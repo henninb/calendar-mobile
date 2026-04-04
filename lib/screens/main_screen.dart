@@ -1,0 +1,175 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/providers.dart';
+import '../widgets/sync_banner.dart';
+import 'calendar_screen.dart';
+import 'occurrence_list_screen.dart';
+import 'task_list_screen.dart';
+import 'credit_card_screen.dart';
+import 'settings_screen.dart';
+
+class MainScreen extends ConsumerStatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  ConsumerState<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends ConsumerState<MainScreen> {
+  int _tabIndex = 0;
+
+  static const _tabs = [
+    _Tab(icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month, label: 'Calendar'),
+    _Tab(icon: Icons.list_alt_outlined,        activeIcon: Icons.list_alt,        label: 'Upcoming'),
+    _Tab(icon: Icons.credit_card_outlined,      activeIcon: Icons.credit_card,      label: 'Cards'),
+    _Tab(icon: Icons.check_circle_outline,      activeIcon: Icons.check_circle,     label: 'Tasks'),
+    _Tab(icon: Icons.settings_outlined,         activeIcon: Icons.settings,         label: 'Settings'),
+  ];
+
+  static const _titles = [
+    'Calendar',
+    'Upcoming',
+    'Credit Cards',
+    'Tasks',
+    'Settings',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Initial silent refresh when app starts
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(syncStateProvider.notifier).silentRefresh();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const Icon(Icons.calendar_month, size: 18, color: Colors.white70),
+            const SizedBox(width: 8),
+            Text(_titles[_tabIndex]),
+          ],
+        ),
+        actions: [
+          if (_tabIndex == 0)
+            _GenerateButton(),
+          _SyncButton(),
+        ],
+      ),
+      body: Column(
+        children: [
+          const SyncBanner(),
+          Expanded(child: _body()),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _tabIndex,
+        onTap: (i) => setState(() => _tabIndex = i),
+        items: _tabs
+            .map((t) => BottomNavigationBarItem(
+                  icon: Icon(t.icon),
+                  activeIcon: Icon(t.activeIcon),
+                  label: t.label,
+                ))
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _body() {
+    return switch (_tabIndex) {
+      0 => const CalendarScreen(),
+      1 => const OccurrenceListScreen(),
+      2 => const CreditCardScreen(),
+      3 => const TaskListScreen(),
+      4 => const SettingsScreen(),
+      _ => const SizedBox.shrink(),
+    };
+  }
+}
+
+class _GenerateButton extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_GenerateButton> createState() => _GenerateButtonState();
+}
+
+class _GenerateButtonState extends ConsumerState<_GenerateButton> {
+  bool _loading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isOnline = ref.watch(isOnlineProvider);
+    return TextButton.icon(
+      onPressed: isOnline && !_loading ? _generate : null,
+      icon: _loading
+          ? const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+            )
+          : const Icon(Icons.refresh_rounded, size: 16, color: Colors.white70),
+      label: Text(
+        _loading ? 'Generating…' : 'Generate',
+        style: const TextStyle(fontSize: 12, color: Colors.white70),
+      ),
+    );
+  }
+
+  Future<void> _generate() async {
+    setState(() => _loading = true);
+    try {
+      await ref.read(apiClientProvider).generateAllOccurrences();
+      await ref.read(syncStateProvider.notifier).silentRefresh();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Occurrences generated')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Generate failed: $e')),
+        );
+      }
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+}
+
+class _SyncButton extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final syncState = ref.watch(syncStateProvider);
+    final isOnline  = ref.watch(isOnlineProvider);
+    final busy      = syncState.phase != SyncPhase.idle;
+
+    return IconButton(
+      tooltip: busy ? 'Syncing…' : 'Sync now',
+      icon: busy
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+            )
+          : Icon(
+              Icons.sync_rounded,
+              color: isOnline ? Colors.white : Colors.white38,
+            ),
+      onPressed: isOnline && !busy
+          ? () => ref.read(syncStateProvider.notifier).sync()
+          : null,
+    );
+  }
+}
+
+class _Tab {
+  const _Tab({required this.icon, required this.activeIcon, required this.label});
+
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+}

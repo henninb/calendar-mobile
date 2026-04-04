@@ -1,0 +1,46 @@
+name: calendar_mobile
+description: Calendar mobile app — offline-first mirror of calendar-app.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Local database (offline-first)
+  drift: ^2.21.0
+  drift_flutter: ^0.2.4
+  sqlite3_flutter_libs: ^0.5.29
+
+  # HTTP
+  dio: ^5.7.0
+
+  # Connectivity
+  connectivity_plus: ^6.1.0
+
+  # Calendar widget
+  table_calendar: ^3.1.2
+
+  # Preferences
+  shared_preferences: ^2.3.4
+
+  # Utilities
+  intl: ^0.20.1
+  path_provider: ^2.1.5
+  path: ^1.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.21.0
+  build_runner: ^2.4.13
+
+flutter:
+  uses-material-design: true
