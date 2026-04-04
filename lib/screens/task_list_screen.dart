@@ -30,7 +30,16 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         final categories = categoriesAsync.valueOrNull ?? [];
         final catMap = {for (final c in categories) c.serverId: c};
 
-        var filtered = tasks.where((t) => t.syncStatus != SyncStatus.pendingDelete).toList();
+        final today = DateTime.now();
+        final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+        var filtered = tasks.where((t) {
+          if (t.syncStatus == SyncStatus.pendingDelete) return false;
+          if (t.dueDate == null) return true;
+          if (t.dueDate!.compareTo(todayStr) >= 0) return true;
+          // Past due: only show if not completed
+          return t.status != 'done' && t.status != 'cancelled';
+        }).toList();
         if (_filterStatus != 'all') {
           filtered = filtered.where((t) => t.status == _filterStatus).toList();
         }
