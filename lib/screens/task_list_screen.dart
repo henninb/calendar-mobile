@@ -372,6 +372,13 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                           ),
                         ),
                       if (_task.dueDate != null) _InfoRow(label: 'DUE', value: _task.dueDate!),
+                      if (_task.assigneeServerId != null)
+                        Consumer(builder: (context, ref, _) {
+                          final persons = ref.watch(personsProvider).valueOrNull ?? [];
+                          final person = persons.where((p) => p.serverId == _task.assigneeServerId).firstOrNull;
+                          if (person == null) return const SizedBox.shrink();
+                          return _InfoRow(label: 'ASSIGNEE', value: person.name);
+                        }),
                       if (_task.recurrence != 'none') _InfoRow(label: 'RECURRENCE', value: _task.recurrence),
                       if (_task.estimatedMinutes != null)
                         _InfoRow(label: 'ESTIMATED', value: '${_task.estimatedMinutes} min'),
@@ -575,6 +582,8 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
   String _status   = 'todo';
   String _priority = 'medium';
   String _recurrence = 'none';
+  String? _dueDate;
+  int? _assigneeServerId;
 
   static const _statuses    = ['todo', 'in_progress', 'done', 'cancelled'];
   static const _priorities  = ['low', 'medium', 'high'];
@@ -589,6 +598,8 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
     _status      = e?.status ?? 'todo';
     _priority    = e?.priority ?? 'medium';
     _recurrence  = e?.recurrence ?? 'none';
+    _dueDate     = e?.dueDate;
+    _assigneeServerId = e?.assigneeServerId;
   }
 
   @override
@@ -648,6 +659,60 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
               items: _recurrences.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
               onChanged: (v) => setState(() => _recurrence = v!),
             ),
+            const SizedBox(height: 10),
+            // Due date picker
+            InkWell(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _dueDate != null
+                      ? DateTime.tryParse(_dueDate!) ?? DateTime.now()
+                      : DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  setState(() => _dueDate = picked.toIso8601String().substring(0, 10));
+                }
+              },
+              child: InputDecorator(
+                decoration: const InputDecoration(labelText: 'Due Date'),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(_dueDate ?? 'None', style: AppText.body),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textMuted),
+                        if (_dueDate != null) ...[
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () => setState(() => _dueDate = null),
+                            child: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Assignee dropdown
+            ref.watch(personsProvider).when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (persons) => DropdownButtonFormField<int?>(
+                value: _assigneeServerId,
+                decoration: const InputDecoration(labelText: 'Assignee'),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('None')),
+                  ...persons.map((p) => DropdownMenuItem(value: p.serverId, child: Text(p.name))),
+                ],
+                onChanged: (v) => setState(() => _assigneeServerId = v),
+              ),
+            ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -679,6 +744,8 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
         status: Value(_status),
         priority: Value(_priority),
         recurrence: Value(_recurrence),
+        dueDate: Value(_dueDate),
+        assigneeServerId: Value(_assigneeServerId),
         syncStatus: const Value(SyncStatus.pendingCreate),
         createdAt: Value(now),
         updatedAt: Value(now),
@@ -692,6 +759,8 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
           status: Value(_status),
           priority: Value(_priority),
           recurrence: Value(_recurrence),
+          dueDate: Value(_dueDate),
+          assigneeServerId: Value(_assigneeServerId),
           updatedAt: Value(now),
           syncStatus: const Value(SyncStatus.pendingUpdate),
         ),
