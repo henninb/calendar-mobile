@@ -35,8 +35,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           filtered = filtered.where((t) => t.status == _filterStatus).toList();
         }
         filtered.sort((a, b) {
-          const order = {'in_progress': 0, 'todo': 1, 'done': 2, 'cancelled': 3};
-          return (order[a.status] ?? 4).compareTo(order[b.status] ?? 4);
+          if (a.dueDate == null && b.dueDate == null) return 0;
+          if (a.dueDate == null) return 1;
+          if (b.dueDate == null) return -1;
+          return a.dueDate!.compareTo(b.dueDate!);
         });
 
         return Stack(
@@ -598,7 +600,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
     _status      = e?.status ?? 'todo';
     _priority    = e?.priority ?? 'medium';
     _recurrence  = e?.recurrence ?? 'none';
-    _dueDate     = e?.dueDate;
+    _dueDate     = e?.dueDate ?? DateTime.now().toIso8601String().substring(0, 10);
     _assigneeServerId = e?.assigneeServerId;
   }
 
@@ -661,40 +663,34 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             ),
             const SizedBox(height: 10),
             // Due date picker
-            InkWell(
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _dueDate != null
-                      ? DateTime.tryParse(_dueDate!) ?? DateTime.now()
-                      : DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                );
-                if (picked != null) {
-                  setState(() => _dueDate = picked.toIso8601String().substring(0, 10));
-                }
-              },
-              child: InputDecorator(
-                decoration: const InputDecoration(labelText: 'Due Date'),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(_dueDate ?? 'None', style: AppText.body),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textMuted),
-                        if (_dueDate != null) ...[
-                          const SizedBox(width: 4),
-                          GestureDetector(
-                            onTap: () => setState(() => _dueDate = null),
-                            child: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
+            FormField<String>(
+              initialValue: _dueDate,
+              validator: (_) => _dueDate == null ? 'Required' : null,
+              builder: (field) => InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.tryParse(_dueDate!) ?? DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) {
+                    setState(() => _dueDate = picked.toIso8601String().substring(0, 10));
+                    field.didChange(_dueDate);
+                  }
+                },
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Due Date *',
+                    errorText: field.errorText,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(_dueDate!, style: AppText.body),
+                      const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textMuted),
+                    ],
+                  ),
                 ),
               ),
             ),
