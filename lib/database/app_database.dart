@@ -125,7 +125,39 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        // Remove duplicates introduced by the old INSERT OR REPLACE logic that
+        // keyed on the auto-increment id instead of server_id. Keep the row
+        // with the lowest local id for each server_id.
+        const tablesWithServerId = [
+          'categories',
+          'persons',
+          'events',
+          'occurrences',
+          'tasks',
+          'subtasks',
+          'credit_cards',
+        ];
+        for (final t in tablesWithServerId) {
+          await customStatement(
+            'DELETE FROM $t '
+            'WHERE id NOT IN ('
+            '  SELECT MIN(id) FROM $t GROUP BY server_id'
+            ') AND server_id IS NOT NULL',
+          );
+          await customStatement(
+            'CREATE UNIQUE INDEX IF NOT EXISTS idx_${t}_server_id '
+            'ON $t(server_id)',
+          );
+        }
+      }
+    },
+  );
 
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'calendar_mobile');
@@ -138,8 +170,13 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Category>> watchCategories() => select(categories).watch();
 
   Future<void> upsertCategories(List<CategoriesCompanion> rows) async {
-    await batch((b) {
-      b.insertAllOnConflictUpdate(categories, rows);
+    await transaction(() async {
+      for (final row in rows) {
+        await into(categories).insert(
+          row,
+          onConflict: DoUpdate((old) => row, target: [categories.serverId]),
+        );
+      }
     });
   }
 
@@ -150,8 +187,13 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Person>> watchPersons() => select(persons).watch();
 
   Future<void> upsertPersons(List<PersonsCompanion> rows) async {
-    await batch((b) {
-      b.insertAllOnConflictUpdate(persons, rows);
+    await transaction(() async {
+      for (final row in rows) {
+        await into(persons).insert(
+          row,
+          onConflict: DoUpdate((old) => row, target: [persons.serverId]),
+        );
+      }
     });
   }
 
@@ -160,8 +202,13 @@ class AppDatabase extends _$AppDatabase {
   Future<List<Event>> getAllEvents() => select(events).get();
 
   Future<void> upsertEvents(List<EventsCompanion> rows) async {
-    await batch((b) {
-      b.insertAllOnConflictUpdate(events, rows);
+    await transaction(() async {
+      for (final row in rows) {
+        await into(events).insert(
+          row,
+          onConflict: DoUpdate((old) => row, target: [events.serverId]),
+        );
+      }
     });
   }
 
@@ -186,8 +233,13 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> upsertOccurrences(List<OccurrencesCompanion> rows) async {
-    await batch((b) {
-      b.insertAllOnConflictUpdate(occurrences, rows);
+    await transaction(() async {
+      for (final row in rows) {
+        await into(occurrences).insert(
+          row,
+          onConflict: DoUpdate((old) => row, target: [occurrences.serverId]),
+        );
+      }
     });
   }
 
@@ -265,8 +317,13 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> upsertTasks(List<TasksCompanion> rows) async {
-    await batch((b) {
-      b.insertAllOnConflictUpdate(tasks, rows);
+    await transaction(() async {
+      for (final row in rows) {
+        await into(tasks).insert(
+          row,
+          onConflict: DoUpdate((old) => row, target: [tasks.serverId]),
+        );
+      }
     });
   }
 
@@ -319,8 +376,13 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> upsertSubtasks(List<SubtasksCompanion> rows) async {
-    await batch((b) {
-      b.insertAllOnConflictUpdate(subtasks, rows);
+    await transaction(() async {
+      for (final row in rows) {
+        await into(subtasks).insert(
+          row,
+          onConflict: DoUpdate((old) => row, target: [subtasks.serverId]),
+        );
+      }
     });
   }
 
@@ -364,8 +426,13 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> upsertCreditCards(List<CreditCardsCompanion> rows) async {
-    await batch((b) {
-      b.insertAllOnConflictUpdate(creditCards, rows);
+    await transaction(() async {
+      for (final row in rows) {
+        await into(creditCards).insert(
+          row,
+          onConflict: DoUpdate((old) => row, target: [creditCards.serverId]),
+        );
+      }
     });
   }
 
