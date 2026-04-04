@@ -30,6 +30,9 @@ dependencies:
   # Preferences
   shared_preferences: ^2.3.4
 
+  # Launch external apps (e.g. WireGuard)
+  url_launcher: ^6.3.0
+
   # Utilities
   intl: ^0.20.1
   path_provider: ^2.1.5

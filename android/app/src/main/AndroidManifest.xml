@@ -41,5 +41,11 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Allow querying the WireGuard app -->
+        <package android:name="com.wireguard.android" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="wireguard" />
+        </intent>
     </queries>
 </manifest>

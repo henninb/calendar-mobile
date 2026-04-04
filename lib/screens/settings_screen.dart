@@ -1,5 +1,7 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/theme.dart';
 import '../core/constants.dart';
 import '../providers/providers.dart';
@@ -86,6 +88,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
               ],
             ),
+            if (!isOnline) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openWireGuard(context),
+                  icon: const Icon(Icons.vpn_lock_rounded, size: 16),
+                  label: const Text('Open WireGuard'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.overdueFg,
+                    side: BorderSide(color: AppColors.overdueFg.withValues(alpha: 0.6)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
 
@@ -162,6 +181,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _openWireGuard(BuildContext context) async {
+    Uri uri;
+    if (Platform.isAndroid) {
+      // Launch WireGuard by package name via Android intent
+      uri = Uri.parse(
+        'intent:#Intent;action=android.intent.action.MAIN;'
+        'category=android.intent.category.LAUNCHER;'
+        'package=com.wireguard.android;end',
+      );
+    } else if (Platform.isIOS) {
+      uri = Uri.parse('wireguard://');
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please open WireGuard manually to establish a VPN connection')),
+        );
+      }
+      return;
+    }
+
+    final launched = await canLaunchUrl(uri) && await launchUrl(uri);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('WireGuard not found — please install or open it manually')),
+      );
+    }
   }
 
   void _saveUrl() {
