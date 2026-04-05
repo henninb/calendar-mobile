@@ -53,9 +53,8 @@ class ApiClient {
     return (res.data ?? []).map((j) => ApiOccurrence.fromJson(j)).toList();
   }
 
-  Future<ApiOccurrence> patchOccurrence(int serverId, Map<String, dynamic> data) async {
-    final res = await _dio.patch<Map<String, dynamic>>('/occurrences/$serverId', data: data);
-    return ApiOccurrence.fromJson(res.data!);
+  Future<void> patchOccurrence(int serverId, Map<String, dynamic> data) async {
+    await _dio.patch('/occurrences/$serverId', data: data);
   }
 
   Future<void> deleteOccurrence(int serverId) async {
@@ -78,9 +77,8 @@ class ApiClient {
     return ApiTask.fromJson(res.data!);
   }
 
-  Future<ApiTask> patchTask(int serverId, Map<String, dynamic> data) async {
-    final res = await _dio.patch<Map<String, dynamic>>('/tasks/$serverId', data: data);
-    return ApiTask.fromJson(res.data!);
+  Future<void> patchTask(int serverId, Map<String, dynamic> data) async {
+    await _dio.patch('/tasks/$serverId', data: data);
   }
 
   Future<void> deleteTask(int serverId) async {
@@ -94,12 +92,8 @@ class ApiClient {
     return ApiSubtask.fromJson(res.data!);
   }
 
-  Future<ApiSubtask> patchSubtask(int taskServerId, int subtaskServerId, Map<String, dynamic> data) async {
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '/tasks/$taskServerId/subtasks/$subtaskServerId',
-      data: data,
-    );
-    return ApiSubtask.fromJson(res.data!);
+  Future<void> patchSubtask(int taskServerId, int subtaskServerId, Map<String, dynamic> data) async {
+    await _dio.patch('/tasks/$taskServerId/subtasks/$subtaskServerId', data: data);
   }
 
   Future<void> deleteSubtask(int taskServerId, int subtaskServerId) async {

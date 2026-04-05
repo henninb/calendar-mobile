@@ -123,9 +123,21 @@ final syncStateProvider = StateNotifierProvider<SyncNotifier, SyncState>((ref) {
 });
 
 class SyncNotifier extends StateNotifier<SyncState> {
-  SyncNotifier(this._ref) : super(const SyncState());
+  SyncNotifier(this._ref) : super(const SyncState()) {
+    _periodicTimer = Timer.periodic(
+      const Duration(minutes: 5),
+      (_) => silentRefresh(),
+    );
+  }
 
   final Ref _ref;
+  Timer? _periodicTimer;
+
+  @override
+  void dispose() {
+    _periodicTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> sync() async {
     if (state.phase != SyncPhase.idle) return;
@@ -140,11 +152,11 @@ class SyncNotifier extends StateNotifier<SyncState> {
           phase: SyncPhase.error,
           errorMessage: result.errors.first,
         );
-        await Future.delayed(const Duration(seconds: 2));
+        return; // stay in error — user must dismiss before syncing again
       }
     } catch (e) {
       state = state.copyWith(phase: SyncPhase.error, errorMessage: e.toString());
-      await Future.delayed(const Duration(seconds: 2));
+      return;
     }
 
     state = state.copyWith(phase: SyncPhase.pulling);
@@ -156,8 +168,7 @@ class SyncNotifier extends StateNotifier<SyncState> {
         phase: SyncPhase.error,
         errorMessage: _friendlyError(e),
       );
-      await Future.delayed(const Duration(seconds: 2));
-      state = state.copyWith(phase: SyncPhase.idle);
+      // stay in error — user must dismiss before syncing again
     }
   }
 

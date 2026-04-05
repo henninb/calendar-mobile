@@ -44,10 +44,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           filtered = filtered.where((t) => t.status == _filterStatus).toList();
         }
         filtered.sort((a, b) {
-          if (a.dueDate == null && b.dueDate == null) return 0;
+          if (a.dueDate == null && b.dueDate == null) return _doneWeight(a) - _doneWeight(b);
           if (a.dueDate == null) return 1;
           if (b.dueDate == null) return -1;
-          return a.dueDate!.compareTo(b.dueDate!);
+          final dateCmp = a.dueDate!.compareTo(b.dueDate!);
+          if (dateCmp != 0) return dateCmp;
+          return _doneWeight(a) - _doneWeight(b);
         });
 
         return Stack(
@@ -66,6 +68,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                           itemCount: filtered.length,
                           separatorBuilder: (c, i) => const SizedBox(height: 8),
                           itemBuilder: (context, i) => _TaskCard(
+                            key: ValueKey(filtered[i].id),
                             task: filtered[i],
                             catMap: catMap,
                           ),
@@ -86,6 +89,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       },
     );
   }
+
+  static int _doneWeight(Task t) =>
+      (t.status == 'done' || t.status == 'cancelled') ? 1 : 0;
 
   Future<void> _showTaskForm(BuildContext context, Task? existing) async {
     await showModalBottomSheet(
@@ -148,20 +154,63 @@ class _StatusFilter extends StatelessWidget {
   }
 }
 
-class _TaskCard extends ConsumerWidget {
-  const _TaskCard({required this.task, required this.catMap});
+class _TaskCard extends ConsumerStatefulWidget {
+  const _TaskCard({super.key, required this.task, required this.catMap});
 
   final Task task;
   final Map<int?, Category> catMap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cat = catMap[task.categoryServerId];
+  ConsumerState<_TaskCard> createState() => _TaskCardState();
+}
+
+class _TaskCardState extends ConsumerState<_TaskCard> {
+  bool _expanded = false;
+  final _newSubtaskCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _newSubtaskCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addSubtask() async {
+    final title = _newSubtaskCtrl.text.trim();
+    if (title.isEmpty) return;
+    _newSubtaskCtrl.clear();
+    final task = widget.task;
+    await ref.read(dbProvider).insertSubtask(SubtasksCompanion(
+      taskLocalId: Value(task.id),
+      taskServerId: Value(task.serverId),
+      title: Value(title),
+      syncStatus: const Value(SyncStatus.pendingCreate),
+    ));
+    if (ref.read(isOnlineProvider)) {
+      ref.read(syncStateProvider.notifier).sync();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final task = widget.task;
+    final cat = widget.catMap[task.categoryServerId];
+
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final isActive = task.status != 'done' && task.status != 'cancelled';
+    final isDueToday = task.dueDate == todayStr;
+    final isOverdue = task.dueDate != null && task.dueDate!.compareTo(todayStr) < 0;
+    final highlight = isActive && (isDueToday || isOverdue);
+
+    final subtasksAsync = ref.watch(subtasksForTaskProvider(task.id));
+    final subtasks = subtasksAsync.valueOrNull ?? [];
+    final doneCount = subtasks.where((s) => s.status == 'done').length;
 
     return Card(
+      color: highlight ? const Color(0xFFFEE2E2) : null,
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        onTap: () => _showDetail(context, ref),
+        onTap: () => _showDetail(context),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -194,6 +243,13 @@ class _TaskCard extends ConsumerWidget {
                         const Icon(Icons.calendar_today_outlined, size: 11, color: AppColors.textMuted),
                         const SizedBox(width: 3),
                         Text(task.dueDate!, style: AppText.label),
+                        if (isActive && isDueToday) ...[
+                          const SizedBox(width: 4),
+                          const Text('today', style: TextStyle(fontSize: 10, color: Color(0xFFD97706), fontWeight: FontWeight.w600)),
+                        ] else if (isActive && isOverdue) ...[
+                          const SizedBox(width: 4),
+                          const Text('overdue', style: TextStyle(fontSize: 10, color: Color(0xFFDC2626), fontWeight: FontWeight.w600)),
+                        ],
                       ],
                     ),
                   ],
@@ -210,6 +266,65 @@ class _TaskCard extends ConsumerWidget {
               // Quick status actions
               const SizedBox(height: 8),
               _QuickStatusRow(task: task),
+              // Subtask expand toggle (always visible)
+              const SizedBox(height: 6),
+              GestureDetector(
+                onTap: () => setState(() => _expanded = !_expanded),
+                child: Row(
+                  children: [
+                    Icon(
+                      _expanded ? Icons.expand_less : Icons.expand_more,
+                      size: 16,
+                      color: AppColors.textMuted,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      subtasks.isEmpty
+                          ? 'Subtasks'
+                          : '${subtasks.length} subtask${subtasks.length == 1 ? '' : 's'}  ·  $doneCount/${subtasks.length} done',
+                      style: AppText.small.copyWith(color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              if (_expanded) ...[
+                const SizedBox(height: 6),
+                const Divider(height: 1),
+                const SizedBox(height: 4),
+                ...subtasks.map((s) => _InlineSubtaskRow(subtask: s)),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _newSubtaskCtrl,
+                        style: AppText.small,
+                        decoration: const InputDecoration(
+                          hintText: 'Add subtask…',
+                          hintStyle: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          border: OutlineInputBorder(),
+                        ),
+                        onSubmitted: (_) => _addSubtask(),
+                        textInputAction: TextInputAction.done,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: _addSubtask,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: const Text('Add', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -217,7 +332,7 @@ class _TaskCard extends ConsumerWidget {
     );
   }
 
-  void _showDetail(BuildContext context, WidgetRef ref) {
+  void _showDetail(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -225,7 +340,56 @@ class _TaskCard extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => _TaskDetailSheet(task: task, catMap: catMap),
+      builder: (_) => _TaskDetailSheet(task: widget.task, catMap: widget.catMap),
+    );
+  }
+}
+
+class _InlineSubtaskRow extends ConsumerWidget {
+  const _InlineSubtaskRow({required this.subtask});
+
+  final Subtask subtask;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final done = subtask.status == 'done';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () async {
+              final newStatus = done ? 'todo' : 'done';
+              await ref.read(dbProvider).updateSubtask(
+                subtask.id,
+                SubtasksCompanion(
+                  status: Value(newStatus),
+                  syncStatus: const Value(SyncStatus.pendingUpdate),
+                ),
+              );
+              if (ref.read(isOnlineProvider)) {
+                ref.read(syncStateProvider.notifier).sync();
+              }
+            },
+            child: Icon(
+              done ? Icons.check_circle : Icons.radio_button_unchecked,
+              size: 18,
+              color: done ? AppColors.completedFg : AppColors.textMuted,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              subtask.title,
+              style: AppText.small.copyWith(
+                decoration: done ? TextDecoration.lineThrough : null,
+                color: done ? AppColors.textMuted : AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -253,6 +417,41 @@ class _QuickStatusRow extends ConsumerWidget {
       }
     }
 
+    void editTask() {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: AppColors.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (_) => _TaskForm(existing: task),
+      );
+    }
+
+    Future<void> deleteTask() async {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Delete Task'),
+          content: Text('Delete "${task.title}"?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.btnRed),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+      await db.markTaskDeleted(task.id);
+      if (ref.read(isOnlineProvider)) {
+        ref.read(syncStateProvider.notifier).sync();
+      }
+    }
+
     return Wrap(
       spacing: 6,
       children: [
@@ -262,6 +461,8 @@ class _QuickStatusRow extends ConsumerWidget {
           _Chip(label: 'Done', color: AppColors.btnGreen, onTap: () => setStatus('done')),
         if (task.status != 'cancelled' && task.status != 'done')
           _Chip(label: 'Cancel', color: AppColors.btnGrayBg, textColor: AppColors.btnGrayFg, onTap: () => setStatus('cancelled')),
+        _Chip(label: 'Edit', color: const Color(0xFF3B82F6), onTap: editTask),
+        _Chip(label: 'Del', color: AppColors.btnRed, onTap: deleteTask),
       ],
     );
   }
@@ -595,6 +796,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
   String _recurrence = 'none';
   String? _dueDate;
   int? _assigneeServerId;
+  int? _categoryServerId;
 
   static const _statuses    = ['todo', 'in_progress', 'done', 'cancelled'];
   static const _priorities  = ['low', 'medium', 'high'];
@@ -611,6 +813,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
     _recurrence  = e?.recurrence ?? 'none';
     _dueDate     = e?.dueDate ?? DateTime.now().toIso8601String().substring(0, 10);
     _assigneeServerId = e?.assigneeServerId;
+    _categoryServerId = e?.categoryServerId;
   }
 
   @override
@@ -626,10 +829,12 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Form(
         key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             TextFormField(
               controller: _title,
               decoration: const InputDecoration(labelText: 'Title *'),
@@ -646,7 +851,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    initialValue: _status,
+                    value: _status,
                     decoration: const InputDecoration(labelText: 'Status'),
                     items: _statuses.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                     onChanged: (v) => setState(() => _status = v!),
@@ -655,7 +860,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    initialValue: _priority,
+                    value: _priority,
                     decoration: const InputDecoration(labelText: 'Priority'),
                     items: _priorities.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                     onChanged: (v) => setState(() => _priority = v!),
@@ -665,7 +870,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
-              initialValue: _recurrence,
+              value: _recurrence,
               decoration: const InputDecoration(labelText: 'Recurrence'),
               items: _recurrences.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
               onChanged: (v) => setState(() => _recurrence = v!),
@@ -704,6 +909,24 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
               ),
             ),
             const SizedBox(height: 10),
+            // Category dropdown
+            ref.watch(categoriesProvider).when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (cats) => DropdownButtonFormField<int?>(
+                value: _categoryServerId,
+                decoration: const InputDecoration(labelText: 'Category'),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('None')),
+                  ...cats.map((c) => DropdownMenuItem(
+                        value: c.serverId,
+                        child: Text('${c.icon} ${c.name}'),
+                      )),
+                ],
+                onChanged: (v) => setState(() => _categoryServerId = v),
+              ),
+            ),
+            const SizedBox(height: 10),
             // Assignee dropdown
             ref.watch(personsProvider).when(
               loading: () => const SizedBox.shrink(),
@@ -733,6 +956,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -751,6 +975,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
         recurrence: Value(_recurrence),
         dueDate: Value(_dueDate),
         assigneeServerId: Value(_assigneeServerId),
+        categoryServerId: Value(_categoryServerId),
         syncStatus: const Value(SyncStatus.pendingCreate),
         createdAt: Value(now),
         updatedAt: Value(now),
@@ -766,6 +991,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
           recurrence: Value(_recurrence),
           dueDate: Value(_dueDate),
           assigneeServerId: Value(_assigneeServerId),
+          categoryServerId: Value(_categoryServerId),
           updatedAt: Value(now),
           syncStatus: const Value(SyncStatus.pendingUpdate),
         ),

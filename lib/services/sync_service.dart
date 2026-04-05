@@ -119,8 +119,19 @@ class SyncService {
             ))
         .toList());
 
-    // Upsert subtasks — resolve local task id first
+    // Purge local tasks that were deleted on the server, then reuse the
+    // refreshed list to resolve local IDs for subtask upserts.
+    final serverIds = apiTasks.map((t) => t.id).toSet();
     final localTasks = await _db.getTasks();
+    for (final local in localTasks) {
+      // Purge any local task whose serverId is gone from the server,
+      // regardless of sync status (covers orphaned pendingUpdate/pendingDelete).
+      if (local.serverId != null && !serverIds.contains(local.serverId)) {
+        await _db.deleteTaskLocal(local.id);
+      }
+    }
+
+    // Upsert subtasks — resolve local task id first
     final serverToLocal = {for (final t in localTasks) t.serverId: t.id};
 
     for (final t in apiTasks) {
@@ -246,7 +257,12 @@ class SyncService {
             count++;
         }
       } on DioException catch (e) {
-        errors.add('Task ${task.id}: ${e.message}');
+        if (e.response?.statusCode == 404) {
+          // Task was deleted on the server; remove the orphaned local record.
+          await _db.deleteTaskLocal(task.id);
+        } else {
+          errors.add('Task ${task.id}: ${e.message}');
+        }
       }
     }
     return count;
@@ -317,7 +333,7 @@ class SyncService {
 
   Map<String, dynamic> _taskToJson(Task t) => {
         'title': t.title,
-        if (t.description != null) 'description': t.description,
+        'description': t.description,
         'status': t.status,
         'priority': t.priority,
         if (t.assigneeServerId != null) 'assignee_id': t.assigneeServerId,
