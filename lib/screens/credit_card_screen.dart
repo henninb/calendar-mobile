@@ -280,6 +280,11 @@ class _CardFormState extends ConsumerState<_CardForm> {
                 decoration: const InputDecoration(labelText: 'Last 4 digits'),
                 keyboardType: TextInputType.number,
                 maxLength: 4,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return null; // optional
+                  if (!RegExp(r'^\d{4}$').hasMatch(v.trim())) return 'Must be exactly 4 digits';
+                  return null;
+                },
               )),
             ]),
             const SizedBox(height: 10),
@@ -288,12 +293,24 @@ class _CardFormState extends ConsumerState<_CardForm> {
                 controller: _closeDay,
                 decoration: const InputDecoration(labelText: 'Statement close day'),
                 keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return null; // optional
+                  final n = int.tryParse(v.trim());
+                  if (n == null || n < 1 || n > 31) return 'Must be 1–31';
+                  return null;
+                },
               )),
               const SizedBox(width: 10),
               Expanded(child: TextFormField(
                 controller: _graceDays,
                 decoration: const InputDecoration(labelText: 'Grace period (days)'),
                 keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return null; // optional
+                  final n = int.tryParse(v.trim());
+                  if (n == null || n < 0) return 'Must be 0 or more';
+                  return null;
+                },
               )),
             ]),
             const SizedBox(height: 20),

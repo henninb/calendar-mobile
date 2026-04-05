@@ -237,8 +237,9 @@ class SyncService {
             count++;
         }
       } on DioException catch (e) {
-        dev.log('_pushOccurrences: serverId=${occ.serverId} ${e.message}', name: 'sync', level: 900);
-        errors.add('Occurrence ${occ.serverId}: ${e.message}');
+        final detail = _dioErrorDetail(e);
+        dev.log('_pushOccurrences: serverId=${occ.serverId} $detail', name: 'sync', level: 900);
+        errors.add('Occurrence ${occ.serverId}: $detail');
       }
     }
     return count;
@@ -275,8 +276,9 @@ class SyncService {
           dev.log('_pushTasks: 404 for local=${task.id}, removing orphan', name: 'sync');
           await _db.deleteTaskLocal(task.id);
         } else {
-          dev.log('_pushTasks: local=${task.id} ${e.message}', name: 'sync', level: 900);
-          errors.add('Task ${task.id}: ${e.message}');
+          final detail = _dioErrorDetail(e);
+          dev.log('_pushTasks: local=${task.id} $detail', name: 'sync', level: 900);
+          errors.add('Task ${task.id}: $detail');
         }
       }
     }
@@ -310,8 +312,9 @@ class SyncService {
             count++;
         }
       } on DioException catch (e) {
-        dev.log('_pushSubtasks: local=${sub.id} ${e.message}', name: 'sync', level: 900);
-        errors.add('Subtask ${sub.id}: ${e.message}');
+        final detail = _dioErrorDetail(e);
+        dev.log('_pushSubtasks: local=${sub.id} $detail', name: 'sync', level: 900);
+        errors.add('Subtask ${sub.id}: $detail');
       }
     }
     return count;
@@ -343,8 +346,9 @@ class SyncService {
             count++;
         }
       } on DioException catch (e) {
-        dev.log('_pushCreditCards: local=${card.id} ${e.message}', name: 'sync', level: 900);
-        errors.add('CreditCard ${card.id}: ${e.message}');
+        final detail = _dioErrorDetail(e);
+        dev.log('_pushCreditCards: local=${card.id} $detail', name: 'sync', level: 900);
+        errors.add('CreditCard ${card.id}: $detail');
       }
     }
     return count;
@@ -394,4 +398,27 @@ class SyncResult {
   final int pushed;
   final List<String> errors;
   SyncResult({required this.pushed, required this.errors});
+}
+
+/// Extract a human-readable detail string from a DioException.
+/// For 422 Unprocessable Entity, includes the server's validation message.
+String _dioErrorDetail(DioException e) {
+  final status = e.response?.statusCode;
+  if (status == 422) {
+    // FastAPI returns {"detail": [{"msg": "...", "loc": [...], ...}]} or {"detail": "..."}
+    final data = e.response?.data;
+    if (data is Map) {
+      final detail = data['detail'];
+      if (detail is String) return '422 Validation: $detail';
+      if (detail is List && detail.isNotEmpty) {
+        final msgs = detail
+            .whereType<Map>()
+            .map((d) => '${(d['loc'] as List?)?.lastOrNull ?? '?'}: ${d['msg'] ?? d}')
+            .join('; ');
+        return '422 Validation: $msgs';
+      }
+    }
+    return '422 Unprocessable Entity';
+  }
+  return e.message ?? 'HTTP $status';
 }
