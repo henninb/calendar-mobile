@@ -61,18 +61,28 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                   onChanged: (s) => setState(() => _filterStatus = s),
                 ),
                 Expanded(
-                  child: filtered.isEmpty
-                      ? const Center(child: Text('No tasks', style: AppText.small))
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
-                          itemCount: filtered.length,
-                          separatorBuilder: (c, i) => const SizedBox(height: 8),
-                          itemBuilder: (context, i) => _TaskCard(
-                            key: ValueKey(filtered[i].id),
-                            task: filtered[i],
-                            catMap: catMap,
+                  child: RefreshIndicator(
+                    onRefresh: () => ref.read(syncStateProvider.notifier).sync(),
+                    child: filtered.isEmpty
+                        ? const SingleChildScrollView(
+                            physics: AlwaysScrollableScrollPhysics(),
+                            child: SizedBox(
+                              height: 400,
+                              child: Center(child: Text('No tasks', style: AppText.small)),
+                            ),
+                          )
+                        : ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
+                            itemCount: filtered.length,
+                            separatorBuilder: (c, i) => const SizedBox(height: 8),
+                            itemBuilder: (context, i) => _TaskCard(
+                              key: ValueKey(filtered[i].id),
+                              task: filtered[i],
+                              catMap: catMap,
+                            ),
                           ),
-                        ),
+                  ),
                 ),
               ],
             ),
