@@ -34,7 +34,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
         var filtered = tasks.where((t) {
-          if (t.syncStatus == SyncStatus.pendingDelete) return false;
+          if (t.syncStatus == SyncStatus.pendingDelete.value) return false;
           if (t.dueDate == null) return true;
           if (t.dueDate!.compareTo(todayStr) >= 0) return true;
           // Past due: only show if not completed
@@ -183,7 +183,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
       taskLocalId: Value(task.id),
       taskServerId: Value(task.serverId),
       title: Value(title),
-      syncStatus: const Value(SyncStatus.pendingCreate),
+      syncStatus: Value(SyncStatus.pendingCreate.value),
     ));
     if (ref.read(isOnlineProvider)) {
       ref.read(syncStateProvider.notifier).sync();
@@ -253,7 +253,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                       ],
                     ),
                   ],
-                  if (task.syncStatus != SyncStatus.synced) ...[
+                  if (task.syncStatus != SyncStatus.synced.value) ...[
                     const SizedBox(width: 6),
                     const Icon(Icons.cloud_upload_outlined, size: 12, color: AppColors.textMuted),
                   ],
@@ -365,7 +365,7 @@ class _InlineSubtaskRow extends ConsumerWidget {
                 subtask.id,
                 SubtasksCompanion(
                   status: Value(newStatus),
-                  syncStatus: const Value(SyncStatus.pendingUpdate),
+                  syncStatus: Value(SyncStatus.pendingUpdate.value),
                 ),
               );
               if (ref.read(isOnlineProvider)) {
@@ -409,7 +409,7 @@ class _QuickStatusRow extends ConsumerWidget {
         TasksCompanion(
           status: Value(s),
           updatedAt: Value(DateTime.now().toIso8601String()),
-          syncStatus: const Value(SyncStatus.pendingUpdate),
+          syncStatus: Value(SyncStatus.pendingUpdate.value),
         ),
       );
       if (ref.read(isOnlineProvider)) {
@@ -657,7 +657,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                 taskLocalId: Value(_task.id),
                 taskServerId: Value(localTask.serverId),
                 title: Value(ctrl.text.trim()),
-                syncStatus: const Value(SyncStatus.pendingCreate),
+                syncStatus: Value(SyncStatus.pendingCreate.value),
               ));
               if (mounted) Navigator.pop(context);
               if (ref.read(isOnlineProvider)) {
@@ -715,7 +715,7 @@ class _SubtaskRow extends ConsumerWidget {
                 subtask.id,
                 SubtasksCompanion(
                   status: Value(newStatus),
-                  syncStatus: const Value(SyncStatus.pendingUpdate),
+                  syncStatus: Value(SyncStatus.pendingUpdate.value),
                 ),
               );
               if (ref.read(isOnlineProvider)) {
@@ -976,7 +976,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
         dueDate: Value(_dueDate),
         assigneeServerId: Value(_assigneeServerId),
         categoryServerId: Value(_categoryServerId),
-        syncStatus: const Value(SyncStatus.pendingCreate),
+        syncStatus: Value(SyncStatus.pendingCreate.value),
         createdAt: Value(now),
         updatedAt: Value(now),
       ));
@@ -993,7 +993,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
           assigneeServerId: Value(_assigneeServerId),
           categoryServerId: Value(_categoryServerId),
           updatedAt: Value(now),
-          syncStatus: const Value(SyncStatus.pendingUpdate),
+          syncStatus: Value(SyncStatus.pendingUpdate.value),
         ),
       );
     }

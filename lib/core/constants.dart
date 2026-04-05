@@ -11,10 +11,22 @@ class AppConstants {
   static const Duration connectCheck  = Duration(seconds: 5);
 }
 
-// Sync status codes stored in SQLite
-class SyncStatus {
-  static const int synced        = 0;
-  static const int pendingCreate = 1;
-  static const int pendingUpdate = 2;
-  static const int pendingDelete = 3;
+// Fix #12: enum gives exhaustive switch checking; explicit .value property
+// maps to the integer stored in SQLite (column type stays IntColumn).
+enum SyncStatus {
+  synced(0),
+  pendingCreate(1),
+  pendingUpdate(2),
+  pendingDelete(3);
+
+  const SyncStatus(this.value);
+  final int value;
+
+  /// Converts the raw SQLite integer back to the enum.
+  /// Falls back to [synced] for unexpected values so callers never crash,
+  /// but the unknown value will simply not be pushed.
+  static SyncStatus fromInt(int v) => SyncStatus.values.firstWhere(
+        (s) => s.value == v,
+        orElse: () => SyncStatus.synced,
+      );
 }

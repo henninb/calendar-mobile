@@ -326,7 +326,7 @@ class _CardFormState extends ConsumerState<_CardForm> {
         lastFour: Value(_lastFour.text.trim().isEmpty ? null : _lastFour.text.trim()),
         statementCloseDay: Value(int.tryParse(_closeDay.text)),
         gracePeriodDays: Value(int.tryParse(_graceDays.text)),
-        syncStatus: const Value(SyncStatus.pendingCreate),
+        syncStatus: Value(SyncStatus.pendingCreate.value),
       ));
     } else {
       await db.updateCreditCard(
@@ -337,7 +337,7 @@ class _CardFormState extends ConsumerState<_CardForm> {
           lastFour: Value(_lastFour.text.trim().isEmpty ? null : _lastFour.text.trim()),
           statementCloseDay: Value(int.tryParse(_closeDay.text)),
           gracePeriodDays: Value(int.tryParse(_graceDays.text)),
-          syncStatus: const Value(SyncStatus.pendingUpdate),
+          syncStatus: Value(SyncStatus.pendingUpdate.value),
         ),
       );
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../core/constants.dart';
 import '../core/theme.dart';
 import '../database/app_database.dart';
 import '../providers/providers.dart';
@@ -24,6 +25,8 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
   Widget build(BuildContext context) {
     final occurrencesAsync = ref.watch(occurrencesProvider);
     final categoriesAsync  = ref.watch(categoriesProvider);
+    // Fix #7: fetch events once at the screen level, keyed by serverId.
+    final eventsAsync      = ref.watch(eventsProvider);
 
     return occurrencesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -31,9 +34,13 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
       data: (occurrences) {
         final categories = categoriesAsync.valueOrNull ?? [];
         final catMap = {for (final c in categories) c.serverId: c};
+        final events = eventsAsync.valueOrNull ?? [];
+        final eventMap = {for (final e in events) e.serverId: e};
 
-        // Apply filters
-        var filtered = occurrences.where((o) => o.syncStatus != 3).toList();
+        // Apply filters (exclude pending-delete rows)
+        var filtered = occurrences
+            .where((o) => o.syncStatus != SyncStatus.pendingDelete.value)
+            .toList();
         if (_filterStatus != 'all') {
           filtered = filtered.where((o) => o.status == _filterStatus).toList();
         }
@@ -68,6 +75,7 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
                         final occ = filtered[i];
                         return _OccurrenceRow(
                           occurrence: occ,
+                          event: eventMap[occ.eventServerId],
                           catMap: catMap,
                           onStatusChange: (s) => _updateStatus(occ, s),
                           onDelete: () => _deleteOccurrence(occ),
@@ -81,8 +89,10 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
     );
   }
 
+  // Fix #6: guard against widget disposal after each await.
   Future<void> _updateStatus(Occurrence occ, String newStatus) async {
     await ref.read(dbProvider).updateOccurrenceStatus(occ.id, newStatus);
+    if (!mounted) return;
     if (ref.read(isOnlineProvider)) {
       await ref.read(syncStateProvider.notifier).sync();
     }
@@ -90,6 +100,7 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
 
   Future<void> _deleteOccurrence(Occurrence occ) async {
     await ref.read(dbProvider).markOccurrenceDeleted(occ.id);
+    if (!mounted) return;
     if (ref.read(isOnlineProvider)) {
       await ref.read(syncStateProvider.notifier).sync();
     }
@@ -158,86 +169,79 @@ class _Toolbar extends StatelessWidget {
   }
 }
 
-class _OccurrenceRow extends ConsumerWidget {
+// Fix #7: event is resolved at the parent and passed in — no per-row DB query.
+class _OccurrenceRow extends StatelessWidget {
   const _OccurrenceRow({
     required this.occurrence,
+    required this.event,
     required this.catMap,
     required this.onStatusChange,
     required this.onDelete,
   });
 
   final Occurrence occurrence;
+  final Event? event;
   final Map<int?, Category> catMap;
   final void Function(String) onStatusChange;
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return FutureBuilder(
-      future: ref.read(dbProvider).getAllEvents(),
-      builder: (context, snap) {
-        final events = snap.data ?? [];
-        final event = events.cast<Event?>().firstWhere(
-              (e) => e?.serverId == occurrence.eventServerId,
-              orElse: () => null,
-            );
-        final cat = event != null ? catMap[event.categoryServerId] : null;
-        final dateLabel = _relDate(occurrence.occurrenceDate);
+  Widget build(BuildContext context) {
+    final cat = event != null ? catMap[event!.categoryServerId] : null;
+    final dateLabel = _relDate(occurrence.occurrenceDate);
 
-        return InkWell(
-          onTap: () => _showDetail(context),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Date column
-                SizedBox(
-                  width: 52,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _shortDate(occurrence.occurrenceDate),
-                        style: AppText.small.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      Text(dateLabel, style: AppText.label.copyWith(fontSize: 10)),
-                    ],
+    return InkWell(
+      onTap: () => _showDetail(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Date column
+            SizedBox(
+              width: 52,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _shortDate(occurrence.occurrenceDate),
+                    style: AppText.small.copyWith(fontWeight: FontWeight.w600),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event?.title ?? 'Event #${occurrence.eventServerId}',
-                        style: AppText.body.copyWith(fontWeight: FontWeight.w500),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (cat != null) ...[
-                        const SizedBox(height: 3),
-                        CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
-                      ],
-                    ],
+                  Text(dateLabel, style: AppText.label.copyWith(fontSize: 10)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event?.title ?? 'Event #${occurrence.eventServerId}',
+                    style: AppText.body.copyWith(fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const SizedBox(width: 8),
-                // Status + quick actions
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    StatusBadge(occurrence.status),
-                    const SizedBox(height: 4),
-                    _QuickActions(status: occurrence.status, onAction: onStatusChange),
+                  if (cat != null) ...[
+                    const SizedBox(height: 3),
+                    CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
                   ],
-                ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Status + quick actions
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                StatusBadge(occurrence.status),
+                const SizedBox(height: 4),
+                _QuickActions(status: occurrence.status, onAction: onStatusChange),
               ],
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 
@@ -249,7 +253,13 @@ class _OccurrenceRow extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => _DetailSheet(occurrence: occurrence, catMap: catMap, onStatusChange: onStatusChange, onDelete: onDelete),
+      builder: (_) => _DetailSheet(
+        occurrence: occurrence,
+        event: event,
+        catMap: catMap,
+        onStatusChange: onStatusChange,
+        onDelete: onDelete,
+      ),
     );
   }
 
@@ -319,21 +329,26 @@ class _IconBtn extends StatelessWidget {
   }
 }
 
-class _DetailSheet extends ConsumerWidget {
+// Fix #7: event is passed in from the parent — no FutureBuilder needed.
+class _DetailSheet extends StatelessWidget {
   const _DetailSheet({
     required this.occurrence,
+    required this.event,
     required this.catMap,
     required this.onStatusChange,
     required this.onDelete,
   });
 
   final Occurrence occurrence;
+  final Event? event;
   final Map<int?, Category> catMap;
   final void Function(String) onStatusChange;
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final cat = event != null ? catMap[event!.categoryServerId] : null;
+
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -341,102 +356,90 @@ class _DetailSheet extends ConsumerWidget {
         top: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
-      child: FutureBuilder(
-        future: ref.read(dbProvider).getAllEvents(),
-        builder: (context, snap) {
-          final events = snap.data ?? [];
-          final event = events.cast<Event?>().firstWhere(
-                (e) => e?.serverId == occurrence.eventServerId,
-                orElse: () => null,
-              );
-          final cat = event != null ? catMap[event.categoryServerId] : null;
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: AppColors.textLight,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Text(
+            event?.title ?? 'Event #${occurrence.eventServerId}',
+            style: AppText.heading,
+          ),
+          const SizedBox(height: 12),
+          _DetailRow(label: 'DATE', value: occurrence.occurrenceDate),
+          _DetailRow(label: 'STATUS', child: StatusBadge(occurrence.status)),
+          if (cat != null)
+            _DetailRow(
+              label: 'CATEGORY',
+              child: CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
+            ),
+          if (event?.priority != null)
+            _DetailRow(label: 'PRIORITY', value: event!.priority),
+          if (occurrence.notes != null && occurrence.notes!.isNotEmpty)
+            _DetailRow(label: 'NOTES', value: occurrence.notes!),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.textLight,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+              if (occurrence.status != 'completed')
+                _ActionBtn(
+                  label: 'Mark Done',
+                  color: AppColors.btnGreen,
+                  onTap: () { onStatusChange('completed'); Navigator.pop(context); },
                 ),
-              ),
-              Text(
-                event?.title ?? 'Event #${occurrence.eventServerId}',
-                style: AppText.heading,
-              ),
-              const SizedBox(height: 12),
-              _DetailRow(label: 'DATE', value: occurrence.occurrenceDate),
-              _DetailRow(label: 'STATUS', child: StatusBadge(occurrence.status)),
-              if (cat != null)
-                _DetailRow(
-                  label: 'CATEGORY',
-                  child: CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
+              if (occurrence.status != 'skipped')
+                _ActionBtn(
+                  label: 'Skip',
+                  color: AppColors.btnGrayBg,
+                  textColor: AppColors.btnGrayFg,
+                  onTap: () { onStatusChange('skipped'); Navigator.pop(context); },
                 ),
-              if (event?.priority != null)
-                _DetailRow(label: 'PRIORITY', value: event!.priority),
-              if (occurrence.notes != null && occurrence.notes!.isNotEmpty)
-                _DetailRow(label: 'NOTES', value: occurrence.notes!),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (occurrence.status != 'completed')
-                    _ActionBtn(
-                      label: 'Mark Done',
-                      color: AppColors.btnGreen,
-                      onTap: () { onStatusChange('completed'); Navigator.pop(context); },
-                    ),
-                  if (occurrence.status != 'skipped')
-                    _ActionBtn(
-                      label: 'Skip',
-                      color: AppColors.btnGrayBg,
-                      textColor: AppColors.btnGrayFg,
-                      onTap: () { onStatusChange('skipped'); Navigator.pop(context); },
-                    ),
-                  if (occurrence.status == 'completed' || occurrence.status == 'skipped')
-                    _ActionBtn(
-                      label: 'Reopen',
-                      color: AppColors.btnBlue,
-                      onTap: () { onStatusChange('upcoming'); Navigator.pop(context); },
-                    ),
-                  _ActionBtn(
-                    label: 'Delete',
-                    color: AppColors.btnRed,
-                    onTap: () async {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text('Delete occurrence?'),
-                          content: const Text('This cannot be undone.'),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(backgroundColor: AppColors.btnRed),
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Delete', style: TextStyle(color: Colors.white)),
-                            ),
-                          ],
+              if (occurrence.status == 'completed' || occurrence.status == 'skipped')
+                _ActionBtn(
+                  label: 'Reopen',
+                  color: AppColors.btnBlue,
+                  onTap: () { onStatusChange('upcoming'); Navigator.pop(context); },
+                ),
+              _ActionBtn(
+                label: 'Delete',
+                color: AppColors.btnRed,
+                onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Delete occurrence?'),
+                      content: const Text('This cannot be undone.'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.btnRed),
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Delete', style: TextStyle(color: Colors.white)),
                         ),
-                      );
-                      if (confirmed == true && context.mounted) {
-                        Navigator.pop(context);
-                        onDelete();
-                      }
-                    },
-                  ),
-                ],
+                      ],
+                    ),
+                  );
+                  if (confirmed == true && context.mounted) {
+                    Navigator.pop(context);
+                    onDelete();
+                  }
+                },
               ),
             ],
-          );
-        },
+          ),
+        ],
       ),
     );
   }

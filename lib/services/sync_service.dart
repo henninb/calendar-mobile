@@ -1,4 +1,6 @@
+import 'dart:developer' as dev;
 import 'package:dio/dio.dart';
+import 'package:intl/intl.dart';
 import '../api/api_client.dart';
 import '../api/api_models.dart';
 import '../core/constants.dart';
@@ -15,6 +17,7 @@ class SyncService {
   // ── Full refresh (pull all server data into local DB) ────────────────────────
 
   Future<void> fullRefresh() async {
+    dev.log('fullRefresh: start', name: 'sync');
     final errors = <String>[];
 
     await Future.wait([
@@ -27,8 +30,10 @@ class SyncService {
     ]);
 
     if (errors.isNotEmpty) {
+      dev.log('fullRefresh: errors — ${errors.join(' | ')}', name: 'sync', level: 900);
       throw Exception(errors.join(' | '));
     }
+    dev.log('fullRefresh: complete', name: 'sync');
   }
 
   Future<void> _refreshCategories() async {
@@ -70,7 +75,7 @@ class SyncService {
               occurrenceDate: Value(o.occurrenceDate),
               status: Value(o.status),
               notes: Value(o.notes),
-              syncStatus: const Value(SyncStatus.synced),
+              syncStatus: Value(SyncStatus.synced.value),
             ))
         .toList());
     // Also cache events referenced by occurrences
@@ -113,7 +118,7 @@ class SyncService {
               estimatedMinutes: Value(t.estimatedMinutes),
               recurrence: Value(t.recurrence),
               occurrenceServerId: Value(t.occurrenceId),
-              syncStatus: const Value(SyncStatus.synced),
+              syncStatus: Value(SyncStatus.synced.value),
               createdAt: Value(t.createdAt),
               updatedAt: Value(t.updatedAt),
             ))
@@ -124,31 +129,31 @@ class SyncService {
     final serverIds = apiTasks.map((t) => t.id).toSet();
     final localTasks = await _db.getTasks();
     for (final local in localTasks) {
-      // Purge any local task whose serverId is gone from the server,
-      // regardless of sync status (covers orphaned pendingUpdate/pendingDelete).
       if (local.serverId != null && !serverIds.contains(local.serverId)) {
+        dev.log('_refreshTasks: purging orphan local=${local.id} serverId=${local.serverId}', name: 'sync');
         await _db.deleteTaskLocal(local.id);
       }
     }
 
-    // Upsert subtasks — resolve local task id first
+    // Fix #8: collect all subtasks first, then upsert in a single transaction.
     final serverToLocal = {for (final t in localTasks) t.serverId: t.id};
-
+    final allSubtasks = <SubtasksCompanion>[];
     for (final t in apiTasks) {
       final localTaskId = serverToLocal[t.id];
       if (localTaskId == null) continue;
-      await _db.upsertSubtasks(t.subtasks
-          .map((s) => SubtasksCompanion(
-                serverId: Value(s.id),
-                taskLocalId: Value(localTaskId),
-                taskServerId: Value(t.id),
-                title: Value(s.title),
-                status: Value(s.status),
-                dueDate: Value(s.dueDate),
-                order: Value(s.order),
-                syncStatus: const Value(SyncStatus.synced),
-              ))
-          .toList());
+      allSubtasks.addAll(t.subtasks.map((s) => SubtasksCompanion(
+            serverId: Value(s.id),
+            taskLocalId: Value(localTaskId),
+            taskServerId: Value(t.id),
+            title: Value(s.title),
+            status: Value(s.status),
+            dueDate: Value(s.dueDate),
+            order: Value(s.order),
+            syncStatus: Value(SyncStatus.synced.value),
+          )));
+    }
+    if (allSubtasks.isNotEmpty) {
+      await _db.upsertSubtasks(allSubtasks);
     }
   }
 
@@ -169,7 +174,7 @@ class SyncService {
               dueDayNextMonth: Value(c.dueDayNextMonth),
               annualFeeMonth: Value(c.annualFeeMonth),
               isActive: Value(c.isActive),
-              syncStatus: const Value(SyncStatus.synced),
+              syncStatus: Value(SyncStatus.synced.value),
             ))
         .toList());
   }
@@ -207,6 +212,7 @@ class SyncService {
     pushed += await _pushSubtasks(errors);
     pushed += await _pushCreditCards(errors);
 
+    dev.log('pushPending: pushed=$pushed errors=${errors.length}', name: 'sync');
     return SyncResult(pushed: pushed, errors: errors);
   }
 
@@ -216,7 +222,11 @@ class SyncService {
     for (final occ in pending) {
       if (occ.serverId == null) continue; // can't create occurrences client-side
       try {
-        switch (occ.syncStatus) {
+        // Fix #5 + #12: exhaustive enum switch surfaces the formerly-silent pendingCreate case.
+        switch (SyncStatus.fromInt(occ.syncStatus)) {
+          case SyncStatus.synced:
+          case SyncStatus.pendingCreate:
+            break; // occurrences cannot be created client-side
           case SyncStatus.pendingUpdate:
             await _api.patchOccurrence(occ.serverId!, {'status': occ.status, 'notes': occ.notes});
             await _db.markOccurrenceSynced(occ.id, occ.serverId!);
@@ -227,6 +237,7 @@ class SyncService {
             count++;
         }
       } on DioException catch (e) {
+        dev.log('_pushOccurrences: serverId=${occ.serverId} ${e.message}', name: 'sync', level: 900);
         errors.add('Occurrence ${occ.serverId}: ${e.message}');
       }
     }
@@ -238,7 +249,9 @@ class SyncService {
     final pending = await _db.getPendingTasks();
     for (final task in pending) {
       try {
-        switch (task.syncStatus) {
+        switch (SyncStatus.fromInt(task.syncStatus)) {
+          case SyncStatus.synced:
+            break;
           case SyncStatus.pendingCreate:
             final body = _taskToJson(task);
             final created = await _api.createTask(body);
@@ -259,8 +272,10 @@ class SyncService {
       } on DioException catch (e) {
         if (e.response?.statusCode == 404) {
           // Task was deleted on the server; remove the orphaned local record.
+          dev.log('_pushTasks: 404 for local=${task.id}, removing orphan', name: 'sync');
           await _db.deleteTaskLocal(task.id);
         } else {
+          dev.log('_pushTasks: local=${task.id} ${e.message}', name: 'sync', level: 900);
           errors.add('Task ${task.id}: ${e.message}');
         }
       }
@@ -273,7 +288,9 @@ class SyncService {
     final pending = await _db.getPendingSubtasks();
     for (final sub in pending) {
       try {
-        switch (sub.syncStatus) {
+        switch (SyncStatus.fromInt(sub.syncStatus)) {
+          case SyncStatus.synced:
+            break;
           case SyncStatus.pendingCreate:
             if (sub.taskServerId == null) break;
             final body = _subtaskToJson(sub);
@@ -293,6 +310,7 @@ class SyncService {
             count++;
         }
       } on DioException catch (e) {
+        dev.log('_pushSubtasks: local=${sub.id} ${e.message}', name: 'sync', level: 900);
         errors.add('Subtask ${sub.id}: ${e.message}');
       }
     }
@@ -304,7 +322,9 @@ class SyncService {
     final pending = await _db.getPendingCreditCards();
     for (final card in pending) {
       try {
-        switch (card.syncStatus) {
+        switch (SyncStatus.fromInt(card.syncStatus)) {
+          case SyncStatus.synced:
+            break;
           case SyncStatus.pendingCreate:
             final body = _cardToJson(card);
             final created = await _api.createCreditCard(body);
@@ -323,6 +343,7 @@ class SyncService {
             count++;
         }
       } on DioException catch (e) {
+        dev.log('_pushCreditCards: local=${card.id} ${e.message}', name: 'sync', level: 900);
         errors.add('CreditCard ${card.id}: ${e.message}');
       }
     }
@@ -365,10 +386,8 @@ class SyncService {
         'is_active': c.isActive,
       };
 
-  static String _fmt(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
+  // Fix #11: use DateFormat instead of manual pad-left string building.
+  static String _fmt(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
 }
 
 class SyncResult {

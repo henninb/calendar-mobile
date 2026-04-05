@@ -1,5 +1,7 @@
+import 'dart:developer' as dev;
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import '../core/constants.dart';
 
 part 'app_database.g.dart';
 
@@ -130,6 +132,7 @@ class AppDatabase extends _$AppDatabase {
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
+      dev.log('AppDatabase: migrating v$from → v$to', name: 'db');
       if (from < 2) {
         // Remove duplicates introduced by the old INSERT OR REPLACE logic that
         // keyed on the auto-increment id instead of server_id. Keep the row
@@ -201,6 +204,8 @@ class AppDatabase extends _$AppDatabase {
 
   Future<List<Event>> getAllEvents() => select(events).get();
 
+  Stream<List<Event>> watchEvents() => select(events).watch();
+
   Future<void> upsertEvents(List<EventsCompanion> rows) async {
     await transaction(() async {
       for (final row in rows) {
@@ -247,7 +252,7 @@ class AppDatabase extends _$AppDatabase {
     await (update(occurrences)..where((o) => o.id.equals(localId))).write(
       OccurrencesCompanion(
         status: Value(status),
-        syncStatus: const Value(2), // pendingUpdate
+        syncStatus: Value(SyncStatus.pendingUpdate.value),
       ),
     );
   }
@@ -268,7 +273,7 @@ class AppDatabase extends _$AppDatabase {
       await (delete(occurrences)..where((o) => o.id.equals(localId))).go();
     } else {
       await (update(occurrences)..where((o) => o.id.equals(localId))).write(
-        const OccurrencesCompanion(syncStatus: Value(3)), // pendingDelete
+        OccurrencesCompanion(syncStatus: Value(SyncStatus.pendingDelete.value)),
       );
     }
   }
@@ -300,7 +305,7 @@ class AppDatabase extends _$AppDatabase {
       await (delete(tasks)..where((t) => t.id.equals(localId))).go();
     } else {
       await (update(tasks)..where((t) => t.id.equals(localId))).write(
-        const TasksCompanion(syncStatus: Value(3)),
+        TasksCompanion(syncStatus: Value(SyncStatus.pendingDelete.value)),
       );
     }
   }
@@ -360,7 +365,7 @@ class AppDatabase extends _$AppDatabase {
       await (delete(subtasks)..where((s) => s.id.equals(localId))).go();
     } else {
       await (update(subtasks)..where((s) => s.id.equals(localId))).write(
-        const SubtasksCompanion(syncStatus: Value(3)),
+        SubtasksCompanion(syncStatus: Value(SyncStatus.pendingDelete.value)),
       );
     }
   }
@@ -410,7 +415,7 @@ class AppDatabase extends _$AppDatabase {
       await (delete(creditCards)..where((c) => c.id.equals(localId))).go();
     } else {
       await (update(creditCards)..where((c) => c.id.equals(localId))).write(
-        const CreditCardsCompanion(syncStatus: Value(3)),
+        CreditCardsCompanion(syncStatus: Value(SyncStatus.pendingDelete.value)),
       );
     }
   }

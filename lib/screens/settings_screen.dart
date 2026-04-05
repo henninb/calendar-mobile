@@ -214,9 +214,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _saveUrl() {
     final url = _urlCtrl.text.trim();
     if (url.isEmpty) return;
+    // Fix #1: reject non-HTTP/HTTPS URLs before they reach the API client.
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme || !['http', 'https'].contains(uri.scheme)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid URL — must start with http:// or https://')),
+      );
+      return;
+    }
+    // Fix #2: setting baseUrlProvider invalidates apiClientProvider, which
+    // Riverpod rebuilds automatically — the manual updateBaseUrl call was
+    // mutating a stale instance that was about to be discarded.
     ref.read(baseUrlProvider.notifier).set(url);
-    // Update the API client
-    ref.read(apiClientProvider).updateBaseUrl(url);
     setState(() => _saved = true);
   }
 
