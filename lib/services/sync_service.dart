@@ -78,6 +78,15 @@ class SyncService {
               syncStatus: Value(SyncStatus.synced.value),
             ))
         .toList());
+    // Purge local occurrences within the synced window that no longer exist on the server.
+    final serverOccIds = occs.map((o) => o.id).toSet();
+    final localOccs = await _db.getOccurrencesByDateRange(_fmt(start), _fmt(end));
+    for (final local in localOccs) {
+      if (local.serverId != null && !serverOccIds.contains(local.serverId)) {
+        dev.log('_refreshOccurrences: purging orphan local=${local.id} serverId=${local.serverId}', name: 'sync');
+        await _db.deleteOccurrenceLocal(local.id);
+      }
+    }
     // Also cache events referenced by occurrences
     final events = occs
         .where((o) => o.event != null)
