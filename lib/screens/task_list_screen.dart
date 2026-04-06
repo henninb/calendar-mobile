@@ -27,7 +27,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (tasks) {
-        final categories = categoriesAsync.valueOrNull ?? [];
+        final categories = categoriesAsync.value ?? [];
         final catMap = {for (final c in categories) c.serverId: c};
 
         final today = DateTime.now();
@@ -213,7 +213,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     final highlight = isActive && (isDueToday || isOverdue);
 
     final subtasksAsync = ref.watch(subtasksForTaskProvider(task.id));
-    final subtasks = subtasksAsync.valueOrNull ?? [];
+    final subtasks = subtasksAsync.value ?? [];
     final doneCount = subtasks.where((s) => s.status == 'done').length;
 
     return Card(
@@ -596,7 +596,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                       if (_task.dueDate != null) _InfoRow(label: 'DUE', value: _task.dueDate!),
                       if (_task.assigneeServerId != null)
                         Consumer(builder: (context, ref, _) {
-                          final persons = ref.watch(personsProvider).valueOrNull ?? [];
+                          final persons = ref.watch(personsProvider).value ?? [];
                           final person = persons.where((p) => p.serverId == _task.assigneeServerId).firstOrNull;
                           if (person == null) return const SizedBox.shrink();
                           return _InfoRow(label: 'ASSIGNEE', value: person.name);

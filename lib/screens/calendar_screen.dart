@@ -35,7 +35,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (occurrences) {
-        final categories = categoriesAsync.valueOrNull ?? [];
+        final categories = categoriesAsync.value ?? [];
         final catMap = {for (final c in categories) c.serverId: c};
 
         // Build event map: date string → list of occurrences

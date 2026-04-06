@@ -83,7 +83,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(width: 12),
                 if (!isOnline)
                   Text(
-                    connectivity.valueOrNull?.map((r) => r.name).join(', ') ?? 'checking…',
+                    connectivity.value?.map((r) => r.name).join(', ') ?? 'checking…',
                     style: AppText.small,
                   ),
               ],

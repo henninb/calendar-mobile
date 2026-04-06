@@ -32,9 +32,9 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (occurrences) {
-        final categories = categoriesAsync.valueOrNull ?? [];
+        final categories = categoriesAsync.value ?? [];
         final catMap = {for (final c in categories) c.serverId: c};
-        final events = eventsAsync.valueOrNull ?? [];
+        final events = eventsAsync.value ?? [];
         final eventMap = {for (final e in events) e.serverId: e};
 
         // Apply filters (exclude pending-delete rows)

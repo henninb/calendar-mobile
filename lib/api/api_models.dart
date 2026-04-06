@@ -216,19 +216,19 @@ class ApiCreditCard {
   });
 
   factory ApiCreditCard.fromJson(Map<String, dynamic> j) => ApiCreditCard(
-        id: j['id'],
-        name: j['name'],
-        issuer: j['issuer'],
-        lastFour: j['last_four'],
-        statementCloseDay: j['statement_close_day'],
-        gracePeriodDays: j['grace_period_days'],
-        weekendShift: j['weekend_shift'],
-        cycleDays: j['cycle_days'],
-        cycleReferenceDate: j['cycle_reference_date'],
-        dueDaySameMonth: j['due_day_same_month'],
-        dueDayNextMonth: j['due_day_next_month'],
-        annualFeeMonth: j['annual_fee_month'],
-        isActive: j['is_active'] ?? true,
+        id: (j['id'] as num).toInt(),
+        name: j['name'] as String,
+        issuer: j['issuer'] as String?,
+        lastFour: j['last_four'] as String?,
+        statementCloseDay: (j['statement_close_day'] as num?)?.toInt(),
+        gracePeriodDays: (j['grace_period_days'] as num?)?.toInt(),
+        weekendShift: j['weekend_shift'] as String?,
+        cycleDays: (j['cycle_days'] as num?)?.toInt(),
+        cycleReferenceDate: j['cycle_reference_date'] as String?,
+        dueDaySameMonth: (j['due_day_same_month'] as num?)?.toInt(),
+        dueDayNextMonth: (j['due_day_next_month'] as num?)?.toInt(),
+        annualFeeMonth: (j['annual_fee_month'] as num?)?.toInt(),
+        isActive: j['is_active'] as bool? ?? true,
       );
 }
 
@@ -266,19 +266,19 @@ class ApiTrackerRow {
   });
 
   factory ApiTrackerRow.fromJson(Map<String, dynamic> j) => ApiTrackerRow(
-        id: j['id'],
-        name: j['name'],
-        issuer: j['issuer'],
-        lastFour: j['last_four'],
-        grace: j['grace'] ?? '',
-        prevClose: j['prev_close'] ?? '',
-        prevDue: j['prev_due'] ?? '',
-        nextClose: j['next_close'] ?? '',
-        nextCloseDays: j['next_close_days'] ?? 0,
-        nextDue: j['next_due'] ?? '',
-        nextDueDays: j['next_due_days'] ?? 0,
-        annualFeeDate: j['annual_fee_date'],
-        annualFeeDays: j['annual_fee_days'],
-        prevDueOverdue: j['prev_due_overdue'] ?? false,
+        id: (j['id'] as num).toInt(),
+        name: j['name'] as String,
+        issuer: j['issuer'] as String?,
+        lastFour: j['last_four'] as String?,
+        grace: j['grace'] as String? ?? '',
+        prevClose: j['prev_close'] as String? ?? '',
+        prevDue: j['prev_due'] as String? ?? '',
+        nextClose: j['next_close'] as String? ?? '',
+        nextCloseDays: (j['next_close_days'] as num?)?.toInt() ?? 0,
+        nextDue: j['next_due'] as String? ?? '',
+        nextDueDays: (j['next_due_days'] as num?)?.toInt() ?? 0,
+        annualFeeDate: j['annual_fee_date'] as String?,
+        annualFeeDays: (j['annual_fee_days'] as num?)?.toInt(),
+        prevDueOverdue: j['prev_due_overdue'] as bool? ?? false,
       );
 }

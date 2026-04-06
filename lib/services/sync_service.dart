@@ -346,9 +346,17 @@ class SyncService {
             count++;
         }
       } on DioException catch (e) {
-        final detail = _dioErrorDetail(e);
-        dev.log('_pushCreditCards: local=${card.id} $detail', name: 'sync', level: 900);
-        errors.add('CreditCard ${card.id}: $detail');
+        if (e.response?.statusCode == 404) {
+          dev.log('_pushCreditCards: 404 for local=${card.id}, removing orphan', name: 'sync');
+          await _db.deleteCreditCardLocal(card.id);
+        } else {
+          final detail = _dioErrorDetail(e);
+          dev.log('_pushCreditCards: local=${card.id} $detail', name: 'sync', level: 900);
+          errors.add('CreditCard ${card.id}: $detail');
+        }
+      } catch (e) {
+        dev.log('_pushCreditCards: local=${card.id} unexpected error: $e', name: 'sync', level: 900);
+        errors.add('CreditCard ${card.id}: $e');
       }
     }
     return count;

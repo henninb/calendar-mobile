@@ -104,17 +104,24 @@ class ApiClient {
 
   Future<List<ApiCreditCard>> fetchCreditCards() async {
     final res = await _dio.get<List>('/credit-cards');
-    return (res.data ?? []).map((j) => ApiCreditCard.fromJson(j)).toList();
+    return (res.data ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ApiCreditCard.fromJson)
+        .toList();
   }
 
   Future<ApiCreditCard> createCreditCard(Map<String, dynamic> data) async {
     final res = await _dio.post<Map<String, dynamic>>('/credit-cards', data: data);
-    return ApiCreditCard.fromJson(res.data!);
+    final body = res.data;
+    if (body == null) throw const FormatException('Server returned an empty body for createCreditCard');
+    return ApiCreditCard.fromJson(body);
   }
 
   Future<ApiCreditCard> updateCreditCard(int serverId, Map<String, dynamic> data) async {
     final res = await _dio.put<Map<String, dynamic>>('/credit-cards/$serverId', data: data);
-    return ApiCreditCard.fromJson(res.data!);
+    final body = res.data;
+    if (body == null) throw const FormatException('Server returned an empty body for updateCreditCard');
+    return ApiCreditCard.fromJson(body);
   }
 
   Future<void> deleteCreditCard(int serverId) async {
@@ -123,6 +130,9 @@ class ApiClient {
 
   Future<List<ApiTrackerRow>> fetchTrackerRows() async {
     final res = await _dio.get<List>('/credit-cards/tracker');
-    return (res.data ?? []).map((j) => ApiTrackerRow.fromJson(j)).toList();
+    return (res.data ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ApiTrackerRow.fromJson)
+        .toList();
   }
 }
