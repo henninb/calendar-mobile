@@ -19,18 +19,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   int _tabIndex = 0;
 
   static const _tabs = [
+    _Tab(icon: Icons.check_circle_outline,      activeIcon: Icons.check_circle,     label: 'Tasks'),
     _Tab(icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month, label: 'Calendar'),
     _Tab(icon: Icons.list_alt_outlined,        activeIcon: Icons.list_alt,        label: 'Upcoming'),
     _Tab(icon: Icons.credit_card_outlined,      activeIcon: Icons.credit_card,      label: 'Cards'),
-    _Tab(icon: Icons.check_circle_outline,      activeIcon: Icons.check_circle,     label: 'Tasks'),
     _Tab(icon: Icons.settings_outlined,         activeIcon: Icons.settings,         label: 'Settings'),
   ];
 
   static const _titles = [
+    'Tasks',
     'Calendar',
     'Upcoming',
     'Credit Cards',
-    'Tasks',
     'Settings',
   ];
 
@@ -55,7 +55,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ],
         ),
         actions: [
-          if (_tabIndex == 0)
+          if (_tabIndex == 1)
             _GenerateButton(),
           _SyncButton(),
         ],
@@ -82,10 +82,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   Widget _body() {
     return switch (_tabIndex) {
-      0 => const CalendarScreen(),
-      1 => const OccurrenceListScreen(),
-      2 => const CreditCardScreen(),
-      3 => const TaskListScreen(),
+      0 => const TaskListScreen(),
+      1 => const CalendarScreen(),
+      2 => const OccurrenceListScreen(),
+      3 => const CreditCardScreen(),
       4 => const SettingsScreen(),
       _ => const SizedBox.shrink(),
     };

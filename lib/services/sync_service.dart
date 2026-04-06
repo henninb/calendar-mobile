@@ -409,24 +409,24 @@ class SyncResult {
 }
 
 /// Extract a human-readable detail string from a DioException.
-/// For 422 Unprocessable Entity, includes the server's validation message.
+/// For 400 and 422, includes the server's validation message from the response body.
 String _dioErrorDetail(DioException e) {
   final status = e.response?.statusCode;
-  if (status == 422) {
+  if (status == 400 || status == 422) {
     // FastAPI returns {"detail": [{"msg": "...", "loc": [...], ...}]} or {"detail": "..."}
     final data = e.response?.data;
     if (data is Map) {
       final detail = data['detail'];
-      if (detail is String) return '422 Validation: $detail';
+      if (detail is String) return '$status: $detail';
       if (detail is List && detail.isNotEmpty) {
         final msgs = detail
             .whereType<Map>()
             .map((d) => '${(d['loc'] as List?)?.lastOrNull ?? '?'}: ${d['msg'] ?? d}')
             .join('; ');
-        return '422 Validation: $msgs';
+        return '$status: $msgs';
       }
     }
-    return '422 Unprocessable Entity';
+    return 'HTTP $status';
   }
   return e.message ?? 'HTTP $status';
 }

@@ -102,8 +102,8 @@ class ApiClient {
 
   // ── Credit Cards ─────────────────────────────────────────────────────────────
 
-  Future<List<ApiCreditCard>> fetchCreditCards() async {
-    final res = await _dio.get<List>('/credit-cards');
+  Future<List<ApiCreditCard>> fetchCreditCards({int limit = 500}) async {
+    final res = await _dio.get<List>('/credit-cards', queryParameters: {'limit': limit});
     return (res.data ?? [])
         .whereType<Map<String, dynamic>>()
         .map(ApiCreditCard.fromJson)
