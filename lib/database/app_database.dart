@@ -130,41 +130,54 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 3;
 
+  // Fix: tables whose server_id should be unique across all rows.
+  static const _tablesWithServerId = [
+    'categories', 'persons', 'events', 'occurrences', 'tasks', 'subtasks', 'credit_cards',
+  ];
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    // Fix: new installs (schema v3) previously skipped the onUpgrade path
+    // entirely, so unique indexes on server_id were never created. Without them
+    // DoUpdate(target: [table.serverId]) silently inserts duplicates instead of
+    // updating. Now we create the indexes in onCreate as well.
+    onCreate: (m) async {
+      await m.createAll();
+      await _createServerIdIndexes();
+    },
     onUpgrade: (m, from, to) async {
       dev.log('AppDatabase: migrating v$from → v$to', name: 'db');
       if (from < 2) {
         // Remove duplicates introduced by the old INSERT OR REPLACE logic that
         // keyed on the auto-increment id instead of server_id. Keep the row
         // with the lowest local id for each server_id.
-        const tablesWithServerId = [
-          'categories',
-          'persons',
-          'events',
-          'occurrences',
-          'tasks',
-          'subtasks',
-          'credit_cards',
-        ];
-        for (final t in tablesWithServerId) {
-          await customStatement(
-            'DELETE FROM $t '
-            'WHERE id NOT IN ('
-            '  SELECT MIN(id) FROM $t GROUP BY server_id'
-            ') AND server_id IS NOT NULL',
-          );
-          await customStatement(
-            'CREATE UNIQUE INDEX IF NOT EXISTS idx_${t}_server_id '
-            'ON $t(server_id)',
-          );
-        }
+        await _deduplicateByServerId();
+        await _createServerIdIndexes();
       }
       if (from < 3) {
         await m.addColumn(tasks, tasks.completedAt);
       }
     },
   );
+
+  Future<void> _deduplicateByServerId() async {
+    for (final t in _tablesWithServerId) {
+      await customStatement(
+        'DELETE FROM $t '
+        'WHERE id NOT IN ('
+        '  SELECT MIN(id) FROM $t GROUP BY server_id'
+        ') AND server_id IS NOT NULL',
+      );
+    }
+  }
+
+  Future<void> _createServerIdIndexes() async {
+    for (final t in _tablesWithServerId) {
+      await customStatement(
+        'CREATE UNIQUE INDEX IF NOT EXISTS idx_${t}_server_id ON $t(server_id)',
+      );
+    }
+  }
 
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'calendar_mobile');
@@ -274,6 +287,12 @@ class AppDatabase extends _$AppDatabase {
     await (delete(occurrences)..where((o) => o.id.equals(localId))).go();
   }
 
+  // Fix: batch delete so orphan purge issues one SQL statement instead of N.
+  Future<void> deleteOccurrencesLocalBatch(List<int> ids) async {
+    if (ids.isEmpty) return;
+    await (delete(occurrences)..where((o) => o.id.isIn(ids))).go();
+  }
+
   // ── Task DAO ────────────────────────────────────────────────────────────────
 
   Stream<List<Task>> watchTasks() => select(tasks).watch();
@@ -367,6 +386,12 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteSubtaskLocal(int localId) async {
     await (delete(subtasks)..where((s) => s.id.equals(localId))).go();
+  }
+
+  // Fix: batch delete for orphan subtask purge.
+  Future<void> deleteSubtasksLocalBatch(List<int> ids) async {
+    if (ids.isEmpty) return;
+    await (delete(subtasks)..where((s) => s.id.isIn(ids))).go();
   }
 
   Future<void> upsertSubtasks(List<SubtasksCompanion> rows) async {

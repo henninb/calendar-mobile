@@ -21,11 +21,14 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
 
   static const _statusOptions = ['all', 'upcoming', 'overdue', 'completed', 'skipped'];
 
+  // Fix: static const so this map is not re-allocated inside the sort comparator
+  // on every O(N log N) comparison.
+  static const _statusOrder = {'overdue': 0, 'upcoming': 1, 'skipped': 2, 'completed': 3};
+
   @override
   Widget build(BuildContext context) {
     final occurrencesAsync = ref.watch(occurrencesProvider);
     final categoriesAsync  = ref.watch(categoriesProvider);
-    // Fix #7: fetch events once at the screen level, keyed by serverId.
     final eventsAsync      = ref.watch(eventsProvider);
 
     return occurrencesAsync.when(
@@ -37,6 +40,9 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
         final events = eventsAsync.value ?? [];
         final eventMap = {for (final e in events) e.serverId: e};
 
+        // Fix: compute today once per build rather than once per row in _relDate.
+        final today = DateTime.now();
+
         // Apply filters (exclude pending-delete rows)
         var filtered = occurrences
             .where((o) => o.syncStatus != SyncStatus.pendingDelete.value)
@@ -44,12 +50,18 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
         if (_filterStatus != 'all') {
           filtered = filtered.where((o) => o.status == _filterStatus).toList();
         }
+        // Fix: _filterCategoryId was stored and wired up but never applied.
+        if (_filterCategoryId != null) {
+          filtered = filtered.where((o) {
+            final event = eventMap[o.eventServerId];
+            return event?.categoryServerId == _filterCategoryId;
+          }).toList();
+        }
 
         // Sort: overdue first, then by date
         filtered.sort((a, b) {
-          final statusOrder = {'overdue': 0, 'upcoming': 1, 'skipped': 2, 'completed': 3};
-          final sa = statusOrder[a.status] ?? 4;
-          final sb = statusOrder[b.status] ?? 4;
+          final sa = _statusOrder[a.status] ?? 4;
+          final sb = _statusOrder[b.status] ?? 4;
           if (sa != sb) return sa.compareTo(sb);
           return a.occurrenceDate.compareTo(b.occurrenceDate);
         });
@@ -77,6 +89,7 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
                           occurrence: occ,
                           event: eventMap[occ.eventServerId],
                           catMap: catMap,
+                          today: today,
                           onStatusChange: (s) => _updateStatus(occ, s),
                           onDelete: () => _deleteOccurrence(occ),
                         );
@@ -89,7 +102,6 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
     );
   }
 
-  // Fix #6: guard against widget disposal after each await.
   Future<void> _updateStatus(Occurrence occ, String newStatus) async {
     await ref.read(dbProvider).updateOccurrenceStatus(occ.id, newStatus);
     if (!mounted) return;
@@ -169,12 +181,12 @@ class _Toolbar extends StatelessWidget {
   }
 }
 
-// Fix #7: event is resolved at the parent and passed in — no per-row DB query.
 class _OccurrenceRow extends StatelessWidget {
   const _OccurrenceRow({
     required this.occurrence,
     required this.event,
     required this.catMap,
+    required this.today,
     required this.onStatusChange,
     required this.onDelete,
   });
@@ -182,13 +194,16 @@ class _OccurrenceRow extends StatelessWidget {
   final Occurrence occurrence;
   final Event? event;
   final Map<int?, Category> catMap;
+  // Fix: today is computed once at the screen level and passed in so _relDate
+  // does not call DateTime.now() once per row per build.
+  final DateTime today;
   final void Function(String) onStatusChange;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final cat = event != null ? catMap[event!.categoryServerId] : null;
-    final dateLabel = _relDate(occurrence.occurrenceDate);
+    final dateLabel = _relDate(occurrence.occurrenceDate, today);
 
     return InkWell(
       onTap: () => _showDetail(context),
@@ -272,10 +287,9 @@ class _OccurrenceRow extends StatelessWidget {
     }
   }
 
-  static String _relDate(String iso) {
+  static String _relDate(String iso, DateTime today) {
     try {
       final d = DateTime.parse(iso);
-      final today = DateTime.now();
       final diff = d.difference(DateTime(today.year, today.month, today.day)).inDays;
       if (diff == 0) return 'Today';
       if (diff == 1) return 'Tomorrow';
@@ -329,7 +343,6 @@ class _IconBtn extends StatelessWidget {
   }
 }
 
-// Fix #7: event is passed in from the parent — no FutureBuilder needed.
 class _DetailSheet extends StatelessWidget {
   const _DetailSheet({
     required this.occurrence,

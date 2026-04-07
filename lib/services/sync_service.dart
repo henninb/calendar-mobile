@@ -87,7 +87,8 @@ class SyncService {
     for (final local in orphanOccs) {
       dev.log('_refreshOccurrences: purging orphan local=${local.id} serverId=${local.serverId}', name: 'sync');
     }
-    await Future.wait(orphanOccs.map((o) => _db.deleteOccurrenceLocal(o.id)));
+    // Fix: one SQL DELETE IN (...) instead of N individual deletes.
+    await _db.deleteOccurrencesLocalBatch(orphanOccs.map((o) => o.id).toList());
     // Also cache events referenced by occurrences
     final events = occs
         .where((o) => o.event != null)
@@ -166,6 +167,26 @@ class SyncService {
     }
     if (allSubtasks.isNotEmpty) {
       await _db.upsertSubtasks(allSubtasks);
+    }
+
+    // Fix: purge subtasks that were deleted server-side for tasks that still
+    // exist. Previously only task-level orphans were cleaned up; subtask
+    // deletions made via the web UI or another client persisted locally forever.
+    final orphanSubtaskIds = <int>[];
+    for (final t in apiTasks) {
+      final localTaskId = serverToLocal[t.id];
+      if (localTaskId == null) continue;
+      final serverSubtaskIds = t.subtasks.map((s) => s.id).toSet();
+      final localSubtasks = await _db.getSubtasksForTask(localTaskId);
+      for (final s in localSubtasks) {
+        if (s.serverId != null && !serverSubtaskIds.contains(s.serverId)) {
+          dev.log('_refreshTasks: purging orphan subtask local=${s.id} serverId=${s.serverId}', name: 'sync');
+          orphanSubtaskIds.add(s.id);
+        }
+      }
+    }
+    if (orphanSubtaskIds.isNotEmpty) {
+      await _db.deleteSubtasksLocalBatch(orphanSubtaskIds);
     }
   }
 

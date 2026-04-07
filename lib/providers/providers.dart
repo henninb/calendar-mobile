@@ -40,11 +40,21 @@ final dbProvider = Provider<AppDatabase>((ref) {
 });
 
 // ── API Client ───────────────────────────────────────────────────────────────
+//
+// Fix: use a NotifierProvider so the ApiClient (and its underlying Dio instance)
+// is created once and reused. URL changes call updateBaseUrl() in-place instead
+// of leaking a new Dio instance on every settings save.
 
-final apiClientProvider = Provider<ApiClient>((ref) {
-  final baseUrl = ref.watch(baseUrlProvider);
-  return ApiClient(baseUrl);
-});
+final apiClientProvider = NotifierProvider<ApiClientNotifier, ApiClient>(ApiClientNotifier.new);
+
+class ApiClientNotifier extends Notifier<ApiClient> {
+  @override
+  ApiClient build() {
+    final client = ApiClient(ref.read(baseUrlProvider));
+    ref.listen<String>(baseUrlProvider, (_, next) => client.updateBaseUrl(next));
+    return client;
+  }
+}
 
 // ── Sync Service ─────────────────────────────────────────────────────────────
 
@@ -134,7 +144,9 @@ class SyncNotifier extends Notifier<SyncState> {
   SyncState build() {
     _periodicTimer = Timer.periodic(
       const Duration(minutes: 5),
-      (_) => silentRefresh(),
+      // Fix: skip the refresh when offline so we don't transition to
+      // SyncPhase.error every 5 minutes and show a spurious error banner.
+      (_) { if (ref.read(isOnlineProvider)) silentRefresh(); },
     );
     ref.onDispose(() => _periodicTimer?.cancel());
     return const SyncState();

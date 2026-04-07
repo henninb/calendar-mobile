@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
+import '../core/constants.dart';
 import '../core/theme.dart';
 import '../database/app_database.dart';
 import '../providers/providers.dart';
@@ -20,6 +21,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime? _selectedDay;
   CalendarFormat _format = CalendarFormat.month;
 
+  // Fix: static to avoid allocating a new DateFormat on every eventsForDay call.
+  static final _dateFormat = DateFormat('yyyy-MM-dd');
+
   @override
   void initState() {
     super.initState();
@@ -30,6 +34,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   Widget build(BuildContext context) {
     final occurrencesAsync = ref.watch(occurrencesProvider);
     final categoriesAsync  = ref.watch(categoriesProvider);
+    // Fix: resolve events once at the screen level so _OccurrenceCard can do a
+    // direct map lookup instead of issuing a DB query per card (N+1 fix).
+    final eventsAsync      = ref.watch(eventsProvider);
 
     return occurrencesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -37,18 +44,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       data: (occurrences) {
         final categories = categoriesAsync.value ?? [];
         final catMap = {for (final c in categories) c.serverId: c};
+        final dbEvents = eventsAsync.value ?? [];
+        final eventMap = {for (final e in dbEvents) e.serverId: e};
 
-        // Build event map: date string → list of occurrences
-        final Map<String, List<Occurrence>> eventMap = {};
+        // Build date-string → occurrences map for the calendar.
+        final Map<String, List<Occurrence>> occsByDate = {};
         for (final o in occurrences) {
-          if (o.syncStatus == 3) continue; // pending delete
+          // Fix: use the enum constant instead of the magic number 3.
+          if (o.syncStatus == SyncStatus.pendingDelete.value) continue;
           final key = o.occurrenceDate.substring(0, 10);
-          eventMap.putIfAbsent(key, () => []).add(o);
+          occsByDate.putIfAbsent(key, () => []).add(o);
         }
 
         List<Occurrence> eventsForDay(DateTime day) {
-          final key = DateFormat('yyyy-MM-dd').format(day);
-          return eventMap[key] ?? [];
+          return occsByDate[_dateFormat.format(day)] ?? [];
         }
 
         final selected = _selectedDay;
@@ -58,7 +67,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           children: [
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 420),
-              child: _buildCalendar(eventMap, eventsForDay),
+              child: _buildCalendar(occsByDate, eventsForDay),
             ),
             const Divider(),
             Expanded(
@@ -74,6 +83,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         final occ = selectedOccs[i];
                         return _OccurrenceCard(
                           occurrence: occ,
+                          eventMap: eventMap,
                           catMap: catMap,
                           onStatusChange: (newStatus) => _updateStatus(occ, newStatus),
                           onDelete: () => _deleteOccurrence(occ),
@@ -88,7 +98,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   Widget _buildCalendar(
-    Map<String, List<Occurrence>> eventMap,
+    Map<String, List<Occurrence>> occsByDate,
     List<Occurrence> Function(DateTime) eventsForDay,
   ) {
     return Card(
@@ -153,8 +163,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
+  // Fix: added mounted guard after each await so we don't touch ref/context on
+  // a disposed widget (mirrors the same fix already present in occurrence_list_screen).
   Future<void> _updateStatus(Occurrence occ, String newStatus) async {
     await ref.read(dbProvider).updateOccurrenceStatus(occ.id, newStatus);
+    if (!mounted) return;
     if (ref.read(isOnlineProvider)) {
       await ref.read(syncStateProvider.notifier).sync();
     }
@@ -162,71 +175,66 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   Future<void> _deleteOccurrence(Occurrence occ) async {
     await ref.read(dbProvider).markOccurrenceDeleted(occ.id);
+    if (!mounted) return;
     if (ref.read(isOnlineProvider)) {
       await ref.read(syncStateProvider.notifier).sync();
     }
   }
 }
 
-class _OccurrenceCard extends ConsumerWidget {
+// Fix: changed from ConsumerWidget to StatelessWidget — the event is now
+// resolved at the screen level and passed in, eliminating the per-card
+// FutureBuilder + getAllEvents() DB call (N+1 fix).
+class _OccurrenceCard extends StatelessWidget {
   const _OccurrenceCard({
     required this.occurrence,
+    required this.eventMap,
     required this.catMap,
     required this.onStatusChange,
     required this.onDelete,
   });
 
   final Occurrence occurrence;
+  final Map<int?, Event> eventMap;
   final Map<int?, Category> catMap;
   final void Function(String) onStatusChange;
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Resolve event title from local DB
-    final dbEvents = ref.watch(dbProvider);
-    return FutureBuilder(
-      future: dbEvents.getAllEvents(),
-      builder: (context, snap) {
-        final events = snap.data ?? [];
-        final event = events.cast<Event?>().firstWhere(
-              (e) => e?.serverId == occurrence.eventServerId,
-              orElse: () => null,
-            );
-        final cat = event != null ? catMap[event.categoryServerId] : null;
+  Widget build(BuildContext context) {
+    final event = eventMap[occurrence.eventServerId];
+    final cat = event != null ? catMap[event.categoryServerId] : null;
 
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        event?.title ?? 'Event #${occurrence.eventServerId}',
-                        style: AppText.body.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    StatusBadge(occurrence.status),
-                  ],
+                Expanded(
+                  child: Text(
+                    event?.title ?? 'Event #${occurrence.eventServerId}',
+                    style: AppText.body.copyWith(fontWeight: FontWeight.w600),
+                  ),
                 ),
-                if (cat != null) ...[
-                  const SizedBox(height: 6),
-                  CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
-                ],
-                if (occurrence.notes != null && occurrence.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(occurrence.notes!, style: AppText.small),
-                ],
-                const SizedBox(height: 10),
-                _ActionRow(status: occurrence.status, onStatusChange: onStatusChange, onDelete: onDelete),
+                StatusBadge(occurrence.status),
               ],
             ),
-          ),
-        );
-      },
+            if (cat != null) ...[
+              const SizedBox(height: 6),
+              CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
+            ],
+            if (occurrence.notes != null && occurrence.notes!.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(occurrence.notes!, style: AppText.small),
+            ],
+            const SizedBox(height: 10),
+            _ActionRow(status: occurrence.status, onStatusChange: onStatusChange, onDelete: onDelete),
+          ],
+        ),
+      ),
     );
   }
 }
