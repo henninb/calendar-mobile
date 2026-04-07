@@ -1862,6 +1862,17 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<String> completedAt = GeneratedColumn<String>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1899,6 +1910,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     recurrence,
     occurrenceServerId,
     syncStatus,
+    completedAt,
     createdAt,
     updatedAt,
   ];
@@ -2006,6 +2018,15 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
       );
     }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -2083,6 +2104,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         DriftSqlType.int,
         data['${effectivePrefix}sync_status'],
       )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}completed_at'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}created_at'],
@@ -2114,6 +2139,7 @@ class Task extends DataClass implements Insertable<Task> {
   final String recurrence;
   final int? occurrenceServerId;
   final int syncStatus;
+  final String? completedAt;
   final String createdAt;
   final String updatedAt;
   const Task({
@@ -2130,6 +2156,7 @@ class Task extends DataClass implements Insertable<Task> {
     required this.recurrence,
     this.occurrenceServerId,
     required this.syncStatus,
+    this.completedAt,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -2163,6 +2190,9 @@ class Task extends DataClass implements Insertable<Task> {
       map['occurrence_server_id'] = Variable<int>(occurrenceServerId);
     }
     map['sync_status'] = Variable<int>(syncStatus);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<String>(completedAt);
+    }
     map['created_at'] = Variable<String>(createdAt);
     map['updated_at'] = Variable<String>(updatedAt);
     return map;
@@ -2197,6 +2227,9 @@ class Task extends DataClass implements Insertable<Task> {
           ? const Value.absent()
           : Value(occurrenceServerId),
       syncStatus: Value(syncStatus),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -2221,6 +2254,7 @@ class Task extends DataClass implements Insertable<Task> {
       recurrence: serializer.fromJson<String>(json['recurrence']),
       occurrenceServerId: serializer.fromJson<int?>(json['occurrenceServerId']),
       syncStatus: serializer.fromJson<int>(json['syncStatus']),
+      completedAt: serializer.fromJson<String?>(json['completedAt']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
@@ -2242,6 +2276,7 @@ class Task extends DataClass implements Insertable<Task> {
       'recurrence': serializer.toJson<String>(recurrence),
       'occurrenceServerId': serializer.toJson<int?>(occurrenceServerId),
       'syncStatus': serializer.toJson<int>(syncStatus),
+      'completedAt': serializer.toJson<String?>(completedAt),
       'createdAt': serializer.toJson<String>(createdAt),
       'updatedAt': serializer.toJson<String>(updatedAt),
     };
@@ -2261,6 +2296,7 @@ class Task extends DataClass implements Insertable<Task> {
     String? recurrence,
     Value<int?> occurrenceServerId = const Value.absent(),
     int? syncStatus,
+    Value<String?> completedAt = const Value.absent(),
     String? createdAt,
     String? updatedAt,
   }) => Task(
@@ -2285,6 +2321,7 @@ class Task extends DataClass implements Insertable<Task> {
         ? occurrenceServerId.value
         : this.occurrenceServerId,
     syncStatus: syncStatus ?? this.syncStatus,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -2317,6 +2354,9 @@ class Task extends DataClass implements Insertable<Task> {
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -2338,6 +2378,7 @@ class Task extends DataClass implements Insertable<Task> {
           ..write('recurrence: $recurrence, ')
           ..write('occurrenceServerId: $occurrenceServerId, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('completedAt: $completedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -2359,6 +2400,7 @@ class Task extends DataClass implements Insertable<Task> {
     recurrence,
     occurrenceServerId,
     syncStatus,
+    completedAt,
     createdAt,
     updatedAt,
   );
@@ -2379,6 +2421,7 @@ class Task extends DataClass implements Insertable<Task> {
           other.recurrence == this.recurrence &&
           other.occurrenceServerId == this.occurrenceServerId &&
           other.syncStatus == this.syncStatus &&
+          other.completedAt == this.completedAt &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -2397,6 +2440,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<String> recurrence;
   final Value<int?> occurrenceServerId;
   final Value<int> syncStatus;
+  final Value<String?> completedAt;
   final Value<String> createdAt;
   final Value<String> updatedAt;
   const TasksCompanion({
@@ -2413,6 +2457,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.recurrence = const Value.absent(),
     this.occurrenceServerId = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.completedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -2430,6 +2475,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.recurrence = const Value.absent(),
     this.occurrenceServerId = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.completedAt = const Value.absent(),
     required String createdAt,
     required String updatedAt,
   }) : title = Value(title),
@@ -2449,6 +2495,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Expression<String>? recurrence,
     Expression<int>? occurrenceServerId,
     Expression<int>? syncStatus,
+    Expression<String>? completedAt,
     Expression<String>? createdAt,
     Expression<String>? updatedAt,
   }) {
@@ -2467,6 +2514,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       if (occurrenceServerId != null)
         'occurrence_server_id': occurrenceServerId,
       if (syncStatus != null) 'sync_status': syncStatus,
+      if (completedAt != null) 'completed_at': completedAt,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -2486,6 +2534,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Value<String>? recurrence,
     Value<int?>? occurrenceServerId,
     Value<int>? syncStatus,
+    Value<String?>? completedAt,
     Value<String>? createdAt,
     Value<String>? updatedAt,
   }) {
@@ -2503,6 +2552,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       recurrence: recurrence ?? this.recurrence,
       occurrenceServerId: occurrenceServerId ?? this.occurrenceServerId,
       syncStatus: syncStatus ?? this.syncStatus,
+      completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -2550,6 +2600,9 @@ class TasksCompanion extends UpdateCompanion<Task> {
     if (syncStatus.present) {
       map['sync_status'] = Variable<int>(syncStatus.value);
     }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<String>(completedAt.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<String>(createdAt.value);
     }
@@ -2575,6 +2628,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
           ..write('recurrence: $recurrence, ')
           ..write('occurrenceServerId: $occurrenceServerId, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('completedAt: $completedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -5835,6 +5889,7 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<String> recurrence,
       Value<int?> occurrenceServerId,
       Value<int> syncStatus,
+      Value<String?> completedAt,
       required String createdAt,
       required String updatedAt,
     });
@@ -5853,6 +5908,7 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<String> recurrence,
       Value<int?> occurrenceServerId,
       Value<int> syncStatus,
+      Value<String?> completedAt,
       Value<String> createdAt,
       Value<String> updatedAt,
     });
@@ -5927,6 +5983,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<int> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get completedAt => $composableBuilder(
+    column: $table.completedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6015,6 +6076,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -6088,6 +6154,11 @@ class $$TasksTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -6136,6 +6207,7 @@ class $$TasksTableTableManager
                 Value<String> recurrence = const Value.absent(),
                 Value<int?> occurrenceServerId = const Value.absent(),
                 Value<int> syncStatus = const Value.absent(),
+                Value<String?> completedAt = const Value.absent(),
                 Value<String> createdAt = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
               }) => TasksCompanion(
@@ -6152,6 +6224,7 @@ class $$TasksTableTableManager
                 recurrence: recurrence,
                 occurrenceServerId: occurrenceServerId,
                 syncStatus: syncStatus,
+                completedAt: completedAt,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -6170,6 +6243,7 @@ class $$TasksTableTableManager
                 Value<String> recurrence = const Value.absent(),
                 Value<int?> occurrenceServerId = const Value.absent(),
                 Value<int> syncStatus = const Value.absent(),
+                Value<String?> completedAt = const Value.absent(),
                 required String createdAt,
                 required String updatedAt,
               }) => TasksCompanion.insert(
@@ -6186,6 +6260,7 @@ class $$TasksTableTableManager
                 recurrence: recurrence,
                 occurrenceServerId: occurrenceServerId,
                 syncStatus: syncStatus,
+                completedAt: completedAt,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),

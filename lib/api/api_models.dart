@@ -16,11 +16,11 @@ class ApiCategory {
   });
 
   factory ApiCategory.fromJson(Map<String, dynamic> j) => ApiCategory(
-        id: j['id'],
-        name: j['name'],
-        color: j['color'] ?? '#3b82f6',
-        icon: j['icon'] ?? '📅',
-        description: j['description'],
+        id: (j['id'] as num).toInt(),
+        name: j['name'] as String,
+        color: j['color'] as String? ?? '#3b82f6',
+        icon: j['icon'] as String? ?? '📅',
+        description: j['description'] as String?,
       );
 }
 
@@ -31,8 +31,11 @@ class ApiPerson {
 
   const ApiPerson({required this.id, required this.name, this.email});
 
-  factory ApiPerson.fromJson(Map<String, dynamic> j) =>
-      ApiPerson(id: j['id'], name: j['name'], email: j['email']);
+  factory ApiPerson.fromJson(Map<String, dynamic> j) => ApiPerson(
+        id: (j['id'] as num).toInt(),
+        name: j['name'] as String,
+        email: j['email'] as String?,
+      );
 }
 
 class ApiEvent {
@@ -59,15 +62,15 @@ class ApiEvent {
   });
 
   factory ApiEvent.fromJson(Map<String, dynamic> j) => ApiEvent(
-        id: j['id'],
-        title: j['title'],
-        categoryId: j['category_id'],
-        rrule: j['rrule'],
-        dtstart: j['dtstart'],
-        priority: j['priority'] ?? 'medium',
-        description: j['description'],
-        isActive: j['is_active'] ?? true,
-        category: ApiCategory.fromJson(j['category']),
+        id: (j['id'] as num).toInt(),
+        title: j['title'] as String,
+        categoryId: (j['category_id'] as num).toInt(),
+        rrule: j['rrule'] as String?,
+        dtstart: j['dtstart'] as String,
+        priority: j['priority'] as String? ?? 'medium',
+        description: j['description'] as String?,
+        isActive: j['is_active'] as bool? ?? true,
+        category: ApiCategory.fromJson(j['category'] as Map<String, dynamic>),
       );
 }
 
@@ -89,12 +92,12 @@ class ApiOccurrence {
   });
 
   factory ApiOccurrence.fromJson(Map<String, dynamic> j) => ApiOccurrence(
-        id: j['id'],
-        eventId: j['event_id'],
-        occurrenceDate: j['occurrence_date'],
-        status: j['status'] ?? 'upcoming',
-        notes: j['notes'],
-        event: j['event'] != null ? ApiEvent.fromJson(j['event']) : null,
+        id: (j['id'] as num).toInt(),
+        eventId: (j['event_id'] as num).toInt(),
+        occurrenceDate: j['occurrence_date'] as String,
+        status: j['status'] as String? ?? 'upcoming',
+        notes: j['notes'] as String?,
+        event: j['event'] != null ? ApiEvent.fromJson(j['event'] as Map<String, dynamic>) : null,
       );
 }
 
@@ -116,12 +119,12 @@ class ApiSubtask {
   });
 
   factory ApiSubtask.fromJson(Map<String, dynamic> j) => ApiSubtask(
-        id: j['id'],
-        taskId: j['task_id'],
-        title: j['title'],
-        status: j['status'] ?? 'todo',
-        dueDate: j['due_date'],
-        order: j['order'] ?? 0,
+        id: (j['id'] as num).toInt(),
+        taskId: (j['task_id'] as num).toInt(),
+        title: j['title'] as String,
+        status: j['status'] as String? ?? 'todo',
+        dueDate: j['due_date'] as String?,
+        order: (j['order'] as num?)?.toInt() ?? 0,
       );
 }
 
@@ -140,6 +143,7 @@ class ApiTask {
   final ApiPerson? assignee;
   final ApiCategory? category;
   final List<ApiSubtask> subtasks;
+  final String? completedAt;
   final String createdAt;
   final String updatedAt;
 
@@ -158,29 +162,31 @@ class ApiTask {
     this.assignee,
     this.category,
     required this.subtasks,
+    this.completedAt,
     required this.createdAt,
     required this.updatedAt,
   });
 
   factory ApiTask.fromJson(Map<String, dynamic> j) => ApiTask(
-        id: j['id'],
-        title: j['title'],
-        description: j['description'],
-        status: j['status'] ?? 'todo',
-        priority: j['priority'] ?? 'medium',
-        assigneeId: j['assignee_id'],
-        categoryId: j['category_id'],
-        dueDate: j['due_date'],
-        estimatedMinutes: j['estimated_minutes'],
-        recurrence: j['recurrence'] ?? 'none',
-        occurrenceId: j['occurrence_id'],
-        assignee: j['assignee'] != null ? ApiPerson.fromJson(j['assignee']) : null,
-        category: j['category'] != null ? ApiCategory.fromJson(j['category']) : null,
+        id: (j['id'] as num).toInt(),
+        title: j['title'] as String,
+        description: j['description'] as String?,
+        status: j['status'] as String? ?? 'todo',
+        priority: j['priority'] as String? ?? 'medium',
+        assigneeId: (j['assignee_id'] as num?)?.toInt(),
+        categoryId: (j['category_id'] as num?)?.toInt(),
+        dueDate: j['due_date'] as String?,
+        estimatedMinutes: (j['estimated_minutes'] as num?)?.toInt(),
+        recurrence: j['recurrence'] as String? ?? 'none',
+        occurrenceId: (j['occurrence_id'] as num?)?.toInt(),
+        assignee: j['assignee'] != null ? ApiPerson.fromJson(j['assignee'] as Map<String, dynamic>) : null,
+        category: j['category'] != null ? ApiCategory.fromJson(j['category'] as Map<String, dynamic>) : null,
         subtasks: (j['subtasks'] as List? ?? [])
-            .map((s) => ApiSubtask.fromJson(s))
+            .map((s) => ApiSubtask.fromJson(s as Map<String, dynamic>))
             .toList(),
-        createdAt: j['created_at'] ?? DateTime.now().toIso8601String(),
-        updatedAt: j['updated_at'] ?? DateTime.now().toIso8601String(),
+        completedAt: j['completed_at'] as String?,
+        createdAt: j['created_at'] as String,
+        updatedAt: j['updated_at'] as String,
       );
 }
 

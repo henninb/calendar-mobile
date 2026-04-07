@@ -59,6 +59,7 @@ class Tasks extends Table {
   TextColumn get recurrence       => text().withDefault(const Constant('none'))();
   IntColumn  get occurrenceServerId => integer().nullable()();
   IntColumn  get syncStatus       => integer().withDefault(const Constant(0))();
+  TextColumn get completedAt      => text().nullable()();
   TextColumn get createdAt        => text()();
   TextColumn get updatedAt        => text()();
 }
@@ -127,7 +128,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -159,6 +160,9 @@ class AppDatabase extends _$AppDatabase {
           );
         }
       }
+      if (from < 3) {
+        await m.addColumn(tasks, tasks.completedAt);
+      }
     },
   );
 
@@ -173,12 +177,9 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Category>> watchCategories() => select(categories).watch();
 
   Future<void> upsertCategories(List<CategoriesCompanion> rows) async {
-    await transaction(() async {
+    await batch((b) {
       for (final row in rows) {
-        await into(categories).insert(
-          row,
-          onConflict: DoUpdate((old) => row, target: [categories.serverId]),
-        );
+        b.insert(categories, row, onConflict: DoUpdate((old) => row, target: [categories.serverId]));
       }
     });
   }
@@ -190,12 +191,9 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Person>> watchPersons() => select(persons).watch();
 
   Future<void> upsertPersons(List<PersonsCompanion> rows) async {
-    await transaction(() async {
+    await batch((b) {
       for (final row in rows) {
-        await into(persons).insert(
-          row,
-          onConflict: DoUpdate((old) => row, target: [persons.serverId]),
-        );
+        b.insert(persons, row, onConflict: DoUpdate((old) => row, target: [persons.serverId]));
       }
     });
   }
@@ -207,12 +205,9 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<Event>> watchEvents() => select(events).watch();
 
   Future<void> upsertEvents(List<EventsCompanion> rows) async {
-    await transaction(() async {
+    await batch((b) {
       for (final row in rows) {
-        await into(events).insert(
-          row,
-          onConflict: DoUpdate((old) => row, target: [events.serverId]),
-        );
+        b.insert(events, row, onConflict: DoUpdate((old) => row, target: [events.serverId]));
       }
     });
   }
@@ -238,12 +233,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> upsertOccurrences(List<OccurrencesCompanion> rows) async {
-    await transaction(() async {
+    await batch((b) {
       for (final row in rows) {
-        await into(occurrences).insert(
-          row,
-          onConflict: DoUpdate((old) => row, target: [occurrences.serverId]),
-        );
+        b.insert(occurrences, row, onConflict: DoUpdate((old) => row, target: [occurrences.serverId]));
       }
     });
   }
@@ -322,12 +314,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> upsertTasks(List<TasksCompanion> rows) async {
-    await transaction(() async {
+    await batch((b) {
       for (final row in rows) {
-        await into(tasks).insert(
-          row,
-          onConflict: DoUpdate((old) => row, target: [tasks.serverId]),
-        );
+        b.insert(tasks, row, onConflict: DoUpdate((old) => row, target: [tasks.serverId]));
       }
     });
   }
@@ -381,12 +370,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> upsertSubtasks(List<SubtasksCompanion> rows) async {
-    await transaction(() async {
+    await batch((b) {
       for (final row in rows) {
-        await into(subtasks).insert(
-          row,
-          onConflict: DoUpdate((old) => row, target: [subtasks.serverId]),
-        );
+        b.insert(subtasks, row, onConflict: DoUpdate((old) => row, target: [subtasks.serverId]));
       }
     });
   }
@@ -431,12 +417,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> upsertCreditCards(List<CreditCardsCompanion> rows) async {
-    await transaction(() async {
+    await batch((b) {
       for (final row in rows) {
-        await into(creditCards).insert(
-          row,
-          onConflict: DoUpdate((old) => row, target: [creditCards.serverId]),
-        );
+        b.insert(creditCards, row, onConflict: DoUpdate((old) => row, target: [creditCards.serverId]));
       }
     });
   }
@@ -450,9 +433,11 @@ class AppDatabase extends _$AppDatabase {
       select(creditCardTrackerCache).watch();
 
   Future<void> replaceTrackerCache(List<CreditCardTrackerCacheCompanion> rows) async {
-    await delete(creditCardTrackerCache).go();
-    await batch((b) {
-      b.insertAll(creditCardTrackerCache, rows);
+    await transaction(() async {
+      await delete(creditCardTrackerCache).go();
+      await batch((b) {
+        b.insertAll(creditCardTrackerCache, rows);
+      });
     });
   }
 }

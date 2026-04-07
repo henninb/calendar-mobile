@@ -81,12 +81,13 @@ class SyncService {
     // Purge local occurrences within the synced window that no longer exist on the server.
     final serverOccIds = occs.map((o) => o.id).toSet();
     final localOccs = await _db.getOccurrencesByDateRange(_fmt(start), _fmt(end));
-    for (final local in localOccs) {
-      if (local.serverId != null && !serverOccIds.contains(local.serverId)) {
-        dev.log('_refreshOccurrences: purging orphan local=${local.id} serverId=${local.serverId}', name: 'sync');
-        await _db.deleteOccurrenceLocal(local.id);
-      }
+    final orphanOccs = localOccs
+        .where((o) => o.serverId != null && !serverOccIds.contains(o.serverId))
+        .toList();
+    for (final local in orphanOccs) {
+      dev.log('_refreshOccurrences: purging orphan local=${local.id} serverId=${local.serverId}', name: 'sync');
     }
+    await Future.wait(orphanOccs.map((o) => _db.deleteOccurrenceLocal(o.id)));
     // Also cache events referenced by occurrences
     final events = occs
         .where((o) => o.event != null)
@@ -128,6 +129,7 @@ class SyncService {
               recurrence: Value(t.recurrence),
               occurrenceServerId: Value(t.occurrenceId),
               syncStatus: Value(SyncStatus.synced.value),
+              completedAt: Value(t.completedAt),
               createdAt: Value(t.createdAt),
               updatedAt: Value(t.updatedAt),
             ))
@@ -137,12 +139,13 @@ class SyncService {
     // refreshed list to resolve local IDs for subtask upserts.
     final serverIds = apiTasks.map((t) => t.id).toSet();
     final localTasks = await _db.getTasks();
-    for (final local in localTasks) {
-      if (local.serverId != null && !serverIds.contains(local.serverId)) {
-        dev.log('_refreshTasks: purging orphan local=${local.id} serverId=${local.serverId}', name: 'sync');
-        await _db.deleteTaskLocal(local.id);
-      }
+    final orphanTasks = localTasks
+        .where((t) => t.serverId != null && !serverIds.contains(t.serverId))
+        .toList();
+    for (final local in orphanTasks) {
+      dev.log('_refreshTasks: purging orphan local=${local.id} serverId=${local.serverId}', name: 'sync');
     }
+    await Future.wait(orphanTasks.map((t) => _db.deleteTaskLocal(t.id)));
 
     // Fix #8: collect all subtasks first, then upsert in a single transaction.
     final serverToLocal = {for (final t in localTasks) t.serverId: t.id};
@@ -409,33 +412,33 @@ class SyncService {
 
   // Fix #11: use DateFormat instead of manual pad-left string building.
   static String _fmt(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
+
+  /// Extract a human-readable detail string from a DioException.
+  /// For 400 and 422, includes the server's validation message from the response body.
+  static String _dioErrorDetail(DioException e) {
+    final status = e.response?.statusCode;
+    if (status == 400 || status == 422) {
+      // FastAPI returns {"detail": [{"msg": "...", "loc": [...], ...}]} or {"detail": "..."}
+      final data = e.response?.data;
+      if (data is Map) {
+        final detail = data['detail'];
+        if (detail is String) return '$status: $detail';
+        if (detail is List && detail.isNotEmpty) {
+          final msgs = detail
+              .whereType<Map>()
+              .map((d) => '${(d['loc'] as List?)?.lastOrNull ?? '?'}: ${d['msg'] ?? d}')
+              .join('; ');
+          return '$status: $msgs';
+        }
+      }
+      return 'HTTP $status';
+    }
+    return e.message ?? 'HTTP $status';
+  }
 }
 
 class SyncResult {
   final int pushed;
   final List<String> errors;
   SyncResult({required this.pushed, required this.errors});
-}
-
-/// Extract a human-readable detail string from a DioException.
-/// For 400 and 422, includes the server's validation message from the response body.
-String _dioErrorDetail(DioException e) {
-  final status = e.response?.statusCode;
-  if (status == 400 || status == 422) {
-    // FastAPI returns {"detail": [{"msg": "...", "loc": [...], ...}]} or {"detail": "..."}
-    final data = e.response?.data;
-    if (data is Map) {
-      final detail = data['detail'];
-      if (detail is String) return '$status: $detail';
-      if (detail is List && detail.isNotEmpty) {
-        final msgs = detail
-            .whereType<Map>()
-            .map((d) => '${(d['loc'] as List?)?.lastOrNull ?? '?'}: ${d['msg'] ?? d}')
-            .join('; ');
-        return '$status: $msgs';
-      }
-    }
-    return 'HTTP $status';
-  }
-  return e.message ?? 'HTTP $status';
 }

@@ -80,6 +80,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                               key: ValueKey(filtered[i].id),
                               task: filtered[i],
                               catMap: catMap,
+                              todayStr: todayStr,
                             ),
                           ),
                   ),
@@ -123,6 +124,13 @@ class _StatusFilter extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   static const _options = ['all', 'todo', 'in_progress', 'done', 'cancelled'];
+  static const _labels = {
+    'all': 'All',
+    'todo': 'Todo',
+    'in_progress': 'In Progress',
+    'done': 'Done',
+    'cancelled': 'Cancelled',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +156,7 @@ class _StatusFilter extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  s == 'all' ? 'All' : s.replaceAll('_', ' ').toUpperCase().split(' ').map((w) => w[0] + w.substring(1).toLowerCase()).join(' '),
+                  _labels[s] ?? s,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -165,10 +173,11 @@ class _StatusFilter extends StatelessWidget {
 }
 
 class _TaskCard extends ConsumerStatefulWidget {
-  const _TaskCard({super.key, required this.task, required this.catMap});
+  const _TaskCard({super.key, required this.task, required this.catMap, required this.todayStr});
 
   final Task task;
   final Map<int?, Category> catMap;
+  final String todayStr;
 
   @override
   ConsumerState<_TaskCard> createState() => _TaskCardState();
@@ -204,9 +213,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
   Widget build(BuildContext context) {
     final task = widget.task;
     final cat = widget.catMap[task.categoryServerId];
-
-    final now = DateTime.now();
-    final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final todayStr = widget.todayStr;
     final isActive = task.status != 'done' && task.status != 'cancelled';
     final isDueToday = task.dueDate == todayStr;
     final isOverdue = task.dueDate != null && task.dueDate!.compareTo(todayStr) < 0;
@@ -529,6 +536,11 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep _task in sync with live DB data so syncs are reflected immediately.
+    ref.listen<AsyncValue<List<Task>>>(tasksProvider, (_, next) {
+      final live = next.value?.where((t) => t.id == widget.task.id).firstOrNull;
+      if (live != null) setState(() => _task = live);
+    });
     final subtasksStream = ref.watch(subtasksForTaskProvider(_task.id));
 
     return DraggableScrollableSheet(
@@ -580,7 +592,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
                     if (_editing)
-                      _TaskEditForm(task: _task, onSaved: (t) => setState(() { _task = t; _editing = false; }))
+                      _TaskForm(existing: _task)
                     else ...[
                       _InfoRow(label: 'STATUS', child: TaskStatusBadge(_task.status)),
                       _InfoRow(label: 'PRIORITY', child: PriorityBadge(_task.priority)),
@@ -594,6 +606,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                           ),
                         ),
                       if (_task.dueDate != null) _InfoRow(label: 'DUE', value: _task.dueDate!),
+                      if (_task.completedAt != null) _InfoRow(label: 'COMPLETED', value: _task.completedAt!),
                       if (_task.assigneeServerId != null)
                         Consumer(builder: (context, ref, _) {
                           final persons = ref.watch(personsProvider).value ?? [];
@@ -645,40 +658,41 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
 
   Future<void> _addSubtask() async {
     final ctrl = TextEditingController();
-    await showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Add Subtask', style: AppText.heading),
-        content: TextField(
-          controller: ctrl,
-          decoration: const InputDecoration(hintText: 'Subtask title'),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              if (ctrl.text.trim().isEmpty) return;
-              final db = ref.read(dbProvider);
-              final localTask = await db.getTasks().then(
-                    (ts) => ts.firstWhere((t) => t.id == _task.id),
-                  );
-              await db.insertSubtask(SubtasksCompanion(
-                taskLocalId: Value(_task.id),
-                taskServerId: Value(localTask.serverId),
-                title: Value(ctrl.text.trim()),
-                syncStatus: Value(SyncStatus.pendingCreate.value),
-              ));
-              if (mounted) Navigator.pop(context);
-              if (ref.read(isOnlineProvider)) {
-                ref.read(syncStateProvider.notifier).sync();
-              }
-            },
-            child: const Text('Add'),
+    try {
+      await showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Add Subtask', style: AppText.heading),
+          content: TextField(
+            controller: ctrl,
+            decoration: const InputDecoration(hintText: 'Subtask title'),
+            autofocus: true,
           ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                if (ctrl.text.trim().isEmpty) return;
+                final db = ref.read(dbProvider);
+                await db.insertSubtask(SubtasksCompanion(
+                  taskLocalId: Value(_task.id),
+                  taskServerId: Value(_task.serverId),
+                  title: Value(ctrl.text.trim()),
+                  syncStatus: Value(SyncStatus.pendingCreate.value),
+                ));
+                if (mounted) Navigator.pop(context);
+                if (ref.read(isOnlineProvider)) {
+                  ref.read(syncStateProvider.notifier).sync();
+                }
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      ctrl.dispose();
+    }
   }
 
   Future<void> _deleteTask() async {
@@ -887,34 +901,26 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             ),
             const SizedBox(height: 10),
             // Due date picker
-            FormField<String>(
-              initialValue: _dueDate,
-              validator: (_) => _dueDate == null ? 'Required' : null,
-              builder: (field) => InkWell(
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.tryParse(_dueDate!) ?? DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) {
-                    setState(() => _dueDate = picked.toIso8601String().substring(0, 10));
-                    field.didChange(_dueDate);
-                  }
-                },
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: 'Due Date *',
-                    errorText: field.errorText,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(_dueDate!, style: AppText.body),
-                      const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textMuted),
-                    ],
-                  ),
+            InkWell(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.tryParse(_dueDate!) ?? DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  setState(() => _dueDate = picked.toIso8601String().substring(0, 10));
+                }
+              },
+              child: InputDecorator(
+                decoration: const InputDecoration(labelText: 'Due Date'),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(_dueDate!, style: AppText.body),
+                    const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textMuted),
+                  ],
                 ),
               ),
             ),
@@ -1015,14 +1021,3 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
   }
 }
 
-class _TaskEditForm extends ConsumerWidget {
-  const _TaskEditForm({required this.task, required this.onSaved});
-
-  final Task task;
-  final ValueChanged<Task> onSaved;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return _TaskForm(existing: task);
-  }
-}
