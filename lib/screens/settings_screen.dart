@@ -235,9 +235,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (url.isEmpty) return;
     // Fix #1: reject non-HTTP/HTTPS URLs before they reach the API client.
     final uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme || !['http', 'https'].contains(uri.scheme)) {
+    if (uri == null || !uri.hasScheme || uri.scheme != 'https') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid URL — must start with http:// or https://')),
+        const SnackBar(content: Text('Invalid URL — must start with https://')),
       );
       return;
     }

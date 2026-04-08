@@ -133,7 +133,7 @@ class _GenerateButtonState extends ConsumerState<_GenerateButton> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Generate failed: $e')),
+          const SnackBar(content: Text('Could not generate occurrences — check your connection')),
         );
       }
     }

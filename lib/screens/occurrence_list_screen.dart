@@ -33,7 +33,7 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
 
     return occurrencesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => const Center(child: Text('Failed to load occurrences — try refreshing')),
       data: (occurrences) {
         final categories = categoriesAsync.value ?? [];
         final catMap = {for (final c in categories) c.serverId: c};

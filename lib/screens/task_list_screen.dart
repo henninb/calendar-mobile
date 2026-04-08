@@ -27,7 +27,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 
     return tasksAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+      error: (e, _) => const Center(child: Text('Failed to load tasks — try refreshing')),
       data: (tasks) {
         final categories = categoriesAsync.value ?? [];
         final catMap = {for (final c in categories) c.serverId: c};
@@ -817,7 +817,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                     ),
                     subtasksStream.when(
                       loading: () => const SizedBox(height: 32, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
-                      error: (e, _) => Text('$e', style: AppText.small),
+                      error: (e, _) => const Text('Failed to load subtasks', style: AppText.small),
                       data: (subs) => subs.isEmpty
                           ? const Padding(
                               padding: EdgeInsets.symmetric(vertical: 8),

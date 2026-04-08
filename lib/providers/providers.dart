@@ -26,6 +26,11 @@ class BaseUrlNotifier extends Notifier<String> {
   }
 
   void set(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme || uri.scheme != 'https') {
+      dev.log('BaseUrlNotifier.set: rejected non-https URL', name: 'settings');
+      return;
+    }
     state = url;
     ref.read(sharedPreferencesProvider).setString(AppConstants.prefBaseUrl, url);
   }
