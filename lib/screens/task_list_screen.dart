@@ -905,8 +905,10 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
     final syncNotifier = ref.read(syncStateProvider.notifier);
     try {
       await ref.read(dbProvider).markTaskDeleted(_task.id);
-      if (mounted) Navigator.pop(context);
-      syncNotifier.syncIfOnline();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.pop(context);
+        syncNotifier.syncIfOnline();
+      });
     } catch (e, st) {
       dev.log('_TaskDetailSheet _deleteTask: $e', name: 'tasks', level: 900, stackTrace: st);
       if (mounted) {
@@ -1223,8 +1225,19 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
         );
       }
 
-      if (mounted) Navigator.pop(context);
-      syncNotifier.syncIfOnline();
+      // Defer the dismiss to a post-frame callback.
+      //
+      // On Android the soft keyboard is often visible when the user taps
+      // "Create Task". The button press starts keyboard dismissal, which
+      // changes MediaQuery.viewInsets, which marks this element dirty for
+      // rebuild. Calling Navigator.pop() synchronously while the element is
+      // still dirty causes Flutter to assert '_dependents.isEmpty is not true'
+      // inside InheritedElement.unmount(). Deferring to the next frame lets
+      // Flutter finish all pending rebuilds before the element is unmounted.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.pop(context);
+        syncNotifier.syncIfOnline();
+      });
     } catch (e, st) {
       dev.log('_save: $e', name: 'tasks', level: 900, stackTrace: st);
       if (mounted) {
