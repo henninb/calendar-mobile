@@ -153,49 +153,64 @@ class SyncNotifier extends Notifier<SyncState> {
   }
 
   Future<void> sync() async {
-    if (state.phase != SyncPhase.idle) return;
+    // Allow retrying from error state so a single push failure doesn't
+    // permanently block future syncs (e.g. recurring task chain breaks).
+    if (state.phase != SyncPhase.idle && state.phase != SyncPhase.error) return;
     dev.log('SyncNotifier.sync: start', name: 'sync');
 
     final syncSvc = ref.read(syncServiceProvider);
 
-    state = state.copyWith(phase: SyncPhase.pushing);
+    state = state.copyWith(phase: SyncPhase.pushing, errorMessage: null);
+    String? pushError;
     try {
       final result = await syncSvc.pushPending();
       if (result.errors.isNotEmpty) {
         dev.log('SyncNotifier.sync: push errors=${result.errors}', name: 'sync', level: 900);
-        state = state.copyWith(
-          phase: SyncPhase.error,
-          errorMessage: result.errors.first,
-        );
-        return; // stay in error — user must dismiss before syncing again
+        pushError = result.errors.first;
+        // Fall through — still do fullRefresh so the server-spawned next
+        // recurring task is pulled down even when some pushes failed.
       }
     } catch (e) {
       dev.log('SyncNotifier.sync: push threw $e', name: 'sync', level: 900);
-      state = state.copyWith(phase: SyncPhase.error, errorMessage: e.toString());
-      return;
+      pushError = _friendlyError(e);
     }
 
     state = state.copyWith(phase: SyncPhase.pulling);
     try {
-      await ref.read(syncServiceProvider).fullRefresh();
+      await syncSvc.fullRefresh();
       dev.log('SyncNotifier.sync: complete', name: 'sync');
-      state = state.copyWith(phase: SyncPhase.idle, errorMessage: null);
+      // Surface any push error after a successful pull so the user sees it
+      // but future sync cycles can still proceed.
+      state = state.copyWith(
+        phase: pushError != null ? SyncPhase.error : SyncPhase.idle,
+        errorMessage: pushError,
+      );
     } catch (e) {
       dev.log('SyncNotifier.sync: refresh threw $e', name: 'sync', level: 900);
       state = state.copyWith(
         phase: SyncPhase.error,
-        errorMessage: _friendlyError(e),
+        errorMessage: pushError ?? _friendlyError(e),
       );
     }
   }
 
-  // Called on a timer — doesn't touch the sync phase indicator so it's silent
-  // until an error occurs.
+  // Called on a timer. Also pushes pending items so mutations queued while
+  // offline are sent as soon as connectivity is restored between timer ticks.
   Future<void> silentRefresh() async {
     if (state.phase != SyncPhase.idle) return;
     dev.log('SyncNotifier.silentRefresh: start', name: 'sync');
     state = state.copyWith(phase: SyncPhase.pulling);
     try {
+      // Push any items queued while offline; swallow push errors here — they
+      // will surface when the user next triggers an explicit sync.
+      try {
+        final result = await ref.read(syncServiceProvider).pushPending();
+        if (result.errors.isNotEmpty) {
+          dev.log('SyncNotifier.silentRefresh: push errors (suppressed)=${result.errors}', name: 'sync', level: 900);
+        }
+      } catch (e) {
+        dev.log('SyncNotifier.silentRefresh: push threw (suppressed) $e', name: 'sync', level: 900);
+      }
       await ref.read(syncServiceProvider).fullRefresh();
       dev.log('SyncNotifier.silentRefresh: complete', name: 'sync');
       state = state.copyWith(phase: SyncPhase.idle, errorMessage: null);

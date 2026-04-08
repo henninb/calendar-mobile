@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
@@ -198,14 +199,18 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     if (title.isEmpty) return;
     _newSubtaskCtrl.clear();
     final task = widget.task;
-    await ref.read(dbProvider).insertSubtask(SubtasksCompanion(
-      taskLocalId: Value(task.id),
-      taskServerId: Value(task.serverId),
-      title: Value(title),
-      syncStatus: Value(SyncStatus.pendingCreate.value),
-    ));
-    if (ref.read(isOnlineProvider)) {
-      ref.read(syncStateProvider.notifier).sync();
+    try {
+      await ref.read(dbProvider).insertSubtask(SubtasksCompanion(
+        taskLocalId: Value(task.id),
+        taskServerId: Value(task.serverId),
+        title: Value(title),
+        syncStatus: Value(SyncStatus.pendingCreate.value),
+      ));
+      if (ref.read(isOnlineProvider)) {
+        ref.read(syncStateProvider.notifier).sync();
+      }
+    } catch (e, st) {
+      dev.log('_addSubtask: $e', name: 'tasks', level: 900, stackTrace: st);
     }
   }
 
@@ -378,15 +383,19 @@ class _InlineSubtaskRow extends ConsumerWidget {
           GestureDetector(
             onTap: () async {
               final newStatus = done ? 'todo' : 'done';
-              await ref.read(dbProvider).updateSubtask(
-                subtask.id,
-                SubtasksCompanion(
-                  status: Value(newStatus),
-                  syncStatus: Value(SyncStatus.pendingUpdate.value),
-                ),
-              );
-              if (ref.read(isOnlineProvider)) {
-                ref.read(syncStateProvider.notifier).sync();
+              try {
+                await ref.read(dbProvider).updateSubtask(
+                  subtask.id,
+                  SubtasksCompanion(
+                    status: Value(newStatus),
+                    syncStatus: Value(SyncStatus.pendingUpdate.value),
+                  ),
+                );
+                if (ref.read(isOnlineProvider)) {
+                  ref.read(syncStateProvider.notifier).sync();
+                }
+              } catch (e, st) {
+                dev.log('_InlineSubtaskRow toggle: $e', name: 'tasks', level: 900, stackTrace: st);
               }
             },
             child: Icon(
@@ -421,16 +430,28 @@ class _QuickStatusRow extends ConsumerWidget {
     final db = ref.read(dbProvider);
 
     Future<void> setStatus(String s) async {
-      await db.updateTask(
-        task.id,
-        TasksCompanion(
-          status: Value(s),
-          updatedAt: Value(DateTime.now().toIso8601String()),
-          syncStatus: Value(SyncStatus.pendingUpdate.value),
-        ),
-      );
-      if (ref.read(isOnlineProvider)) {
-        ref.read(syncStateProvider.notifier).sync();
+      try {
+        final now = DateTime.now().toIso8601String();
+        await db.updateTask(
+          task.id,
+          TasksCompanion(
+            status: Value(s),
+            updatedAt: Value(now),
+            // Set completedAt locally so the UI reflects it before sync.
+            completedAt: s == 'done' ? Value(now) : const Value.absent(),
+            syncStatus: Value(SyncStatus.pendingUpdate.value),
+          ),
+        );
+        if (ref.read(isOnlineProvider)) {
+          ref.read(syncStateProvider.notifier).sync();
+        }
+      } catch (e, st) {
+        dev.log('setStatus: $e', name: 'tasks', level: 900, stackTrace: st);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to update task. Please try again.')),
+          );
+        }
       }
     }
 
@@ -462,10 +483,19 @@ class _QuickStatusRow extends ConsumerWidget {
           ],
         ),
       );
-      if (confirmed != true) return;
-      await db.markTaskDeleted(task.id);
-      if (ref.read(isOnlineProvider)) {
-        ref.read(syncStateProvider.notifier).sync();
+      if (confirmed != true || !context.mounted) return;
+      try {
+        await db.markTaskDeleted(task.id);
+        if (ref.read(isOnlineProvider)) {
+          ref.read(syncStateProvider.notifier).sync();
+        }
+      } catch (e, st) {
+        dev.log('deleteTask: $e', name: 'tasks', level: 900, stackTrace: st);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to delete task. Please try again.')),
+          );
+        }
       }
     }
 
@@ -673,16 +703,25 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
             ElevatedButton(
               onPressed: () async {
                 if (ctrl.text.trim().isEmpty) return;
-                final db = ref.read(dbProvider);
-                await db.insertSubtask(SubtasksCompanion(
-                  taskLocalId: Value(_task.id),
-                  taskServerId: Value(_task.serverId),
-                  title: Value(ctrl.text.trim()),
-                  syncStatus: Value(SyncStatus.pendingCreate.value),
-                ));
-                if (mounted) Navigator.pop(context);
-                if (ref.read(isOnlineProvider)) {
-                  ref.read(syncStateProvider.notifier).sync();
+                try {
+                  final db = ref.read(dbProvider);
+                  await db.insertSubtask(SubtasksCompanion(
+                    taskLocalId: Value(_task.id),
+                    taskServerId: Value(_task.serverId),
+                    title: Value(ctrl.text.trim()),
+                    syncStatus: Value(SyncStatus.pendingCreate.value),
+                  ));
+                  if (mounted) Navigator.pop(context);
+                  if (ref.read(isOnlineProvider)) {
+                    ref.read(syncStateProvider.notifier).sync();
+                  }
+                } catch (e, st) {
+                  dev.log('_TaskDetailSheet _addSubtask: $e', name: 'tasks', level: 900, stackTrace: st);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Failed to add subtask. Please try again.')),
+                    );
+                  }
                 }
               },
               child: const Text('Add'),
@@ -712,10 +751,19 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    await ref.read(dbProvider).markTaskDeleted(_task.id);
-    if (mounted) Navigator.pop(context);
-    if (ref.read(isOnlineProvider)) {
-      ref.read(syncStateProvider.notifier).sync();
+    try {
+      await ref.read(dbProvider).markTaskDeleted(_task.id);
+      if (mounted) Navigator.pop(context);
+      if (ref.read(isOnlineProvider)) {
+        ref.read(syncStateProvider.notifier).sync();
+      }
+    } catch (e, st) {
+      dev.log('_TaskDetailSheet _deleteTask: $e', name: 'tasks', level: 900, stackTrace: st);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete task. Please try again.')),
+        );
+      }
     }
   }
 }
@@ -735,15 +783,19 @@ class _SubtaskRow extends ConsumerWidget {
           GestureDetector(
             onTap: () async {
               final newStatus = subtask.status == 'done' ? 'todo' : 'done';
-              await ref.read(dbProvider).updateSubtask(
-                subtask.id,
-                SubtasksCompanion(
-                  status: Value(newStatus),
-                  syncStatus: Value(SyncStatus.pendingUpdate.value),
-                ),
-              );
-              if (ref.read(isOnlineProvider)) {
-                ref.read(syncStateProvider.notifier).sync();
+              try {
+                await ref.read(dbProvider).updateSubtask(
+                  subtask.id,
+                  SubtasksCompanion(
+                    status: Value(newStatus),
+                    syncStatus: Value(SyncStatus.pendingUpdate.value),
+                  ),
+                );
+                if (ref.read(isOnlineProvider)) {
+                  ref.read(syncStateProvider.notifier).sync();
+                }
+              } catch (e, st) {
+                dev.log('_SubtaskRow toggle: $e', name: 'tasks', level: 900, stackTrace: st);
               }
             },
             child: Icon(
@@ -765,9 +817,13 @@ class _SubtaskRow extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
             onPressed: () async {
-              await ref.read(dbProvider).markSubtaskDeleted(subtask.id);
-              if (ref.read(isOnlineProvider)) {
-                ref.read(syncStateProvider.notifier).sync();
+              try {
+                await ref.read(dbProvider).markSubtaskDeleted(subtask.id);
+                if (ref.read(isOnlineProvider)) {
+                  ref.read(syncStateProvider.notifier).sync();
+                }
+              } catch (e, st) {
+                dev.log('_SubtaskRow delete: $e', name: 'tasks', level: 900, stackTrace: st);
               }
             },
           ),
@@ -982,24 +1038,9 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
     final db = ref.read(dbProvider);
     final now = DateTime.now().toIso8601String();
 
-    if (widget.existing == null) {
-      await db.insertTask(TasksCompanion(
-        title: Value(_title.text.trim()),
-        description: Value(_description.text.trim().isEmpty ? null : _description.text.trim()),
-        status: Value(_status),
-        priority: Value(_priority),
-        recurrence: Value(_recurrence),
-        dueDate: Value(_dueDate),
-        assigneeServerId: Value(_assigneeServerId),
-        categoryServerId: Value(_categoryServerId),
-        syncStatus: Value(SyncStatus.pendingCreate.value),
-        createdAt: Value(now),
-        updatedAt: Value(now),
-      ));
-    } else {
-      await db.updateTask(
-        widget.existing!.id,
-        TasksCompanion(
+    try {
+      if (widget.existing == null) {
+        await db.insertTask(TasksCompanion(
           title: Value(_title.text.trim()),
           description: Value(_description.text.trim().isEmpty ? null : _description.text.trim()),
           status: Value(_status),
@@ -1008,15 +1049,39 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
           dueDate: Value(_dueDate),
           assigneeServerId: Value(_assigneeServerId),
           categoryServerId: Value(_categoryServerId),
+          syncStatus: Value(SyncStatus.pendingCreate.value),
+          createdAt: Value(now),
           updatedAt: Value(now),
-          syncStatus: Value(SyncStatus.pendingUpdate.value),
-        ),
-      );
-    }
+        ));
+      } else {
+        await db.updateTask(
+          widget.existing!.id,
+          TasksCompanion(
+            title: Value(_title.text.trim()),
+            description: Value(_description.text.trim().isEmpty ? null : _description.text.trim()),
+            status: Value(_status),
+            priority: Value(_priority),
+            recurrence: Value(_recurrence),
+            dueDate: Value(_dueDate),
+            assigneeServerId: Value(_assigneeServerId),
+            categoryServerId: Value(_categoryServerId),
+            updatedAt: Value(now),
+            syncStatus: Value(SyncStatus.pendingUpdate.value),
+          ),
+        );
+      }
 
-    if (mounted) Navigator.pop(context);
-    if (ref.read(isOnlineProvider)) {
-      ref.read(syncStateProvider.notifier).sync();
+      if (mounted) Navigator.pop(context);
+      if (ref.read(isOnlineProvider)) {
+        ref.read(syncStateProvider.notifier).sync();
+      }
+    } catch (e, st) {
+      dev.log('_save: $e', name: 'tasks', level: 900, stackTrace: st);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save task. Please try again.')),
+        );
+      }
     }
   }
 }
