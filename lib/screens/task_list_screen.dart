@@ -18,7 +18,16 @@ class TaskListScreen extends ConsumerStatefulWidget {
 
 class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   String _filterStatus = 'active';
-  String _filterDate = 'all'; // 'all' | 'today' | 'tomorrow'
+  final Map<String, bool> _collapsedSections = {};
+
+  bool _isCollapsed(String key, bool isEmpty) =>
+      _collapsedSections[key] ?? isEmpty;
+
+  void _toggleSection(String key, bool isEmpty) {
+    setState(() {
+      _collapsedSections[key] = !_isCollapsed(key, isEmpty);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +45,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
         final tomorrow = today.add(const Duration(days: 1));
         final tomorrowStr = '${tomorrow.year}-${tomorrow.month.toString().padLeft(2, '0')}-${tomorrow.day.toString().padLeft(2, '0')}';
+        final week1End = today.add(const Duration(days: 7));
+        final week1EndStr = '${week1End.year}-${week1End.month.toString().padLeft(2, '0')}-${week1End.day.toString().padLeft(2, '0')}';
+        final week2End = today.add(const Duration(days: 14));
+        final week2EndStr = '${week2End.year}-${week2End.month.toString().padLeft(2, '0')}-${week2End.day.toString().padLeft(2, '0')}';
 
         var filtered = tasks.where((t) {
           if (t.syncStatus == SyncStatus.pendingDelete.value) return false;
@@ -49,11 +62,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         } else if (_filterStatus != 'all') {
           filtered = filtered.where((t) => t.status == _filterStatus).toList();
         }
-        if (_filterDate == 'today') {
-          filtered = filtered.where((t) => t.dueDate == todayStr).toList();
-        } else if (_filterDate == 'tomorrow') {
-          filtered = filtered.where((t) => t.dueDate == tomorrowStr).toList();
-        }
         filtered.sort((a, b) {
           if (a.dueDate == null && b.dueDate == null) return _doneWeight(a) - _doneWeight(b);
           if (a.dueDate == null) return 1;
@@ -63,6 +71,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           return _doneWeight(a) - _doneWeight(b);
         });
 
+        final sections = _buildSections(filtered, todayStr, tomorrowStr, week1EndStr, week2EndStr);
+
         return Stack(
           children: [
             Column(
@@ -70,8 +80,6 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                 _StatusFilter(
                   selected: _filterStatus,
                   onChanged: (s) => setState(() => _filterStatus = s),
-                  selectedDate: _filterDate,
-                  onDateChanged: (d) => setState(() => _filterDate = d),
                 ),
                 Expanded(
                   child: RefreshIndicator(
@@ -84,18 +92,33 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                               child: Center(child: Text('No tasks', style: AppText.small)),
                             ),
                           )
-                        : ListView.separated(
+                        : ListView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
-                            itemCount: filtered.length,
-                            separatorBuilder: (c, i) => const SizedBox(height: 8),
-                            itemBuilder: (context, i) => _TaskCard(
-                              key: ValueKey(filtered[i].id),
-                              task: filtered[i],
-                              catMap: catMap,
-                              todayStr: todayStr,
-                              tomorrowStr: tomorrowStr,
-                            ),
+                            children: [
+                              for (final section in sections)
+                                if (!section.hideWhenEmpty || section.tasks.isNotEmpty) ...[
+                                  _SectionHeader(
+                                    label: section.label,
+                                    count: section.tasks.length,
+                                    isExpanded: !_isCollapsed(section.key, section.tasks.isEmpty),
+                                    onTap: () => _toggleSection(section.key, section.tasks.isEmpty),
+                                  ),
+                                  if (!_isCollapsed(section.key, section.tasks.isEmpty))
+                                    for (final task in section.tasks)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: _TaskCard(
+                                          key: ValueKey(task.id),
+                                          task: task,
+                                          catMap: catMap,
+                                          todayStr: todayStr,
+                                          tomorrowStr: tomorrowStr,
+                                        ),
+                                      ),
+                                  const SizedBox(height: 8),
+                                ],
+                            ],
                           ),
                   ),
                 ),
@@ -113,6 +136,50 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         );
       },
     );
+  }
+
+  List<_TaskSection> _buildSections(
+    List<Task> tasks,
+    String todayStr,
+    String tomorrowStr,
+    String week1EndStr,
+    String week2EndStr,
+  ) {
+    final done         = <Task>[];
+    final overdueToday = <Task>[];
+    final tomorrowList = <Task>[];
+    final thisWeek     = <Task>[];
+    final nextWeek     = <Task>[];
+    final later        = <Task>[];
+    final noDate       = <Task>[];
+
+    for (final task in tasks) {
+      if (task.status == 'done') {
+        done.add(task);
+      } else if (task.dueDate == null) {
+        noDate.add(task);
+      } else if (task.dueDate!.compareTo(todayStr) <= 0) {
+        overdueToday.add(task);
+      } else if (task.dueDate == tomorrowStr) {
+        tomorrowList.add(task);
+      } else if (task.dueDate!.compareTo(week1EndStr) <= 0) {
+        thisWeek.add(task);
+      } else if (task.dueDate!.compareTo(week2EndStr) <= 0) {
+        nextWeek.add(task);
+      } else {
+        later.add(task);
+      }
+    }
+
+    return [
+      _TaskSection(key: 'done',          label: 'Done',            tasks: done,         hideWhenEmpty: true),
+      _TaskSection(key: 'overdue_today', label: 'Overdue / Today', tasks: overdueToday),
+      _TaskSection(key: 'tomorrow',      label: 'Tomorrow',        tasks: tomorrowList),
+      _TaskSection(key: 'this_week',     label: 'This Week',       tasks: thisWeek),
+      _TaskSection(key: 'next_week',     label: 'Next Week',       tasks: nextWeek),
+      _TaskSection(key: 'later',         label: 'Later',           tasks: later),
+      _TaskSection(key: 'no_date',       label: 'No Date',         tasks: noDate,        hideWhenEmpty: true),
+    ];
   }
 
   static int _doneWeight(Task t) =>
@@ -135,14 +202,10 @@ class _StatusFilter extends StatelessWidget {
   const _StatusFilter({
     required this.selected,
     required this.onChanged,
-    required this.selectedDate,
-    required this.onDateChanged,
   });
 
   final String selected;
   final ValueChanged<String> onChanged;
-  final String selectedDate;
-  final ValueChanged<String> onDateChanged;
 
   static const _statusOptions = ['active', 'all', 'todo', 'in_progress', 'done', 'cancelled'];
   static const _statusLabels = {
@@ -152,13 +215,6 @@ class _StatusFilter extends StatelessWidget {
     'in_progress': 'In Progress',
     'done': 'Done',
     'cancelled': 'Cancelled',
-  };
-
-  static const _dateOptions = ['all', 'today', 'tomorrow'];
-  static const _dateLabels = {
-    'all': 'Any Date',
-    'today': 'Today',
-    'tomorrow': 'Tomorrow',
   };
 
   Widget _chip({
@@ -198,35 +254,17 @@ class _StatusFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.tableHeader,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              children: _statusOptions.map((s) => _chip(
-                label: _statusLabels[s] ?? s,
-                active: selected == s,
-                onTap: () => onChanged(s),
-              )).toList(),
-            ),
-          ),
-          SizedBox(
-            height: 36,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.only(left: 12, right: 12, bottom: 6),
-              children: _dateOptions.map((d) => _chip(
-                label: _dateLabels[d] ?? d,
-                active: selectedDate == d,
-                onTap: () => onDateChanged(d),
-                activeColor: const Color(0xFF6D28D9),
-              )).toList(),
-            ),
-          ),
-        ],
+      child: SizedBox(
+        height: 40,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          children: _statusOptions.map((s) => _chip(
+            label: _statusLabels[s] ?? s,
+            active: selected == s,
+            onTap: () => onChanged(s),
+          )).toList(),
+        ),
       ),
     );
   }
@@ -1246,6 +1284,79 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
         );
       }
     }
+  }
+}
+
+// ── Section data ─────────────────────────────────────────────────────────────
+
+class _TaskSection {
+  const _TaskSection({
+    required this.key,
+    required this.label,
+    required this.tasks,
+    this.hideWhenEmpty = false,
+  });
+
+  final String key;
+  final String label;
+  final List<Task> tasks;
+  final bool hideWhenEmpty;
+}
+
+// ── Section header widget ─────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.label,
+    required this.count,
+    required this.isExpanded,
+    required this.onTap,
+  });
+
+  final String label;
+  final int count;
+  final bool isExpanded;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.tableHeader,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isExpanded ? Icons.expand_less : Icons.expand_more,
+              size: 16,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(label, style: AppText.body.copyWith(fontWeight: FontWeight.w600)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: AppText.small.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
