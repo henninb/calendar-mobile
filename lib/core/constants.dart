@@ -2,9 +2,10 @@ class AppConstants {
   AppConstants._();
 
   static const String defaultBaseUrl = 'https://calendar.bhenning.com';
-  static const String prefBaseUrl    = 'base_url';
-  static const String prefSyncDays   = 'gcal_sync_days';
-  static const String prefSyncForce  = 'gcal_sync_force';
+  static const String prefBaseUrl      = 'base_url';
+  static const String prefSyncDays     = 'gcal_sync_days';
+  static const String prefSyncForce    = 'gcal_sync_force';
+  static const String prefForcedOffline = 'forced_offline';
   static const int    defaultSyncDays = 365;
 
   static const Duration syncDebounce  = Duration(seconds: 3);

@@ -57,6 +57,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         actions: [
           if (_tabIndex == 1)
             _GenerateButton(),
+          _OfflineToggleButton(),
           _SyncButton(),
         ],
       ),
@@ -137,6 +138,42 @@ class _GenerateButtonState extends ConsumerState<_GenerateButton> {
       }
     }
     if (mounted) setState(() => _loading = false);
+  }
+}
+
+class _OfflineToggleButton extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final forcedOffline = ref.watch(forcedOfflineProvider);
+    final isOnline = ref.watch(isOnlineProvider);
+
+    return IconButton(
+      tooltip: forcedOffline
+          ? 'Offline mode on — tap to re-enable sync'
+          : isOnline
+              ? 'Connected — tap to force offline mode'
+              : 'No network connection',
+      icon: Icon(
+        forcedOffline ? Icons.cloud_off_rounded : Icons.cloud_done_rounded,
+        color: forcedOffline
+            ? Colors.orangeAccent
+            : isOnline
+                ? Colors.white70
+                : Colors.white38,
+      ),
+      onPressed: () {
+        ref.read(forcedOfflineProvider.notifier).toggle();
+        final next = !forcedOffline;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              next ? 'Offline mode enabled — sync paused' : 'Offline mode disabled — sync resumed',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+    );
   }
 }
 

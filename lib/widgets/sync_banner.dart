@@ -12,6 +12,16 @@ class SyncBanner extends ConsumerWidget {
     final syncState = ref.watch(syncStateProvider);
 
     if (!isOnline) {
+      final isForcedOffline = ref.watch(forcedOfflineProvider);
+      if (isForcedOffline) {
+        return _Banner(
+          color: AppColors.skippedBg,
+          iconColor: AppColors.skippedFg,
+          textColor: AppColors.skippedFg,
+          icon: Icons.cloud_off_rounded,
+          text: 'Offline mode enabled — sync paused',
+        );
+      }
       return _Banner(
         color: AppColors.offlineBanner,
         iconColor: AppColors.offlineFg,

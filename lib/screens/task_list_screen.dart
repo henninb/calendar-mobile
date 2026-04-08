@@ -265,6 +265,9 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     if (title.isEmpty) return;
     _newSubtaskCtrl.clear();
     final task = widget.task;
+    // Capture before the await — ref must not be accessed after an async gap
+    // in a ConsumerStatefulWidget because the widget may be disposed by then.
+    final syncNotifier = ref.read(syncStateProvider.notifier);
     try {
       await ref.read(dbProvider).insertSubtask(SubtasksCompanion(
         taskLocalId: Value(task.id),
@@ -272,9 +275,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
         title: Value(title),
         syncStatus: Value(SyncStatus.pendingCreate.value),
       ));
-      if (ref.read(isOnlineProvider)) {
-        ref.read(syncStateProvider.notifier).sync();
-      }
+      syncNotifier.syncIfOnline();
     } catch (e, st) {
       dev.log('_addSubtask: $e', name: 'tasks', level: 900, stackTrace: st);
     }
@@ -435,6 +436,7 @@ class _InlineSubtaskRow extends ConsumerWidget {
           GestureDetector(
             onTap: () async {
               final newStatus = done ? 'todo' : 'done';
+              final syncNotifier = ref.read(syncStateProvider.notifier);
               try {
                 await ref.read(dbProvider).updateSubtask(
                   subtask.id,
@@ -443,9 +445,7 @@ class _InlineSubtaskRow extends ConsumerWidget {
                     syncStatus: Value(SyncStatus.pendingUpdate.value),
                   ),
                 );
-                if (ref.read(isOnlineProvider)) {
-                  ref.read(syncStateProvider.notifier).sync();
-                }
+                syncNotifier.syncIfOnline();
               } catch (e, st) {
                 dev.log('_InlineSubtaskRow toggle: $e', name: 'tasks', level: 900, stackTrace: st);
               }
@@ -584,6 +584,7 @@ class _QuickStatusRow extends ConsumerWidget {
     final db = ref.read(dbProvider);
 
     Future<void> setStatus(String s) async {
+      final syncNotifier = ref.read(syncStateProvider.notifier);
       try {
         final now = DateTime.now().toIso8601String();
         await db.updateTask(
@@ -596,9 +597,7 @@ class _QuickStatusRow extends ConsumerWidget {
             syncStatus: Value(SyncStatus.pendingUpdate.value),
           ),
         );
-        if (ref.read(isOnlineProvider)) {
-          ref.read(syncStateProvider.notifier).sync();
-        }
+        syncNotifier.syncIfOnline();
       } catch (e, st) {
         dev.log('setStatus: $e', name: 'tasks', level: 900, stackTrace: st);
         if (context.mounted) {
@@ -638,11 +637,10 @@ class _QuickStatusRow extends ConsumerWidget {
         ),
       );
       if (confirmed != true || !context.mounted) return;
+      final syncNotifier = ref.read(syncStateProvider.notifier);
       try {
         await db.markTaskDeleted(task.id);
-        if (ref.read(isOnlineProvider)) {
-          ref.read(syncStateProvider.notifier).sync();
-        }
+        syncNotifier.syncIfOnline();
       } catch (e, st) {
         dev.log('deleteTask: $e', name: 'tasks', level: 900, stackTrace: st);
         if (context.mounted) {
@@ -857,6 +855,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
             ElevatedButton(
               onPressed: () async {
                 if (ctrl.text.trim().isEmpty) return;
+                final syncNotifier = ref.read(syncStateProvider.notifier);
                 try {
                   final db = ref.read(dbProvider);
                   await db.insertSubtask(SubtasksCompanion(
@@ -866,9 +865,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                     syncStatus: Value(SyncStatus.pendingCreate.value),
                   ));
                   if (mounted) Navigator.pop(context);
-                  if (ref.read(isOnlineProvider)) {
-                    ref.read(syncStateProvider.notifier).sync();
-                  }
+                  syncNotifier.syncIfOnline();
                 } catch (e, st) {
                   dev.log('_TaskDetailSheet _addSubtask: $e', name: 'tasks', level: 900, stackTrace: st);
                   if (mounted) {
@@ -905,12 +902,11 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
       ),
     );
     if (confirmed != true || !mounted) return;
+    final syncNotifier = ref.read(syncStateProvider.notifier);
     try {
       await ref.read(dbProvider).markTaskDeleted(_task.id);
       if (mounted) Navigator.pop(context);
-      if (ref.read(isOnlineProvider)) {
-        ref.read(syncStateProvider.notifier).sync();
-      }
+      syncNotifier.syncIfOnline();
     } catch (e, st) {
       dev.log('_TaskDetailSheet _deleteTask: $e', name: 'tasks', level: 900, stackTrace: st);
       if (mounted) {
@@ -937,6 +933,7 @@ class _SubtaskRow extends ConsumerWidget {
           GestureDetector(
             onTap: () async {
               final newStatus = subtask.status == 'done' ? 'todo' : 'done';
+              final syncNotifier = ref.read(syncStateProvider.notifier);
               try {
                 await ref.read(dbProvider).updateSubtask(
                   subtask.id,
@@ -945,9 +942,7 @@ class _SubtaskRow extends ConsumerWidget {
                     syncStatus: Value(SyncStatus.pendingUpdate.value),
                   ),
                 );
-                if (ref.read(isOnlineProvider)) {
-                  ref.read(syncStateProvider.notifier).sync();
-                }
+                syncNotifier.syncIfOnline();
               } catch (e, st) {
                 dev.log('_SubtaskRow toggle: $e', name: 'tasks', level: 900, stackTrace: st);
               }
@@ -971,11 +966,10 @@ class _SubtaskRow extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
             onPressed: () async {
+              final syncNotifier = ref.read(syncStateProvider.notifier);
               try {
                 await ref.read(dbProvider).markSubtaskDeleted(subtask.id);
-                if (ref.read(isOnlineProvider)) {
-                  ref.read(syncStateProvider.notifier).sync();
-                }
+                syncNotifier.syncIfOnline();
               } catch (e, st) {
                 dev.log('_SubtaskRow delete: $e', name: 'tasks', level: 900, stackTrace: st);
               }
@@ -1190,6 +1184,10 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final db = ref.read(dbProvider);
+    // Capture the notifier before the first await. Navigator.pop() disposes
+    // this widget's ref — any ref.read() after that throws an assertion in
+    // Riverpod 3.x ('_dependents.isEmpty' is not true).
+    final syncNotifier = ref.read(syncStateProvider.notifier);
     final now = DateTime.now().toIso8601String();
 
     try {
@@ -1226,9 +1224,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
       }
 
       if (mounted) Navigator.pop(context);
-      if (ref.read(isOnlineProvider)) {
-        ref.read(syncStateProvider.notifier).sync();
-      }
+      syncNotifier.syncIfOnline();
     } catch (e, st) {
       dev.log('_save: $e', name: 'tasks', level: 900, stackTrace: st);
       if (mounted) {

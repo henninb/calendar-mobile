@@ -31,9 +31,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final syncState = ref.watch(syncStateProvider);
-    final isOnline  = ref.watch(isOnlineProvider);
-    final connectivity = ref.watch(connectivityProvider);
+    final syncState     = ref.watch(syncStateProvider);
+    final isOnline      = ref.watch(isOnlineProvider);
+    final forcedOffline = ref.watch(forcedOfflineProvider);
+    final connectivity  = ref.watch(connectivityProvider);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -69,26 +70,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   height: 8,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isOnline ? AppColors.btnGreen : AppColors.btnRed,
+                    color: isOnline
+                        ? AppColors.btnGreen
+                        : forcedOffline
+                            ? AppColors.ccSoon   // amber — paused by choice, not broken
+                            : AppColors.btnRed,
                   ),
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  isOnline ? 'Online' : 'Offline',
+                  isOnline
+                      ? 'Online'
+                      : forcedOffline
+                          ? 'Offline mode (sync paused)'
+                          : 'Offline',
                   style: AppText.small.copyWith(
-                    color: isOnline ? AppColors.completedFg : AppColors.overdueFg,
+                    color: isOnline
+                        ? AppColors.completedFg
+                        : forcedOffline
+                            ? AppColors.ccSoon
+                            : AppColors.overdueFg,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(width: 12),
-                if (!isOnline)
+                // Only show raw connectivity details when the network is
+                // genuinely down — not when we manually paused sync.
+                if (!isOnline && !forcedOffline)
                   Text(
                     connectivity.value?.map((r) => r.name).join(', ') ?? 'checking…',
                     style: AppText.small,
                   ),
               ],
             ),
-            if (!isOnline) ...[
+            // Only offer the WireGuard shortcut when there is an actual
+            // network problem — never when the user manually forced offline,
+            // since the network is up and opening WireGuard could confuse
+            // them into toggling the tunnel unnecessarily.
+            if (!isOnline && !forcedOffline) ...[
               const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,

@@ -62,19 +62,52 @@ final syncServiceProvider = Provider<SyncService>((ref) {
   return SyncService(ref.watch(dbProvider), ref.watch(apiClientProvider));
 });
 
+// ── Forced Offline Toggle ────────────────────────────────────────────────────
+//
+// Persisted manual override that suppresses all sync regardless of network
+// state. Useful when the WireGuard tunnel is down but the OS still reports
+// a network interface as connected.
+
+final forcedOfflineProvider =
+    NotifierProvider<ForcedOfflineNotifier, bool>(ForcedOfflineNotifier.new);
+
+class ForcedOfflineNotifier extends Notifier<bool> {
+  @override
+  bool build() {
+    return ref.read(sharedPreferencesProvider)
+            .getBool(AppConstants.prefForcedOffline) ??
+        false;
+  }
+
+  void toggle() {
+    final next = !state;
+    state = next;
+    ref
+        .read(sharedPreferencesProvider)
+        .setBool(AppConstants.prefForcedOffline, next);
+    dev.log('ForcedOfflineNotifier: forcedOffline=$next', name: 'connectivity');
+  }
+}
+
 // ── Connectivity ─────────────────────────────────────────────────────────────
 //
 // connectivity_plus only fires onConnectivityChanged when the state *changes*.
 // On Linux/desktop the stream never emits at startup, so we do an explicit
 // checkConnectivity() call and then stay subscribed to changes.
+//
+// The effective online state is: networkOnline AND NOT forcedOffline.
+// This keeps isOnlineProvider as the single source of truth consumed by all
+// sync logic — no call sites need changing.
 
 final _connectivity = Connectivity();
 
-final isOnlineProvider = NotifierProvider<ConnectivityNotifier, bool>(ConnectivityNotifier.new);
+final isOnlineProvider =
+    NotifierProvider<ConnectivityNotifier, bool>(ConnectivityNotifier.new);
 
 class ConnectivityNotifier extends Notifier<bool> {
   StreamSubscription<List<ConnectivityResult>>? _sub;
   bool _active = false;
+  bool _networkOnline = true;
 
   @override
   bool build() {
@@ -83,23 +116,35 @@ class ConnectivityNotifier extends Notifier<bool> {
       _active = false;
       _sub?.cancel();
     });
+
+    // Re-evaluate effective state whenever the forced-offline toggle changes.
+    ref.listen<bool>(forcedOfflineProvider, (_, _) {
+      if (!_active) return;
+      state = _networkOnline && !ref.read(forcedOfflineProvider);
+    });
+
     _init();
-    return true; // optimistic initial state until checkConnectivity completes
+    // Optimistic initial state: assume network is up, honour forced-offline.
+    return !ref.read(forcedOfflineProvider);
   }
 
   Future<void> _init() async {
     final results = await _connectivity.checkConnectivity();
     if (!_active) return;
-    state = _isOnline(results);
+    _networkOnline = _isOnline(results);
+    state = _networkOnline && !ref.read(forcedOfflineProvider);
 
     _sub = _connectivity.onConnectivityChanged.listen((results) {
       if (!_active) return;
-      final online = _isOnline(results);
+      _networkOnline = _isOnline(results);
+      final forced = ref.read(forcedOfflineProvider);
+      final effective = _networkOnline && !forced;
       dev.log(
-        'ConnectivityNotifier: online=$online (${results.map((r) => r.name).join(', ')})',
+        'ConnectivityNotifier: network=$_networkOnline forced=$forced → effective=$effective'
+        ' (${results.map((r) => r.name).join(', ')})',
         name: 'connectivity',
       );
-      state = online;
+      state = effective;
     });
   }
 
@@ -221,6 +266,13 @@ class SyncNotifier extends Notifier<SyncState> {
         errorMessage: _friendlyError(e),
       );
     }
+  }
+
+  /// Triggers a full sync only when the app has effective connectivity.
+  /// Safe to call after a widget's ref has been disposed because this method
+  /// uses the notifier's own internal ref, not the caller's widget ref.
+  void syncIfOnline() {
+    if (ref.read(isOnlineProvider)) sync();
   }
 
   void clearError() {
