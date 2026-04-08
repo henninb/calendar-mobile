@@ -1085,7 +1085,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _status,
+                    initialValue: _status,
                     decoration: const InputDecoration(labelText: 'Status'),
                     items: _statuses.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                     onChanged: (v) => setState(() => _status = v!),
@@ -1094,7 +1094,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _priority,
+                    initialValue: _priority,
                     decoration: const InputDecoration(labelText: 'Priority'),
                     items: _priorities.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                     onChanged: (v) => setState(() => _priority = v!),
@@ -1104,7 +1104,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
-              value: _recurrence,
+              initialValue: _recurrence,
               decoration: const InputDecoration(labelText: 'Recurrence'),
               items: _recurrences.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
               onChanged: (v) => setState(() => _recurrence = v!),
@@ -1138,9 +1138,9 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             // Category dropdown
             ref.watch(categoriesProvider).when(
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
               data: (cats) => DropdownButtonFormField<int?>(
-                value: _categoryServerId,
+                initialValue: _categoryServerId,
                 decoration: const InputDecoration(labelText: 'Category'),
                 items: [
                   const DropdownMenuItem(value: null, child: Text('None')),
@@ -1156,9 +1156,9 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             // Assignee dropdown
             ref.watch(personsProvider).when(
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
               data: (persons) => DropdownButtonFormField<int?>(
-                value: _assigneeServerId,
+                initialValue: _assigneeServerId,
                 decoration: const InputDecoration(labelText: 'Assignee'),
                 items: [
                   const DropdownMenuItem(value: null, child: Text('None')),
