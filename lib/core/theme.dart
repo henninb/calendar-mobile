@@ -42,7 +42,7 @@ class AppColors {
   // Priority
   static const Color priorityHigh   = Color(0xFFEF4444);
   static const Color priorityMedium = Color(0xFFF59E0B);
-  static const Color priorityLow    = Color(0xFF22C55E);
+  static const Color priorityLow    = Color(0xFF64748B);
 
   // Credit cards
   static const Color ccOverdue = Color(0xFFDC2626);

@@ -18,15 +18,16 @@ class CategoryBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: c,
+        color: c.withAlpha(33),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: c.withAlpha(84)),
       ),
       child: Text(
         '${icon ?? ''} $name'.trim(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: Colors.white,
+          color: c,
         ),
         overflow: TextOverflow.ellipsis,
       ),

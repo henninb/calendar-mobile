@@ -17,7 +17,8 @@ class TaskListScreen extends ConsumerStatefulWidget {
 }
 
 class _TaskListScreenState extends ConsumerState<TaskListScreen> {
-  String _filterStatus = 'all';
+  String _filterStatus = 'active';
+  String _filterDate = 'all'; // 'all' | 'today' | 'tomorrow'
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +34,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 
         final today = DateTime.now();
         final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+        final tomorrow = today.add(const Duration(days: 1));
+        final tomorrowStr = '${tomorrow.year}-${tomorrow.month.toString().padLeft(2, '0')}-${tomorrow.day.toString().padLeft(2, '0')}';
 
         var filtered = tasks.where((t) {
           if (t.syncStatus == SyncStatus.pendingDelete.value) return false;
@@ -41,8 +44,15 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           // Past due: only show if not completed
           return t.status != 'done' && t.status != 'cancelled';
         }).toList();
-        if (_filterStatus != 'all') {
+        if (_filterStatus == 'active') {
+          filtered = filtered.where((t) => t.status == 'todo' || t.status == 'in_progress').toList();
+        } else if (_filterStatus != 'all') {
           filtered = filtered.where((t) => t.status == _filterStatus).toList();
+        }
+        if (_filterDate == 'today') {
+          filtered = filtered.where((t) => t.dueDate == todayStr).toList();
+        } else if (_filterDate == 'tomorrow') {
+          filtered = filtered.where((t) => t.dueDate == tomorrowStr).toList();
         }
         filtered.sort((a, b) {
           if (a.dueDate == null && b.dueDate == null) return _doneWeight(a) - _doneWeight(b);
@@ -60,6 +70,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                 _StatusFilter(
                   selected: _filterStatus,
                   onChanged: (s) => setState(() => _filterStatus = s),
+                  selectedDate: _filterDate,
+                  onDateChanged: (d) => setState(() => _filterDate = d),
                 ),
                 Expanded(
                   child: RefreshIndicator(
@@ -82,6 +94,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                               task: filtered[i],
                               catMap: catMap,
                               todayStr: todayStr,
+                              tomorrowStr: tomorrowStr,
                             ),
                           ),
                   ),
@@ -119,13 +132,21 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 }
 
 class _StatusFilter extends StatelessWidget {
-  const _StatusFilter({required this.selected, required this.onChanged});
+  const _StatusFilter({
+    required this.selected,
+    required this.onChanged,
+    required this.selectedDate,
+    required this.onDateChanged,
+  });
 
   final String selected;
   final ValueChanged<String> onChanged;
+  final String selectedDate;
+  final ValueChanged<String> onDateChanged;
 
-  static const _options = ['all', 'todo', 'in_progress', 'done', 'cancelled'];
-  static const _labels = {
+  static const _statusOptions = ['active', 'all', 'todo', 'in_progress', 'done', 'cancelled'];
+  static const _statusLabels = {
+    'active': 'Active',
     'all': 'All',
     'todo': 'Todo',
     'in_progress': 'In Progress',
@@ -133,52 +154,97 @@ class _StatusFilter extends StatelessWidget {
     'cancelled': 'Cancelled',
   };
 
+  static const _dateOptions = ['all', 'today', 'tomorrow'];
+  static const _dateLabels = {
+    'all': 'Any Date',
+    'today': 'Today',
+    'tomorrow': 'Tomorrow',
+  };
+
+  Widget _chip({
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+    Color? activeColor,
+  }) {
+    final bg = active ? (activeColor ?? AppColors.primary) : AppColors.surface;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: active ? bg : AppColors.divider,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: active ? Colors.white : AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 44,
       color: AppColors.tableHeader,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        children: _options.map((s) {
-          final active = selected == s;
-          return Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: GestureDetector(
-              onTap: () => onChanged(s),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: active ? AppColors.primary : AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: active ? AppColors.primary : AppColors.divider,
-                  ),
-                ),
-                child: Text(
-                  _labels[s] ?? s,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: active ? Colors.white : AppColors.textSecondary,
-                  ),
-                ),
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              children: _statusOptions.map((s) => _chip(
+                label: _statusLabels[s] ?? s,
+                active: selected == s,
+                onTap: () => onChanged(s),
+              )).toList(),
             ),
-          );
-        }).toList(),
+          ),
+          SizedBox(
+            height: 36,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(left: 12, right: 12, bottom: 6),
+              children: _dateOptions.map((d) => _chip(
+                label: _dateLabels[d] ?? d,
+                active: selectedDate == d,
+                onTap: () => onDateChanged(d),
+                activeColor: const Color(0xFF6D28D9),
+              )).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _TaskCard extends ConsumerStatefulWidget {
-  const _TaskCard({super.key, required this.task, required this.catMap, required this.todayStr});
+  const _TaskCard({
+    super.key,
+    required this.task,
+    required this.catMap,
+    required this.todayStr,
+    required this.tomorrowStr,
+  });
 
   final Task task;
   final Map<int?, Category> catMap;
   final String todayStr;
+  final String tomorrowStr;
 
   @override
   ConsumerState<_TaskCard> createState() => _TaskCardState();
@@ -223,6 +289,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     final isDueToday = task.dueDate == todayStr;
     final isOverdue = task.dueDate != null && task.dueDate!.compareTo(todayStr) < 0;
     final highlight = isActive && (isDueToday || isOverdue);
+    final showRecurrence = task.recurrence != 'none';
 
     final subtasksAsync = ref.watch(subtasksForTaskProvider(task.id));
     final subtasks = subtasksAsync.value ?? [];
@@ -250,35 +317,20 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                 ],
               ),
               const SizedBox(height: 6),
-              Row(
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   PriorityBadge(task.priority),
-                  if (cat != null) ...[
-                    const SizedBox(width: 6),
+                  if (cat != null)
                     CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
-                  ],
-                  if (task.dueDate != null) ...[
-                    const SizedBox(width: 6),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.calendar_today_outlined, size: 11, color: AppColors.textMuted),
-                        const SizedBox(width: 3),
-                        Text(task.dueDate!, style: AppText.label),
-                        if (isActive && isDueToday) ...[
-                          const SizedBox(width: 4),
-                          const Text('today', style: TextStyle(fontSize: 10, color: Color(0xFFD97706), fontWeight: FontWeight.w600)),
-                        ] else if (isActive && isOverdue) ...[
-                          const SizedBox(width: 4),
-                          const Text('overdue', style: TextStyle(fontSize: 10, color: Color(0xFFDC2626), fontWeight: FontWeight.w600)),
-                        ],
-                      ],
-                    ),
-                  ],
-                  if (task.syncStatus != SyncStatus.synced.value) ...[
-                    const SizedBox(width: 6),
+                  if (task.dueDate != null)
+                    _DaysBadge(dueDate: task.dueDate!, todayStr: todayStr, isActive: isActive),
+                  if (showRecurrence)
+                    _RecurrenceBadge(task.recurrence),
+                  if (task.syncStatus != SyncStatus.synced.value)
                     const Icon(Icons.cloud_upload_outlined, size: 12, color: AppColors.textMuted),
-                  ],
                 ],
               ),
               if (task.description != null && task.description!.isNotEmpty) ...[
@@ -415,6 +467,108 @@ class _InlineSubtaskRow extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Shows a pill badge with the days until/since the due date.
+/// - Overdue + active: "Xd overdue" in red
+/// - Due today + active: "today" in amber
+/// - Due within 3 days + active: "Xd" in amber
+/// - Future: "Xd" in gray
+/// - Completed/cancelled tasks: plain date label (no urgency color)
+class _DaysBadge extends StatelessWidget {
+  const _DaysBadge({
+    required this.dueDate,
+    required this.todayStr,
+    required this.isActive,
+  });
+
+  final String dueDate;
+  final String todayStr;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime.tryParse(todayStr);
+    final due = DateTime.tryParse(dueDate);
+    if (today == null || due == null) {
+      return Text(dueDate, style: AppText.label);
+    }
+
+    final daysDelta = due.difference(today).inDays;
+
+    final String label;
+    final Color bg;
+    final Color fg;
+
+    if (!isActive) {
+      // Completed/cancelled — show plain date, no urgency styling.
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.calendar_today_outlined, size: 11, color: AppColors.textMuted),
+          const SizedBox(width: 3),
+          Text(dueDate, style: AppText.label),
+        ],
+      );
+    }
+
+    if (daysDelta < 0) {
+      label = '${daysDelta.abs()}d overdue';
+      bg = const Color(0xFFFEE2E2);
+      fg = const Color(0xFFDC2626);
+    } else if (daysDelta == 0) {
+      label = 'today';
+      bg = const Color(0xFFFEF3C7);
+      fg = const Color(0xFFD97706);
+    } else if (daysDelta <= 3) {
+      label = '${daysDelta}d';
+      bg = const Color(0xFFFEF3C7);
+      fg = const Color(0xFFD97706);
+    } else {
+      label = '${daysDelta}d';
+      bg = const Color(0xFFF1F5F9);
+      fg = const Color(0xFF64748B);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fg),
+      ),
+    );
+  }
+}
+
+/// Shows a recurrence badge: "↻ weekly" in blue.
+class _RecurrenceBadge extends StatelessWidget {
+  const _RecurrenceBadge(this.recurrence);
+
+  final String recurrence;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Text(
+        '↻ $recurrence',
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF2563EB),
+        ),
       ),
     );
   }
