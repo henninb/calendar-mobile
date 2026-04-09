@@ -2,22 +2,32 @@ import 'package:dio/dio.dart';
 import 'api_models.dart';
 
 class ApiClient {
-  ApiClient(String baseUrl) : _dio = _buildDio(baseUrl);
+  ApiClient(String baseUrl, {String apiKey = ''}) : _dio = _buildDio(baseUrl, apiKey);
 
   final Dio _dio;
 
-  static Dio _buildDio(String baseUrl) {
+  static Dio _buildDio(String baseUrl, String apiKey) {
+    final headers = <String, dynamic>{'Content-Type': 'application/json'};
+    if (apiKey.isNotEmpty) headers['X-Api-Key'] = apiKey;
     final dio = Dio(BaseOptions(
       baseUrl: '$baseUrl/api',
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 30),
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
     ));
     return dio;
   }
 
   void updateBaseUrl(String baseUrl) {
     _dio.options.baseUrl = '$baseUrl/api';
+  }
+
+  void updateApiKey(String apiKey) {
+    if (apiKey.isEmpty) {
+      _dio.options.headers.remove('X-Api-Key');
+    } else {
+      _dio.options.headers['X-Api-Key'] = apiKey;
+    }
   }
 
   // ── Categories ───────────────────────────────────────────────────────────────

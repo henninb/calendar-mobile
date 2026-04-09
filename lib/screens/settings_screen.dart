@@ -15,17 +15,20 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late TextEditingController _urlCtrl;
+  late TextEditingController _keyCtrl;
   bool _saved = false;
 
   @override
   void initState() {
     super.initState();
     _urlCtrl = TextEditingController(text: ref.read(baseUrlProvider));
+    _keyCtrl = TextEditingController(text: ref.read(apiKeyProvider));
   }
 
   @override
   void dispose() {
     _urlCtrl.dispose();
+    _keyCtrl.dispose();
     super.dispose();
   }
 
@@ -55,6 +58,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               onChanged: (_) => setState(() => _saved = false),
               keyboardType: TextInputType.url,
+              autocorrect: false,
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: _keyCtrl,
+              decoration: InputDecoration(
+                labelText: 'API Key',
+                hintText: 'Leave empty if backend has no key set',
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.save_outlined, color: AppColors.primary),
+                  onPressed: _saveKey,
+                ),
+              ),
+              onChanged: (_) => setState(() => _saved = false),
+              obscureText: true,
               autocorrect: false,
             ),
             if (_saved)
@@ -228,6 +246,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const SnackBar(content: Text('WireGuard not found — please install or open it manually')),
       );
     }
+  }
+
+  void _saveKey() {
+    ref.read(apiKeyProvider.notifier).set(_keyCtrl.text.trim());
+    setState(() => _saved = true);
   }
 
   void _saveUrl() {

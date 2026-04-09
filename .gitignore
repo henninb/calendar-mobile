@@ -51,4 +51,4 @@ android/local.properties
 # Android signing keys
 android/key.properties
 
-.claude
+.claude/settings.local.json

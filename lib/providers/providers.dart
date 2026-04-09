@@ -36,6 +36,21 @@ class BaseUrlNotifier extends Notifier<String> {
   }
 }
 
+final apiKeyProvider = NotifierProvider<ApiKeyNotifier, String>(ApiKeyNotifier.new);
+
+class ApiKeyNotifier extends Notifier<String> {
+  @override
+  String build() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    return prefs.getString(AppConstants.prefApiKey) ?? '';
+  }
+
+  void set(String key) {
+    state = key;
+    ref.read(sharedPreferencesProvider).setString(AppConstants.prefApiKey, key);
+  }
+}
+
 // ── Database ─────────────────────────────────────────────────────────────────
 
 final dbProvider = Provider<AppDatabase>((ref) {
@@ -55,8 +70,9 @@ final apiClientProvider = NotifierProvider<ApiClientNotifier, ApiClient>(ApiClie
 class ApiClientNotifier extends Notifier<ApiClient> {
   @override
   ApiClient build() {
-    final client = ApiClient(ref.read(baseUrlProvider));
+    final client = ApiClient(ref.read(baseUrlProvider), apiKey: ref.read(apiKeyProvider));
     ref.listen<String>(baseUrlProvider, (_, next) => client.updateBaseUrl(next));
+    ref.listen<String>(apiKeyProvider, (_, next) => client.updateApiKey(next));
     return client;
   }
 }

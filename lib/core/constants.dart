@@ -3,6 +3,7 @@ class AppConstants {
 
   static const String defaultBaseUrl = 'https://calendar.bhenning.com';
   static const String prefBaseUrl      = 'base_url';
+  static const String prefApiKey       = 'api_key';
   static const String prefSyncDays     = 'gcal_sync_days';
   static const String prefSyncForce    = 'gcal_sync_force';
   static const String prefForcedOffline = 'forced_offline';
