@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/theme.dart';
-import '../core/constants.dart';
 import '../providers/providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -14,6 +13,11 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  static const _wireGuardAndroidUri =
+      'intent:#Intent;action=android.intent.action.MAIN;'
+      'category=android.intent.category.LAUNCHER;'
+      'package=com.wireguard.android;end';
+  static const _wireGuardIosUri = 'wireguard://';
   late TextEditingController _urlCtrl;
   late TextEditingController _keyCtrl;
   bool _saved = false;
@@ -50,7 +54,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               controller: _urlCtrl,
               decoration: InputDecoration(
                 labelText: 'Base URL',
-                hintText: AppConstants.defaultBaseUrl,
+                hintText: 'https://your-backend.example.com',
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.save_outlined, color: AppColors.primary),
                   onPressed: _saveUrl,
@@ -223,14 +227,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _openWireGuard(BuildContext context) async {
     Uri uri;
     if (Platform.isAndroid) {
-      // Launch WireGuard by package name via Android intent
-      uri = Uri.parse(
-        'intent:#Intent;action=android.intent.action.MAIN;'
-        'category=android.intent.category.LAUNCHER;'
-        'package=com.wireguard.android;end',
-      );
+      uri = Uri.parse(_wireGuardAndroidUri);
     } else if (Platform.isIOS) {
-      uri = Uri.parse('wireguard://');
+      uri = Uri.parse(_wireGuardIosUri);
     } else {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -248,9 +247,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  void _saveKey() {
-    ref.read(apiKeyProvider.notifier).set(_keyCtrl.text.trim());
-    setState(() => _saved = true);
+  Future<void> _saveKey() async {
+    await ref.read(apiKeyProvider.notifier).set(_keyCtrl.text.trim());
+    if (mounted) setState(() => _saved = true);
   }
 
   void _saveUrl() {

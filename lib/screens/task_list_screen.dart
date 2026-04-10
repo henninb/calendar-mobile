@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 import '../core/theme.dart';
 import '../core/constants.dart';
+import '../core/extensions/date_extensions.dart';
 import '../database/app_database.dart';
 import '../providers/providers.dart';
 import '../widgets/status_badge.dart';
@@ -42,13 +43,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         final catMap = {for (final c in categories) c.serverId: c};
 
         final today = DateTime.now();
-        final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-        final tomorrow = today.add(const Duration(days: 1));
-        final tomorrowStr = '${tomorrow.year}-${tomorrow.month.toString().padLeft(2, '0')}-${tomorrow.day.toString().padLeft(2, '0')}';
-        final week1End = today.add(const Duration(days: 7));
-        final week1EndStr = '${week1End.year}-${week1End.month.toString().padLeft(2, '0')}-${week1End.day.toString().padLeft(2, '0')}';
-        final week2End = today.add(const Duration(days: 14));
-        final week2EndStr = '${week2End.year}-${week2End.month.toString().padLeft(2, '0')}-${week2End.day.toString().padLeft(2, '0')}';
+        final todayStr    = today.toIso8601DateString();
+        final tomorrowStr = today.add(const Duration(days: 1)).toIso8601DateString();
+        final week1EndStr = today.add(const Duration(days: 7)).toIso8601DateString();
+        final week2EndStr = today.add(const Duration(days: 14)).toIso8601DateString();
 
         var filtered = tasks.where((t) {
           if (t.syncStatus == SyncStatus.pendingDelete.value) return false;
@@ -412,12 +410,14 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                       child: TextField(
                         controller: _newSubtaskCtrl,
                         style: AppText.small,
+                        maxLength: 255,
                         decoration: const InputDecoration(
                           hintText: 'Add subtask…',
                           hintStyle: TextStyle(fontSize: 12, color: AppColors.textMuted),
                           isDense: true,
                           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                           border: OutlineInputBorder(),
+                          counterText: '',
                         ),
                         onSubmitted: (_) => _addSubtask(),
                         textInputAction: TextInputAction.done,
@@ -886,6 +886,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
           content: TextField(
             controller: ctrl,
             decoration: const InputDecoration(hintText: 'Subtask title'),
+            maxLength: 255,
             autofocus: true,
           ),
           actions: [
@@ -1106,6 +1107,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             TextFormField(
               controller: _title,
               decoration: const InputDecoration(labelText: 'Title *'),
+              maxLength: 255,
               validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 10),
@@ -1113,6 +1115,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
               controller: _description,
               decoration: const InputDecoration(labelText: 'Description'),
               maxLines: 2,
+              maxLength: 2000,
             ),
             const SizedBox(height: 10),
             Row(

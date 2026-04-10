@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as dev;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../api/api_client.dart';
@@ -11,6 +12,18 @@ import '../services/sync_service.dart';
 // ── Shared Preferences ───────────────────────────────────────────────────────
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError('Override in ProviderScope');
+});
+
+// ── Secure Storage ───────────────────────────────────────────────────────────
+
+final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
+  throw UnimplementedError('Override in ProviderScope');
+});
+
+/// Holds the API key value eagerly loaded from secure storage at startup,
+/// so ApiKeyNotifier.build() can remain synchronous.
+final apiKeyInitialValueProvider = Provider<String>((ref) {
   throw UnimplementedError('Override in ProviderScope');
 });
 
@@ -41,13 +54,17 @@ final apiKeyProvider = NotifierProvider<ApiKeyNotifier, String>(ApiKeyNotifier.n
 class ApiKeyNotifier extends Notifier<String> {
   @override
   String build() {
-    final prefs = ref.read(sharedPreferencesProvider);
-    return prefs.getString(AppConstants.prefApiKey) ?? '';
+    // Initial value was read from secure storage in main() before runApp.
+    return ref.read(apiKeyInitialValueProvider);
   }
 
-  void set(String key) {
+  Future<void> set(String key) async {
     state = key;
-    ref.read(sharedPreferencesProvider).setString(AppConstants.prefApiKey, key);
+    // Persist to Android Keystore / iOS Keychain; never write to SharedPreferences.
+    await ref.read(secureStorageProvider).write(
+      key: AppConstants.prefApiKey,
+      value: key,
+    );
   }
 }
 
@@ -193,12 +210,22 @@ class SyncState {
     this.pendingCount = 0,
   });
 
-  SyncState copyWith({SyncPhase? phase, String? errorMessage, int? pendingCount}) =>
+  SyncState copyWith({
+    SyncPhase? phase,
+    Object? errorMessage = _keep,
+    int? pendingCount,
+  }) =>
       SyncState(
         phase: phase ?? this.phase,
-        errorMessage: errorMessage,
+        errorMessage: identical(errorMessage, _keep)
+            ? this.errorMessage
+            : errorMessage as String?,
         pendingCount: pendingCount ?? this.pendingCount,
       );
+
+  // Sentinel that distinguishes "caller did not pass errorMessage" from
+  // "caller explicitly passed null to clear it".
+  static const _keep = Object();
 }
 
 final syncStateProvider = NotifierProvider<SyncNotifier, SyncState>(SyncNotifier.new);
@@ -212,13 +239,20 @@ class SyncNotifier extends Notifier<SyncState> {
       const Duration(minutes: 5),
       // Fix: skip the refresh when offline so we don't transition to
       // SyncPhase.error every 5 minutes and show a spurious error banner.
-      (_) { if (ref.read(isOnlineProvider)) silentRefresh(); },
+      (_) { if (ref.read(isOnlineProvider) && ref.read(baseUrlProvider).isNotEmpty) silentRefresh(); },
     );
     ref.onDispose(() => _periodicTimer?.cancel());
     return const SyncState();
   }
 
   Future<void> sync() async {
+    if (ref.read(baseUrlProvider).isEmpty) {
+      state = state.copyWith(
+        phase: SyncPhase.error,
+        errorMessage: 'No backend URL configured — enter one in Settings',
+      );
+      return;
+    }
     // Allow retrying from error state so a single push failure doesn't
     // permanently block future syncs (e.g. recurring task chain breaks).
     if (state.phase != SyncPhase.idle && state.phase != SyncPhase.error) return;
@@ -263,21 +297,23 @@ class SyncNotifier extends Notifier<SyncState> {
   // Called on a timer. Also pushes pending items so mutations queued while
   // offline are sent as soon as connectivity is restored between timer ticks.
   Future<void> silentRefresh() async {
+    if (ref.read(baseUrlProvider).isEmpty) return; // not yet configured
     if (state.phase != SyncPhase.idle) return;
     dev.log('SyncNotifier.silentRefresh: start', name: 'sync');
     state = state.copyWith(phase: SyncPhase.pulling);
+    final svc = ref.read(syncServiceProvider);
     try {
       // Push any items queued while offline; swallow push errors here — they
       // will surface when the user next triggers an explicit sync.
       try {
-        final result = await ref.read(syncServiceProvider).pushPending();
+        final result = await svc.pushPending();
         if (result.errors.isNotEmpty) {
           dev.log('SyncNotifier.silentRefresh: push errors (suppressed)=${result.errors}', name: 'sync', level: 900);
         }
       } catch (e) {
         dev.log('SyncNotifier.silentRefresh: push threw (suppressed) $e', name: 'sync', level: 900);
       }
-      await ref.read(syncServiceProvider).fullRefresh();
+      await svc.fullRefresh();
       dev.log('SyncNotifier.silentRefresh: complete', name: 'sync');
       state = state.copyWith(phase: SyncPhase.idle, errorMessage: null);
     } catch (e) {
@@ -315,31 +351,31 @@ class SyncNotifier extends Notifier<SyncState> {
 
 // ── Data Streams ─────────────────────────────────────────────────────────────
 
-final categoriesProvider = StreamProvider((ref) {
+final categoriesProvider = StreamProvider<List<Category>>((ref) {
   return ref.watch(dbProvider).watchCategories();
 });
 
-final eventsProvider = StreamProvider((ref) {
+final eventsProvider = StreamProvider<List<Event>>((ref) {
   return ref.watch(dbProvider).watchEvents();
 });
 
-final occurrencesProvider = StreamProvider((ref) {
+final occurrencesProvider = StreamProvider<List<Occurrence>>((ref) {
   return ref.watch(dbProvider).watchOccurrences();
 });
 
-final tasksProvider = StreamProvider((ref) {
+final tasksProvider = StreamProvider<List<Task>>((ref) {
   return ref.watch(dbProvider).watchTasks();
 });
 
-final creditCardsProvider = StreamProvider((ref) {
+final creditCardsProvider = StreamProvider<List<CreditCard>>((ref) {
   return ref.watch(dbProvider).watchCreditCards();
 });
 
-final trackerCacheProvider = StreamProvider((ref) {
+final trackerCacheProvider = StreamProvider<List<CreditCardTrackerCacheData>>((ref) {
   return ref.watch(dbProvider).watchTrackerCache();
 });
 
-final personsProvider = StreamProvider((ref) {
+final personsProvider = StreamProvider<List<Person>>((ref) {
   return ref.watch(dbProvider).watchPersons();
 });
 

@@ -1,7 +1,12 @@
 class AppConstants {
   AppConstants._();
 
-  static const String defaultBaseUrl = 'https://calendar.bhenning.com';
+  // Supply at build time: flutter build apk --dart-define=DEFAULT_BASE_URL=https://...
+  // Intentionally empty when not provided so no personal domain is baked into source.
+  static const String defaultBaseUrl = String.fromEnvironment(
+    'DEFAULT_BASE_URL',
+    defaultValue: '',
+  );
   static const String prefBaseUrl      = 'base_url';
   static const String prefApiKey       = 'api_key';
   static const String prefSyncDays     = 'gcal_sync_days';

@@ -434,27 +434,21 @@ class SyncService {
   // Fix #11: use DateFormat instead of manual pad-left string building.
   static String _fmt(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
 
-  /// Extract a human-readable detail string from a DioException.
-  /// For 400 and 422, includes the server's validation message from the response body.
+  /// Extract a loggable detail string from a DioException.
+  /// Full server response bodies are written to the log only — never returned
+  /// to callers that surface messages in the UI.
   static String _dioErrorDetail(DioException e) {
     final status = e.response?.statusCode;
-    if (status == 400 || status == 422) {
-      // FastAPI returns {"detail": [{"msg": "...", "loc": [...], ...}]} or {"detail": "..."}
-      final data = e.response?.data;
-      if (data is Map) {
-        final detail = data['detail'];
-        if (detail is String) return '$status: $detail';
-        if (detail is List && detail.isNotEmpty) {
-          final msgs = detail
-              .whereType<Map>()
-              .map((d) => '${(d['loc'] as List?)?.lastOrNull ?? '?'}: ${d['msg'] ?? d}')
-              .join('; ');
-          return '$status: $msgs';
-        }
-      }
-      return 'HTTP $status';
-    }
-    return e.message ?? 'HTTP $status';
+    // Log full server body for developer debugging without exposing it to the UI.
+    dev.log(
+      '_dioErrorDetail: status=$status body=${e.response?.data}',
+      name: 'sync',
+      level: 900,
+    );
+    if (status == 400 || status == 422) return 'Validation error (HTTP $status) — check your data';
+    if (status != null) return 'Server error (HTTP $status)';
+    if (e.type == DioExceptionType.badCertificate) return 'TLS certificate error — connection may be intercepted';
+    return e.message ?? 'Network error';
   }
 }
 

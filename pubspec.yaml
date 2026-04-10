@@ -33,6 +33,9 @@ dependencies:
   # Launch external apps (e.g. WireGuard)
   url_launcher: ^6.3.0
 
+  # Secure key storage (Android Keystore / iOS Keychain)
+  flutter_secure_storage: ^10.0.0
+
   # Utilities
   intl: ^0.20.1
   path_provider: ^2.1.5

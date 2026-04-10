@@ -269,11 +269,12 @@ class _CardFormState extends ConsumerState<_CardForm> {
             TextFormField(
               controller: _name,
               decoration: const InputDecoration(labelText: 'Card name *'),
+              maxLength: 100,
               validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 10),
             Row(children: [
-              Expanded(child: TextFormField(controller: _issuer, decoration: const InputDecoration(labelText: 'Issuer'))),
+              Expanded(child: TextFormField(controller: _issuer, decoration: const InputDecoration(labelText: 'Issuer'), maxLength: 100)),
               const SizedBox(width: 10),
               Expanded(child: TextFormField(
                 controller: _lastFour,

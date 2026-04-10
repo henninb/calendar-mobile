@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'api_models.dart';
 
 class ApiClient {
@@ -9,16 +11,34 @@ class ApiClient {
   static Dio _buildDio(String baseUrl, String apiKey) {
     final headers = <String, dynamic>{'Content-Type': 'application/json'};
     if (apiKey.isNotEmpty) headers['X-Api-Key'] = apiKey;
+    // When no URL has been configured yet, use a local placeholder so Dio can
+    // be constructed. Any request fired before the user sets a real URL will
+    // fail with a connection error that surfaces as "Cannot reach backend".
+    final effectiveBase = baseUrl.isNotEmpty ? '$baseUrl/api' : 'https://localhost/api';
     final dio = Dio(BaseOptions(
-      baseUrl: '$baseUrl/api',
+      baseUrl: effectiveBase,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 30),
       headers: headers,
     ));
+    // Explicitly reject any certificate that fails standard validation.
+    // Replace the callback body with fingerprint comparison to enable pinning:
+    //   final fp = _sha256Fingerprint(cert.der);
+    //   return fp == _expectedFingerprint && host == 'your-backend.example.com';
+    (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+      return HttpClient()
+        ..badCertificateCallback = (cert, host, port) => false;
+    };
     return dio;
   }
 
   void updateBaseUrl(String baseUrl) {
+    if (baseUrl.isEmpty) return; // not yet configured — keep placeholder
+    final uri = Uri.tryParse(baseUrl);
+    assert(
+      uri != null && uri.hasScheme && uri.scheme == 'https',
+      'ApiClient.updateBaseUrl: only https:// URLs are accepted',
+    );
     _dio.options.baseUrl = '$baseUrl/api';
   }
 

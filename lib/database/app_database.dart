@@ -130,9 +130,10 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 3;
 
-  // Fix: tables whose server_id should be unique across all rows.
-  static const _tablesWithServerId = [
-    'categories', 'persons', 'events', 'occurrences', 'tasks', 'subtasks', 'credit_cards',
+  // Table names derived from Drift-generated TableInfo objects so they are
+  // never user-controlled. The assert enforces the safe character set.
+  List<TableInfo<Table, dynamic>> get _tablesWithServerId => [
+    categories, persons, events, occurrences, tasks, subtasks, creditCards,
   ];
 
   @override
@@ -162,10 +163,12 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _deduplicateByServerId() async {
     for (final t in _tablesWithServerId) {
+      final name = t.actualTableName;
+      assert(RegExp(r'^[a-z_]+$').hasMatch(name), 'Unexpected table name: $name');
       await customStatement(
-        'DELETE FROM $t '
+        'DELETE FROM $name '
         'WHERE id NOT IN ('
-        '  SELECT MIN(id) FROM $t GROUP BY server_id'
+        '  SELECT MIN(id) FROM $name GROUP BY server_id'
         ') AND server_id IS NOT NULL',
       );
     }
@@ -173,8 +176,10 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _createServerIdIndexes() async {
     for (final t in _tablesWithServerId) {
+      final name = t.actualTableName;
+      assert(RegExp(r'^[a-z_]+$').hasMatch(name), 'Unexpected table name: $name');
       await customStatement(
-        'CREATE UNIQUE INDEX IF NOT EXISTS idx_${t}_server_id ON $t(server_id)',
+        'CREATE UNIQUE INDEX IF NOT EXISTS idx_${name}_server_id ON $name(server_id)',
       );
     }
   }

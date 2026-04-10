@@ -56,9 +56,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         ),
         actions: [
           if (_tabIndex == 1)
-            _GenerateButton(),
-          _OfflineToggleButton(),
-          _SyncButton(),
+            const _GenerateButton(),
+          const _OfflineToggleButton(),
+          const _SyncButton(),
         ],
       ),
       body: Column(
@@ -94,6 +94,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 }
 
 class _GenerateButton extends ConsumerStatefulWidget {
+  const _GenerateButton();
+
   @override
   ConsumerState<_GenerateButton> createState() => _GenerateButtonState();
 }
@@ -142,6 +144,8 @@ class _GenerateButtonState extends ConsumerState<_GenerateButton> {
 }
 
 class _OfflineToggleButton extends ConsumerWidget {
+  const _OfflineToggleButton();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final forcedOffline = ref.watch(forcedOfflineProvider);
@@ -178,6 +182,8 @@ class _OfflineToggleButton extends ConsumerWidget {
 }
 
 class _SyncButton extends ConsumerWidget {
+  const _SyncButton();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final syncState = ref.watch(syncStateProvider);
