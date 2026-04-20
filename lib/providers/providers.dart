@@ -344,6 +344,9 @@ class SyncNotifier extends Notifier<SyncState> {
       return 'Cannot reach backend — check the URL in Settings';
     }
     if (msg.contains('timed out')) return 'Request timed out — is the server running?';
+    if (msg.contains('status code of 401') || msg.contains('status code of 403')) {
+      return 'Authentication failed — check the API key in Settings';
+    }
     if (msg.length <= 120) return msg;
     return '${msg.substring(0, 80)}…${msg.substring(msg.length - 37)}';
   }

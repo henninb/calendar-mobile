@@ -803,6 +803,38 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<String> amount = GeneratedColumn<String>(
+    'amount',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _locationMeta = const VerificationMeta(
+    'location',
+  );
+  @override
+  late final GeneratedColumn<String> location = GeneratedColumn<String>(
+    'location',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _durationDaysMeta = const VerificationMeta(
+    'durationDays',
+  );
+  @override
+  late final GeneratedColumn<int> durationDays = GeneratedColumn<int>(
+    'duration_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -814,6 +846,9 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
     priority,
     description,
     isActive,
+    amount,
+    location,
+    durationDays,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -890,6 +925,27 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
       );
     }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    }
+    if (data.containsKey('location')) {
+      context.handle(
+        _locationMeta,
+        location.isAcceptableOrUnknown(data['location']!, _locationMeta),
+      );
+    }
+    if (data.containsKey('duration_days')) {
+      context.handle(
+        _durationDaysMeta,
+        durationDays.isAcceptableOrUnknown(
+          data['duration_days']!,
+          _durationDaysMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -935,6 +991,18 @@ class $EventsTable extends Events with TableInfo<$EventsTable, Event> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}amount'],
+      ),
+      location: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location'],
+      ),
+      durationDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_days'],
+      )!,
     );
   }
 
@@ -954,6 +1022,9 @@ class Event extends DataClass implements Insertable<Event> {
   final String priority;
   final String? description;
   final bool isActive;
+  final String? amount;
+  final String? location;
+  final int durationDays;
   const Event({
     required this.id,
     this.serverId,
@@ -964,6 +1035,9 @@ class Event extends DataClass implements Insertable<Event> {
     required this.priority,
     this.description,
     required this.isActive,
+    this.amount,
+    this.location,
+    required this.durationDays,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -983,6 +1057,13 @@ class Event extends DataClass implements Insertable<Event> {
       map['description'] = Variable<String>(description);
     }
     map['is_active'] = Variable<bool>(isActive);
+    if (!nullToAbsent || amount != null) {
+      map['amount'] = Variable<String>(amount);
+    }
+    if (!nullToAbsent || location != null) {
+      map['location'] = Variable<String>(location);
+    }
+    map['duration_days'] = Variable<int>(durationDays);
     return map;
   }
 
@@ -1003,6 +1084,13 @@ class Event extends DataClass implements Insertable<Event> {
           ? const Value.absent()
           : Value(description),
       isActive: Value(isActive),
+      amount: amount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amount),
+      location: location == null && nullToAbsent
+          ? const Value.absent()
+          : Value(location),
+      durationDays: Value(durationDays),
     );
   }
 
@@ -1021,6 +1109,9 @@ class Event extends DataClass implements Insertable<Event> {
       priority: serializer.fromJson<String>(json['priority']),
       description: serializer.fromJson<String?>(json['description']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      amount: serializer.fromJson<String?>(json['amount']),
+      location: serializer.fromJson<String?>(json['location']),
+      durationDays: serializer.fromJson<int>(json['durationDays']),
     );
   }
   @override
@@ -1036,6 +1127,9 @@ class Event extends DataClass implements Insertable<Event> {
       'priority': serializer.toJson<String>(priority),
       'description': serializer.toJson<String?>(description),
       'isActive': serializer.toJson<bool>(isActive),
+      'amount': serializer.toJson<String?>(amount),
+      'location': serializer.toJson<String?>(location),
+      'durationDays': serializer.toJson<int>(durationDays),
     };
   }
 
@@ -1049,6 +1143,9 @@ class Event extends DataClass implements Insertable<Event> {
     String? priority,
     Value<String?> description = const Value.absent(),
     bool? isActive,
+    Value<String?> amount = const Value.absent(),
+    Value<String?> location = const Value.absent(),
+    int? durationDays,
   }) => Event(
     id: id ?? this.id,
     serverId: serverId.present ? serverId.value : this.serverId,
@@ -1059,6 +1156,9 @@ class Event extends DataClass implements Insertable<Event> {
     priority: priority ?? this.priority,
     description: description.present ? description.value : this.description,
     isActive: isActive ?? this.isActive,
+    amount: amount.present ? amount.value : this.amount,
+    location: location.present ? location.value : this.location,
+    durationDays: durationDays ?? this.durationDays,
   );
   Event copyWithCompanion(EventsCompanion data) {
     return Event(
@@ -1075,6 +1175,11 @@ class Event extends DataClass implements Insertable<Event> {
           ? data.description.value
           : this.description,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      location: data.location.present ? data.location.value : this.location,
+      durationDays: data.durationDays.present
+          ? data.durationDays.value
+          : this.durationDays,
     );
   }
 
@@ -1089,7 +1194,10 @@ class Event extends DataClass implements Insertable<Event> {
           ..write('dtstart: $dtstart, ')
           ..write('priority: $priority, ')
           ..write('description: $description, ')
-          ..write('isActive: $isActive')
+          ..write('isActive: $isActive, ')
+          ..write('amount: $amount, ')
+          ..write('location: $location, ')
+          ..write('durationDays: $durationDays')
           ..write(')'))
         .toString();
   }
@@ -1105,6 +1213,9 @@ class Event extends DataClass implements Insertable<Event> {
     priority,
     description,
     isActive,
+    amount,
+    location,
+    durationDays,
   );
   @override
   bool operator ==(Object other) =>
@@ -1118,7 +1229,10 @@ class Event extends DataClass implements Insertable<Event> {
           other.dtstart == this.dtstart &&
           other.priority == this.priority &&
           other.description == this.description &&
-          other.isActive == this.isActive);
+          other.isActive == this.isActive &&
+          other.amount == this.amount &&
+          other.location == this.location &&
+          other.durationDays == this.durationDays);
 }
 
 class EventsCompanion extends UpdateCompanion<Event> {
@@ -1131,6 +1245,9 @@ class EventsCompanion extends UpdateCompanion<Event> {
   final Value<String> priority;
   final Value<String?> description;
   final Value<bool> isActive;
+  final Value<String?> amount;
+  final Value<String?> location;
+  final Value<int> durationDays;
   const EventsCompanion({
     this.id = const Value.absent(),
     this.serverId = const Value.absent(),
@@ -1141,6 +1258,9 @@ class EventsCompanion extends UpdateCompanion<Event> {
     this.priority = const Value.absent(),
     this.description = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.location = const Value.absent(),
+    this.durationDays = const Value.absent(),
   });
   EventsCompanion.insert({
     this.id = const Value.absent(),
@@ -1152,6 +1272,9 @@ class EventsCompanion extends UpdateCompanion<Event> {
     this.priority = const Value.absent(),
     this.description = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.location = const Value.absent(),
+    this.durationDays = const Value.absent(),
   }) : title = Value(title),
        categoryServerId = Value(categoryServerId),
        dtstart = Value(dtstart);
@@ -1165,6 +1288,9 @@ class EventsCompanion extends UpdateCompanion<Event> {
     Expression<String>? priority,
     Expression<String>? description,
     Expression<bool>? isActive,
+    Expression<String>? amount,
+    Expression<String>? location,
+    Expression<int>? durationDays,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1176,6 +1302,9 @@ class EventsCompanion extends UpdateCompanion<Event> {
       if (priority != null) 'priority': priority,
       if (description != null) 'description': description,
       if (isActive != null) 'is_active': isActive,
+      if (amount != null) 'amount': amount,
+      if (location != null) 'location': location,
+      if (durationDays != null) 'duration_days': durationDays,
     });
   }
 
@@ -1189,6 +1318,9 @@ class EventsCompanion extends UpdateCompanion<Event> {
     Value<String>? priority,
     Value<String?>? description,
     Value<bool>? isActive,
+    Value<String?>? amount,
+    Value<String?>? location,
+    Value<int>? durationDays,
   }) {
     return EventsCompanion(
       id: id ?? this.id,
@@ -1200,6 +1332,9 @@ class EventsCompanion extends UpdateCompanion<Event> {
       priority: priority ?? this.priority,
       description: description ?? this.description,
       isActive: isActive ?? this.isActive,
+      amount: amount ?? this.amount,
+      location: location ?? this.location,
+      durationDays: durationDays ?? this.durationDays,
     );
   }
 
@@ -1233,6 +1368,15 @@ class EventsCompanion extends UpdateCompanion<Event> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (amount.present) {
+      map['amount'] = Variable<String>(amount.value);
+    }
+    if (location.present) {
+      map['location'] = Variable<String>(location.value);
+    }
+    if (durationDays.present) {
+      map['duration_days'] = Variable<int>(durationDays.value);
+    }
     return map;
   }
 
@@ -1247,7 +1391,10 @@ class EventsCompanion extends UpdateCompanion<Event> {
           ..write('dtstart: $dtstart, ')
           ..write('priority: $priority, ')
           ..write('description: $description, ')
-          ..write('isActive: $isActive')
+          ..write('isActive: $isActive, ')
+          ..write('amount: $amount, ')
+          ..write('location: $location, ')
+          ..write('durationDays: $durationDays')
           ..write(')'))
         .toString();
   }
@@ -1850,6 +1997,16 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _orderMeta = const VerificationMeta('order');
+  @override
+  late final GeneratedColumn<int> order = GeneratedColumn<int>(
+    'order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _syncStatusMeta = const VerificationMeta(
     'syncStatus',
   );
@@ -1909,6 +2066,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     estimatedMinutes,
     recurrence,
     occurrenceServerId,
+    order,
     syncStatus,
     completedAt,
     createdAt,
@@ -2012,6 +2170,12 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         ),
       );
     }
+    if (data.containsKey('order')) {
+      context.handle(
+        _orderMeta,
+        order.isAcceptableOrUnknown(data['order']!, _orderMeta),
+      );
+    }
     if (data.containsKey('sync_status')) {
       context.handle(
         _syncStatusMeta,
@@ -2100,6 +2264,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         DriftSqlType.int,
         data['${effectivePrefix}occurrence_server_id'],
       ),
+      order: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}order'],
+      )!,
       syncStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sync_status'],
@@ -2138,6 +2306,7 @@ class Task extends DataClass implements Insertable<Task> {
   final int? estimatedMinutes;
   final String recurrence;
   final int? occurrenceServerId;
+  final int order;
   final int syncStatus;
   final String? completedAt;
   final String createdAt;
@@ -2155,6 +2324,7 @@ class Task extends DataClass implements Insertable<Task> {
     this.estimatedMinutes,
     required this.recurrence,
     this.occurrenceServerId,
+    required this.order,
     required this.syncStatus,
     this.completedAt,
     required this.createdAt,
@@ -2189,6 +2359,7 @@ class Task extends DataClass implements Insertable<Task> {
     if (!nullToAbsent || occurrenceServerId != null) {
       map['occurrence_server_id'] = Variable<int>(occurrenceServerId);
     }
+    map['order'] = Variable<int>(order);
     map['sync_status'] = Variable<int>(syncStatus);
     if (!nullToAbsent || completedAt != null) {
       map['completed_at'] = Variable<String>(completedAt);
@@ -2226,6 +2397,7 @@ class Task extends DataClass implements Insertable<Task> {
       occurrenceServerId: occurrenceServerId == null && nullToAbsent
           ? const Value.absent()
           : Value(occurrenceServerId),
+      order: Value(order),
       syncStatus: Value(syncStatus),
       completedAt: completedAt == null && nullToAbsent
           ? const Value.absent()
@@ -2253,6 +2425,7 @@ class Task extends DataClass implements Insertable<Task> {
       estimatedMinutes: serializer.fromJson<int?>(json['estimatedMinutes']),
       recurrence: serializer.fromJson<String>(json['recurrence']),
       occurrenceServerId: serializer.fromJson<int?>(json['occurrenceServerId']),
+      order: serializer.fromJson<int>(json['order']),
       syncStatus: serializer.fromJson<int>(json['syncStatus']),
       completedAt: serializer.fromJson<String?>(json['completedAt']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
@@ -2275,6 +2448,7 @@ class Task extends DataClass implements Insertable<Task> {
       'estimatedMinutes': serializer.toJson<int?>(estimatedMinutes),
       'recurrence': serializer.toJson<String>(recurrence),
       'occurrenceServerId': serializer.toJson<int?>(occurrenceServerId),
+      'order': serializer.toJson<int>(order),
       'syncStatus': serializer.toJson<int>(syncStatus),
       'completedAt': serializer.toJson<String?>(completedAt),
       'createdAt': serializer.toJson<String>(createdAt),
@@ -2295,6 +2469,7 @@ class Task extends DataClass implements Insertable<Task> {
     Value<int?> estimatedMinutes = const Value.absent(),
     String? recurrence,
     Value<int?> occurrenceServerId = const Value.absent(),
+    int? order,
     int? syncStatus,
     Value<String?> completedAt = const Value.absent(),
     String? createdAt,
@@ -2320,6 +2495,7 @@ class Task extends DataClass implements Insertable<Task> {
     occurrenceServerId: occurrenceServerId.present
         ? occurrenceServerId.value
         : this.occurrenceServerId,
+    order: order ?? this.order,
     syncStatus: syncStatus ?? this.syncStatus,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
     createdAt: createdAt ?? this.createdAt,
@@ -2351,6 +2527,7 @@ class Task extends DataClass implements Insertable<Task> {
       occurrenceServerId: data.occurrenceServerId.present
           ? data.occurrenceServerId.value
           : this.occurrenceServerId,
+      order: data.order.present ? data.order.value : this.order,
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
@@ -2377,6 +2554,7 @@ class Task extends DataClass implements Insertable<Task> {
           ..write('estimatedMinutes: $estimatedMinutes, ')
           ..write('recurrence: $recurrence, ')
           ..write('occurrenceServerId: $occurrenceServerId, ')
+          ..write('order: $order, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('completedAt: $completedAt, ')
           ..write('createdAt: $createdAt, ')
@@ -2399,6 +2577,7 @@ class Task extends DataClass implements Insertable<Task> {
     estimatedMinutes,
     recurrence,
     occurrenceServerId,
+    order,
     syncStatus,
     completedAt,
     createdAt,
@@ -2420,6 +2599,7 @@ class Task extends DataClass implements Insertable<Task> {
           other.estimatedMinutes == this.estimatedMinutes &&
           other.recurrence == this.recurrence &&
           other.occurrenceServerId == this.occurrenceServerId &&
+          other.order == this.order &&
           other.syncStatus == this.syncStatus &&
           other.completedAt == this.completedAt &&
           other.createdAt == this.createdAt &&
@@ -2439,6 +2619,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<int?> estimatedMinutes;
   final Value<String> recurrence;
   final Value<int?> occurrenceServerId;
+  final Value<int> order;
   final Value<int> syncStatus;
   final Value<String?> completedAt;
   final Value<String> createdAt;
@@ -2456,6 +2637,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.estimatedMinutes = const Value.absent(),
     this.recurrence = const Value.absent(),
     this.occurrenceServerId = const Value.absent(),
+    this.order = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -2474,6 +2656,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.estimatedMinutes = const Value.absent(),
     this.recurrence = const Value.absent(),
     this.occurrenceServerId = const Value.absent(),
+    this.order = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.completedAt = const Value.absent(),
     required String createdAt,
@@ -2494,6 +2677,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Expression<int>? estimatedMinutes,
     Expression<String>? recurrence,
     Expression<int>? occurrenceServerId,
+    Expression<int>? order,
     Expression<int>? syncStatus,
     Expression<String>? completedAt,
     Expression<String>? createdAt,
@@ -2513,6 +2697,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       if (recurrence != null) 'recurrence': recurrence,
       if (occurrenceServerId != null)
         'occurrence_server_id': occurrenceServerId,
+      if (order != null) 'order': order,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (completedAt != null) 'completed_at': completedAt,
       if (createdAt != null) 'created_at': createdAt,
@@ -2533,6 +2718,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Value<int?>? estimatedMinutes,
     Value<String>? recurrence,
     Value<int?>? occurrenceServerId,
+    Value<int>? order,
     Value<int>? syncStatus,
     Value<String?>? completedAt,
     Value<String>? createdAt,
@@ -2551,6 +2737,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,
       recurrence: recurrence ?? this.recurrence,
       occurrenceServerId: occurrenceServerId ?? this.occurrenceServerId,
+      order: order ?? this.order,
       syncStatus: syncStatus ?? this.syncStatus,
       completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt ?? this.createdAt,
@@ -2597,6 +2784,9 @@ class TasksCompanion extends UpdateCompanion<Task> {
     if (occurrenceServerId.present) {
       map['occurrence_server_id'] = Variable<int>(occurrenceServerId.value);
     }
+    if (order.present) {
+      map['order'] = Variable<int>(order.value);
+    }
     if (syncStatus.present) {
       map['sync_status'] = Variable<int>(syncStatus.value);
     }
@@ -2627,6 +2817,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
           ..write('estimatedMinutes: $estimatedMinutes, ')
           ..write('recurrence: $recurrence, ')
           ..write('occurrenceServerId: $occurrenceServerId, ')
+          ..write('order: $order, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('completedAt: $completedAt, ')
           ..write('createdAt: $createdAt, ')
@@ -2727,6 +2918,17 @@ class $SubtasksTable extends Subtasks with TableInfo<$SubtasksTable, Subtask> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<String> completedAt = GeneratedColumn<String>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _syncStatusMeta = const VerificationMeta(
     'syncStatus',
   );
@@ -2749,6 +2951,7 @@ class $SubtasksTable extends Subtasks with TableInfo<$SubtasksTable, Subtask> {
     status,
     dueDate,
     order,
+    completedAt,
     syncStatus,
   ];
   @override
@@ -2818,6 +3021,15 @@ class $SubtasksTable extends Subtasks with TableInfo<$SubtasksTable, Subtask> {
         order.isAcceptableOrUnknown(data['order']!, _orderMeta),
       );
     }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('sync_status')) {
       context.handle(
         _syncStatusMeta,
@@ -2865,6 +3077,10 @@ class $SubtasksTable extends Subtasks with TableInfo<$SubtasksTable, Subtask> {
         DriftSqlType.int,
         data['${effectivePrefix}order'],
       )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}completed_at'],
+      ),
       syncStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sync_status'],
@@ -2887,6 +3103,7 @@ class Subtask extends DataClass implements Insertable<Subtask> {
   final String status;
   final String? dueDate;
   final int order;
+  final String? completedAt;
   final int syncStatus;
   const Subtask({
     required this.id,
@@ -2897,6 +3114,7 @@ class Subtask extends DataClass implements Insertable<Subtask> {
     required this.status,
     this.dueDate,
     required this.order,
+    this.completedAt,
     required this.syncStatus,
   });
   @override
@@ -2916,6 +3134,9 @@ class Subtask extends DataClass implements Insertable<Subtask> {
       map['due_date'] = Variable<String>(dueDate);
     }
     map['order'] = Variable<int>(order);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<String>(completedAt);
+    }
     map['sync_status'] = Variable<int>(syncStatus);
     return map;
   }
@@ -2936,6 +3157,9 @@ class Subtask extends DataClass implements Insertable<Subtask> {
           ? const Value.absent()
           : Value(dueDate),
       order: Value(order),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
       syncStatus: Value(syncStatus),
     );
   }
@@ -2954,6 +3178,7 @@ class Subtask extends DataClass implements Insertable<Subtask> {
       status: serializer.fromJson<String>(json['status']),
       dueDate: serializer.fromJson<String?>(json['dueDate']),
       order: serializer.fromJson<int>(json['order']),
+      completedAt: serializer.fromJson<String?>(json['completedAt']),
       syncStatus: serializer.fromJson<int>(json['syncStatus']),
     );
   }
@@ -2969,6 +3194,7 @@ class Subtask extends DataClass implements Insertable<Subtask> {
       'status': serializer.toJson<String>(status),
       'dueDate': serializer.toJson<String?>(dueDate),
       'order': serializer.toJson<int>(order),
+      'completedAt': serializer.toJson<String?>(completedAt),
       'syncStatus': serializer.toJson<int>(syncStatus),
     };
   }
@@ -2982,6 +3208,7 @@ class Subtask extends DataClass implements Insertable<Subtask> {
     String? status,
     Value<String?> dueDate = const Value.absent(),
     int? order,
+    Value<String?> completedAt = const Value.absent(),
     int? syncStatus,
   }) => Subtask(
     id: id ?? this.id,
@@ -2992,6 +3219,7 @@ class Subtask extends DataClass implements Insertable<Subtask> {
     status: status ?? this.status,
     dueDate: dueDate.present ? dueDate.value : this.dueDate,
     order: order ?? this.order,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
     syncStatus: syncStatus ?? this.syncStatus,
   );
   Subtask copyWithCompanion(SubtasksCompanion data) {
@@ -3008,6 +3236,9 @@ class Subtask extends DataClass implements Insertable<Subtask> {
       status: data.status.present ? data.status.value : this.status,
       dueDate: data.dueDate.present ? data.dueDate.value : this.dueDate,
       order: data.order.present ? data.order.value : this.order,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
@@ -3025,6 +3256,7 @@ class Subtask extends DataClass implements Insertable<Subtask> {
           ..write('status: $status, ')
           ..write('dueDate: $dueDate, ')
           ..write('order: $order, ')
+          ..write('completedAt: $completedAt, ')
           ..write('syncStatus: $syncStatus')
           ..write(')'))
         .toString();
@@ -3040,6 +3272,7 @@ class Subtask extends DataClass implements Insertable<Subtask> {
     status,
     dueDate,
     order,
+    completedAt,
     syncStatus,
   );
   @override
@@ -3054,6 +3287,7 @@ class Subtask extends DataClass implements Insertable<Subtask> {
           other.status == this.status &&
           other.dueDate == this.dueDate &&
           other.order == this.order &&
+          other.completedAt == this.completedAt &&
           other.syncStatus == this.syncStatus);
 }
 
@@ -3066,6 +3300,7 @@ class SubtasksCompanion extends UpdateCompanion<Subtask> {
   final Value<String> status;
   final Value<String?> dueDate;
   final Value<int> order;
+  final Value<String?> completedAt;
   final Value<int> syncStatus;
   const SubtasksCompanion({
     this.id = const Value.absent(),
@@ -3076,6 +3311,7 @@ class SubtasksCompanion extends UpdateCompanion<Subtask> {
     this.status = const Value.absent(),
     this.dueDate = const Value.absent(),
     this.order = const Value.absent(),
+    this.completedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
   });
   SubtasksCompanion.insert({
@@ -3087,6 +3323,7 @@ class SubtasksCompanion extends UpdateCompanion<Subtask> {
     this.status = const Value.absent(),
     this.dueDate = const Value.absent(),
     this.order = const Value.absent(),
+    this.completedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
   }) : taskLocalId = Value(taskLocalId),
        title = Value(title);
@@ -3099,6 +3336,7 @@ class SubtasksCompanion extends UpdateCompanion<Subtask> {
     Expression<String>? status,
     Expression<String>? dueDate,
     Expression<int>? order,
+    Expression<String>? completedAt,
     Expression<int>? syncStatus,
   }) {
     return RawValuesInsertable({
@@ -3110,6 +3348,7 @@ class SubtasksCompanion extends UpdateCompanion<Subtask> {
       if (status != null) 'status': status,
       if (dueDate != null) 'due_date': dueDate,
       if (order != null) 'order': order,
+      if (completedAt != null) 'completed_at': completedAt,
       if (syncStatus != null) 'sync_status': syncStatus,
     });
   }
@@ -3123,6 +3362,7 @@ class SubtasksCompanion extends UpdateCompanion<Subtask> {
     Value<String>? status,
     Value<String?>? dueDate,
     Value<int>? order,
+    Value<String?>? completedAt,
     Value<int>? syncStatus,
   }) {
     return SubtasksCompanion(
@@ -3134,6 +3374,7 @@ class SubtasksCompanion extends UpdateCompanion<Subtask> {
       status: status ?? this.status,
       dueDate: dueDate ?? this.dueDate,
       order: order ?? this.order,
+      completedAt: completedAt ?? this.completedAt,
       syncStatus: syncStatus ?? this.syncStatus,
     );
   }
@@ -3165,6 +3406,9 @@ class SubtasksCompanion extends UpdateCompanion<Subtask> {
     if (order.present) {
       map['order'] = Variable<int>(order.value);
     }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<String>(completedAt.value);
+    }
     if (syncStatus.present) {
       map['sync_status'] = Variable<int>(syncStatus.value);
     }
@@ -3182,6 +3426,7 @@ class SubtasksCompanion extends UpdateCompanion<Subtask> {
           ..write('status: $status, ')
           ..write('dueDate: $dueDate, ')
           ..write('order: $order, ')
+          ..write('completedAt: $completedAt, ')
           ..write('syncStatus: $syncStatus')
           ..write(')'))
         .toString();
@@ -5379,6 +5624,9 @@ typedef $$EventsTableCreateCompanionBuilder =
       Value<String> priority,
       Value<String?> description,
       Value<bool> isActive,
+      Value<String?> amount,
+      Value<String?> location,
+      Value<int> durationDays,
     });
 typedef $$EventsTableUpdateCompanionBuilder =
     EventsCompanion Function({
@@ -5391,6 +5639,9 @@ typedef $$EventsTableUpdateCompanionBuilder =
       Value<String> priority,
       Value<String?> description,
       Value<bool> isActive,
+      Value<String?> amount,
+      Value<String?> location,
+      Value<int> durationDays,
     });
 
 class $$EventsTableFilterComposer
@@ -5444,6 +5695,21 @@ class $$EventsTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationDays => $composableBuilder(
+    column: $table.durationDays,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5501,6 +5767,21 @@ class $$EventsTableOrderingComposer
     column: $table.isActive,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationDays => $composableBuilder(
+    column: $table.durationDays,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$EventsTableAnnotationComposer
@@ -5542,6 +5823,17 @@ class $$EventsTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<String> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<String> get location =>
+      $composableBuilder(column: $table.location, builder: (column) => column);
+
+  GeneratedColumn<int> get durationDays => $composableBuilder(
+    column: $table.durationDays,
+    builder: (column) => column,
+  );
 }
 
 class $$EventsTableTableManager
@@ -5581,6 +5873,9 @@ class $$EventsTableTableManager
                 Value<String> priority = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<String?> amount = const Value.absent(),
+                Value<String?> location = const Value.absent(),
+                Value<int> durationDays = const Value.absent(),
               }) => EventsCompanion(
                 id: id,
                 serverId: serverId,
@@ -5591,6 +5886,9 @@ class $$EventsTableTableManager
                 priority: priority,
                 description: description,
                 isActive: isActive,
+                amount: amount,
+                location: location,
+                durationDays: durationDays,
               ),
           createCompanionCallback:
               ({
@@ -5603,6 +5901,9 @@ class $$EventsTableTableManager
                 Value<String> priority = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<String?> amount = const Value.absent(),
+                Value<String?> location = const Value.absent(),
+                Value<int> durationDays = const Value.absent(),
               }) => EventsCompanion.insert(
                 id: id,
                 serverId: serverId,
@@ -5613,6 +5914,9 @@ class $$EventsTableTableManager
                 priority: priority,
                 description: description,
                 isActive: isActive,
+                amount: amount,
+                location: location,
+                durationDays: durationDays,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -5888,6 +6192,7 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<int?> estimatedMinutes,
       Value<String> recurrence,
       Value<int?> occurrenceServerId,
+      Value<int> order,
       Value<int> syncStatus,
       Value<String?> completedAt,
       required String createdAt,
@@ -5907,6 +6212,7 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<int?> estimatedMinutes,
       Value<String> recurrence,
       Value<int?> occurrenceServerId,
+      Value<int> order,
       Value<int> syncStatus,
       Value<String?> completedAt,
       Value<String> createdAt,
@@ -5978,6 +6284,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<int> get occurrenceServerId => $composableBuilder(
     column: $table.occurrenceServerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get order => $composableBuilder(
+    column: $table.order,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6071,6 +6382,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get order => $composableBuilder(
+    column: $table.order,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnOrderings(column),
@@ -6149,6 +6465,9 @@ class $$TasksTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get order =>
+      $composableBuilder(column: $table.order, builder: (column) => column);
+
   GeneratedColumn<int> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => column,
@@ -6206,6 +6525,7 @@ class $$TasksTableTableManager
                 Value<int?> estimatedMinutes = const Value.absent(),
                 Value<String> recurrence = const Value.absent(),
                 Value<int?> occurrenceServerId = const Value.absent(),
+                Value<int> order = const Value.absent(),
                 Value<int> syncStatus = const Value.absent(),
                 Value<String?> completedAt = const Value.absent(),
                 Value<String> createdAt = const Value.absent(),
@@ -6223,6 +6543,7 @@ class $$TasksTableTableManager
                 estimatedMinutes: estimatedMinutes,
                 recurrence: recurrence,
                 occurrenceServerId: occurrenceServerId,
+                order: order,
                 syncStatus: syncStatus,
                 completedAt: completedAt,
                 createdAt: createdAt,
@@ -6242,6 +6563,7 @@ class $$TasksTableTableManager
                 Value<int?> estimatedMinutes = const Value.absent(),
                 Value<String> recurrence = const Value.absent(),
                 Value<int?> occurrenceServerId = const Value.absent(),
+                Value<int> order = const Value.absent(),
                 Value<int> syncStatus = const Value.absent(),
                 Value<String?> completedAt = const Value.absent(),
                 required String createdAt,
@@ -6259,6 +6581,7 @@ class $$TasksTableTableManager
                 estimatedMinutes: estimatedMinutes,
                 recurrence: recurrence,
                 occurrenceServerId: occurrenceServerId,
+                order: order,
                 syncStatus: syncStatus,
                 completedAt: completedAt,
                 createdAt: createdAt,
@@ -6296,6 +6619,7 @@ typedef $$SubtasksTableCreateCompanionBuilder =
       Value<String> status,
       Value<String?> dueDate,
       Value<int> order,
+      Value<String?> completedAt,
       Value<int> syncStatus,
     });
 typedef $$SubtasksTableUpdateCompanionBuilder =
@@ -6308,6 +6632,7 @@ typedef $$SubtasksTableUpdateCompanionBuilder =
       Value<String> status,
       Value<String?> dueDate,
       Value<int> order,
+      Value<String?> completedAt,
       Value<int> syncStatus,
     });
 
@@ -6357,6 +6682,11 @@ class $$SubtasksTableFilterComposer
 
   ColumnFilters<int> get order => $composableBuilder(
     column: $table.order,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get completedAt => $composableBuilder(
+    column: $table.completedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6415,6 +6745,11 @@ class $$SubtasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnOrderings(column),
@@ -6458,6 +6793,11 @@ class $$SubtasksTableAnnotationComposer
   GeneratedColumn<int> get order =>
       $composableBuilder(column: $table.order, builder: (column) => column);
 
+  GeneratedColumn<String> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => column,
@@ -6500,6 +6840,7 @@ class $$SubtasksTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<String?> dueDate = const Value.absent(),
                 Value<int> order = const Value.absent(),
+                Value<String?> completedAt = const Value.absent(),
                 Value<int> syncStatus = const Value.absent(),
               }) => SubtasksCompanion(
                 id: id,
@@ -6510,6 +6851,7 @@ class $$SubtasksTableTableManager
                 status: status,
                 dueDate: dueDate,
                 order: order,
+                completedAt: completedAt,
                 syncStatus: syncStatus,
               ),
           createCompanionCallback:
@@ -6522,6 +6864,7 @@ class $$SubtasksTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<String?> dueDate = const Value.absent(),
                 Value<int> order = const Value.absent(),
+                Value<String?> completedAt = const Value.absent(),
                 Value<int> syncStatus = const Value.absent(),
               }) => SubtasksCompanion.insert(
                 id: id,
@@ -6532,6 +6875,7 @@ class $$SubtasksTableTableManager
                 status: status,
                 dueDate: dueDate,
                 order: order,
+                completedAt: completedAt,
                 syncStatus: syncStatus,
               ),
           withReferenceMapper: (p0) => p0

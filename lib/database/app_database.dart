@@ -33,6 +33,9 @@ class Events extends Table {
   TextColumn get priority     => text().withDefault(const Constant('medium'))();
   TextColumn get description  => text().nullable()();
   BoolColumn get isActive     => boolean().withDefault(const Constant(true))();
+  TextColumn get amount       => text().nullable()();
+  TextColumn get location     => text().nullable()();
+  IntColumn  get durationDays => integer().withDefault(const Constant(1))();
 }
 
 class Occurrences extends Table {
@@ -58,6 +61,7 @@ class Tasks extends Table {
   IntColumn  get estimatedMinutes => integer().nullable()();
   TextColumn get recurrence       => text().withDefault(const Constant('none'))();
   IntColumn  get occurrenceServerId => integer().nullable()();
+  IntColumn  get order            => integer().withDefault(const Constant(0))();
   IntColumn  get syncStatus       => integer().withDefault(const Constant(0))();
   TextColumn get completedAt      => text().nullable()();
   TextColumn get createdAt        => text()();
@@ -73,6 +77,7 @@ class Subtasks extends Table {
   TextColumn get status        => text().withDefault(const Constant('todo'))();
   TextColumn get dueDate       => text().nullable()();
   IntColumn  get order         => integer().withDefault(const Constant(0))();
+  TextColumn get completedAt   => text().nullable()();
   IntColumn  get syncStatus    => integer().withDefault(const Constant(0))();
 }
 
@@ -128,7 +133,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   // Table names derived from Drift-generated TableInfo objects so they are
   // never user-controlled. The assert enforces the safe character set.
@@ -157,6 +162,13 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 3) {
         await m.addColumn(tasks, tasks.completedAt);
+      }
+      if (from < 4) {
+        await m.addColumn(tasks, tasks.order);
+        await m.addColumn(subtasks, subtasks.completedAt);
+        await m.addColumn(events, events.amount);
+        await m.addColumn(events, events.location);
+        await m.addColumn(events, events.durationDays);
       }
     },
   );

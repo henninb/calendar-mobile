@@ -48,6 +48,9 @@ class ApiEvent {
   final String? description;
   final bool isActive;
   final ApiCategory category;
+  final String? amount;
+  final String? location;
+  final int durationDays;
 
   const ApiEvent({
     required this.id,
@@ -59,6 +62,9 @@ class ApiEvent {
     this.description,
     required this.isActive,
     required this.category,
+    this.amount,
+    this.location,
+    this.durationDays = 1,
   });
 
   factory ApiEvent.fromJson(Map<String, dynamic> j) => ApiEvent(
@@ -71,6 +77,9 @@ class ApiEvent {
         description: j['description'] as String?,
         isActive: j['is_active'] as bool? ?? true,
         category: ApiCategory.fromJson(j['category'] as Map<String, dynamic>),
+        amount: j['amount']?.toString(),
+        location: j['location'] as String?,
+        durationDays: (j['duration_days'] as num?)?.toInt() ?? 1,
       );
 }
 
@@ -108,6 +117,7 @@ class ApiSubtask {
   final String status;
   final String? dueDate;
   final int order;
+  final String? completedAt;
 
   const ApiSubtask({
     required this.id,
@@ -116,6 +126,7 @@ class ApiSubtask {
     required this.status,
     this.dueDate,
     required this.order,
+    this.completedAt,
   });
 
   factory ApiSubtask.fromJson(Map<String, dynamic> j) => ApiSubtask(
@@ -125,6 +136,7 @@ class ApiSubtask {
         status: j['status'] as String? ?? 'todo',
         dueDate: j['due_date'] as String?,
         order: (j['order'] as num?)?.toInt() ?? 0,
+        completedAt: j['completed_at'] as String?,
       );
 }
 
@@ -140,6 +152,7 @@ class ApiTask {
   final int? estimatedMinutes;
   final String recurrence;
   final int? occurrenceId;
+  final int order;
   final ApiPerson? assignee;
   final ApiCategory? category;
   final List<ApiSubtask> subtasks;
@@ -159,6 +172,7 @@ class ApiTask {
     this.estimatedMinutes,
     required this.recurrence,
     this.occurrenceId,
+    this.order = 0,
     this.assignee,
     this.category,
     required this.subtasks,
@@ -179,6 +193,7 @@ class ApiTask {
         estimatedMinutes: (j['estimated_minutes'] as num?)?.toInt(),
         recurrence: j['recurrence'] as String? ?? 'none',
         occurrenceId: (j['occurrence_id'] as num?)?.toInt(),
+        order: (j['order'] as num?)?.toInt() ?? 0,
         assignee: j['assignee'] != null ? ApiPerson.fromJson(j['assignee'] as Map<String, dynamic>) : null,
         category: j['category'] != null ? ApiCategory.fromJson(j['category'] as Map<String, dynamic>) : null,
         subtasks: (j['subtasks'] as List? ?? [])

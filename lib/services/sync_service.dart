@@ -108,6 +108,9 @@ class SyncService {
                 priority: Value(e.priority),
                 description: Value(e.description),
                 isActive: Value(e.isActive),
+                amount: Value(e.amount),
+                location: Value(e.location),
+                durationDays: Value(e.durationDays),
               ))
           .toList());
     }
@@ -129,6 +132,7 @@ class SyncService {
               estimatedMinutes: Value(t.estimatedMinutes),
               recurrence: Value(t.recurrence),
               occurrenceServerId: Value(t.occurrenceId),
+              order: Value(t.order),
               syncStatus: Value(SyncStatus.synced.value),
               completedAt: Value(t.completedAt),
               createdAt: Value(t.createdAt),
@@ -162,6 +166,7 @@ class SyncService {
             status: Value(s.status),
             dueDate: Value(s.dueDate),
             order: Value(s.order),
+            completedAt: Value(s.completedAt),
             syncStatus: Value(SyncStatus.synced.value),
           )));
     }
