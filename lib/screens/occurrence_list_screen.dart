@@ -19,11 +19,22 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
   String _filterStatus = 'all';
   int? _filterCategoryId;
 
-  static const _statusOptions = ['all', 'upcoming', 'overdue', 'completed', 'skipped'];
+  static const _statusOptions = [
+    'all',
+    OccurrenceStatus.upcoming,
+    OccurrenceStatus.overdue,
+    OccurrenceStatus.completed,
+    OccurrenceStatus.skipped,
+  ];
 
   // Fix: static const so this map is not re-allocated inside the sort comparator
   // on every O(N log N) comparison.
-  static const _statusOrder = {'overdue': 0, 'upcoming': 1, 'skipped': 2, 'completed': 3};
+  static const _statusOrder = {
+    OccurrenceStatus.overdue: 0,
+    OccurrenceStatus.upcoming: 1,
+    OccurrenceStatus.skipped: 2,
+    OccurrenceStatus.completed: 3,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -313,12 +324,12 @@ class _QuickActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (status != 'completed')
-          _IconBtn(icon: Icons.check_circle_outline, color: AppColors.btnGreen, onTap: () => onAction('completed')),
-        if (status != 'skipped')
-          _IconBtn(icon: Icons.skip_next_rounded, color: AppColors.textMuted, onTap: () => onAction('skipped')),
-        if (status == 'completed' || status == 'skipped')
-          _IconBtn(icon: Icons.replay_rounded, color: AppColors.btnBlue, onTap: () => onAction('upcoming')),
+        if (status != OccurrenceStatus.completed)
+          _IconBtn(icon: Icons.check_circle_outline, color: AppColors.btnGreen, onTap: () => onAction(OccurrenceStatus.completed)),
+        if (status != OccurrenceStatus.skipped)
+          _IconBtn(icon: Icons.skip_next_rounded, color: AppColors.textMuted, onTap: () => onAction(OccurrenceStatus.skipped)),
+        if (status == OccurrenceStatus.completed || status == OccurrenceStatus.skipped)
+          _IconBtn(icon: Icons.replay_rounded, color: AppColors.btnBlue, onTap: () => onAction(OccurrenceStatus.upcoming)),
       ],
     );
   }
@@ -406,24 +417,24 @@ class _DetailSheet extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (occurrence.status != 'completed')
+              if (occurrence.status != OccurrenceStatus.completed)
                 _ActionBtn(
                   label: 'Mark Done',
                   color: AppColors.btnGreen,
-                  onTap: () { onStatusChange('completed'); Navigator.pop(context); },
+                  onTap: () { onStatusChange(OccurrenceStatus.completed); Navigator.pop(context); },
                 ),
-              if (occurrence.status != 'skipped')
+              if (occurrence.status != OccurrenceStatus.skipped)
                 _ActionBtn(
                   label: 'Skip',
                   color: AppColors.btnGrayBg,
                   textColor: AppColors.btnGrayFg,
-                  onTap: () { onStatusChange('skipped'); Navigator.pop(context); },
+                  onTap: () { onStatusChange(OccurrenceStatus.skipped); Navigator.pop(context); },
                 ),
-              if (occurrence.status == 'completed' || occurrence.status == 'skipped')
+              if (occurrence.status == OccurrenceStatus.completed || occurrence.status == OccurrenceStatus.skipped)
                 _ActionBtn(
                   label: 'Reopen',
                   color: AppColors.btnBlue,
-                  onTap: () { onStatusChange('upcoming'); Navigator.pop(context); },
+                  onTap: () { onStatusChange(OccurrenceStatus.upcoming); Navigator.pop(context); },
                 ),
               _ActionBtn(
                 label: 'Delete',

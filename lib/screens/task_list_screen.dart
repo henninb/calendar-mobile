@@ -53,10 +53,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           if (t.dueDate == null) return true;
           if (t.dueDate!.compareTo(todayStr) >= 0) return true;
           // Past due: only show if not completed
-          return t.status != 'done' && t.status != 'cancelled';
+          return t.status != TaskStatus.done && t.status != TaskStatus.cancelled;
         }).toList();
         if (_filterStatus == 'active') {
-          filtered = filtered.where((t) => t.status == 'todo' || t.status == 'in_progress').toList();
+          filtered = filtered.where((t) => t.status == TaskStatus.todo || t.status == TaskStatus.inProgress).toList();
         } else if (_filterStatus != 'all') {
           filtered = filtered.where((t) => t.status == _filterStatus).toList();
         }
@@ -152,7 +152,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     final noDate       = <Task>[];
 
     for (final task in tasks) {
-      if (task.status == 'done') {
+      if (task.status == TaskStatus.done) {
         done.add(task);
       } else if (task.dueDate == null) {
         noDate.add(task);
@@ -181,7 +181,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   }
 
   static int _doneWeight(Task t) =>
-      (t.status == 'done' || t.status == 'cancelled') ? 1 : 0;
+      (t.status == TaskStatus.done || t.status == TaskStatus.cancelled) ? 1 : 0;
 
   Future<void> _showTaskForm(BuildContext context, Task? existing) async {
     await showModalBottomSheet(
@@ -205,14 +205,16 @@ class _StatusFilter extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onChanged;
 
-  static const _statusOptions = ['active', 'all', 'todo', 'in_progress', 'done', 'cancelled'];
+  static const _statusOptions = [
+    'active', 'all', TaskStatus.todo, TaskStatus.inProgress, TaskStatus.done, TaskStatus.cancelled,
+  ];
   static const _statusLabels = {
     'active': 'Active',
     'all': 'All',
-    'todo': 'Todo',
-    'in_progress': 'In Progress',
-    'done': 'Done',
-    'cancelled': 'Cancelled',
+    TaskStatus.todo: 'Todo',
+    TaskStatus.inProgress: 'In Progress',
+    TaskStatus.done: 'Done',
+    TaskStatus.cancelled: 'Cancelled',
   };
 
   Widget _chip({
@@ -322,7 +324,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     final task = widget.task;
     final cat = widget.catMap[task.categoryServerId];
     final todayStr = widget.todayStr;
-    final isActive = task.status != 'done' && task.status != 'cancelled';
+    final isActive = task.status != TaskStatus.done && task.status != TaskStatus.cancelled;
     final isDueToday = task.dueDate == todayStr;
     final isOverdue = task.dueDate != null && task.dueDate!.compareTo(todayStr) < 0;
     final highlight = isActive && (isDueToday || isOverdue);
@@ -465,7 +467,7 @@ class _InlineSubtaskRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final done = subtask.status == 'done';
+    final done = subtask.status == TaskStatus.done;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -473,7 +475,7 @@ class _InlineSubtaskRow extends ConsumerWidget {
         children: [
           GestureDetector(
             onTap: () async {
-              final newStatus = done ? 'todo' : 'done';
+              final newStatus = done ? TaskStatus.todo : TaskStatus.done;
               final syncNotifier = ref.read(syncStateProvider.notifier);
               try {
                 await ref.read(dbProvider).updateSubtask(
@@ -631,7 +633,7 @@ class _QuickStatusRow extends ConsumerWidget {
             status: Value(s),
             updatedAt: Value(now),
             // Set completedAt locally so the UI reflects it before sync.
-            completedAt: s == 'done' ? Value(now) : const Value.absent(),
+            completedAt: s == TaskStatus.done ? Value(now) : const Value.absent(),
             syncStatus: Value(SyncStatus.pendingUpdate.value),
           ),
         );
@@ -692,12 +694,12 @@ class _QuickStatusRow extends ConsumerWidget {
     return Wrap(
       spacing: 6,
       children: [
-        if (task.status == 'todo')
-          _Chip(label: 'Start', color: const Color(0xFF7C3AED), onTap: () => setStatus('in_progress')),
-        if (task.status != 'done' && task.status != 'cancelled')
-          _Chip(label: 'Done', color: AppColors.btnGreen, onTap: () => setStatus('done')),
-        if (task.status != 'cancelled' && task.status != 'done')
-          _Chip(label: 'Cancel', color: AppColors.btnGrayBg, textColor: AppColors.btnGrayFg, onTap: () => setStatus('cancelled')),
+        if (task.status == TaskStatus.todo)
+          _Chip(label: 'Start', color: const Color(0xFF7C3AED), onTap: () => setStatus(TaskStatus.inProgress)),
+        if (task.status != TaskStatus.done && task.status != TaskStatus.cancelled)
+          _Chip(label: 'Done', color: AppColors.btnGreen, onTap: () => setStatus(TaskStatus.done)),
+        if (task.status != TaskStatus.cancelled && task.status != TaskStatus.done)
+          _Chip(label: 'Cancel', color: AppColors.btnGrayBg, textColor: AppColors.btnGrayFg, onTap: () => setStatus(TaskStatus.cancelled)),
         _Chip(label: 'Edit', color: const Color(0xFF3B82F6), onTap: editTask),
         _Chip(label: 'Del', color: AppColors.btnRed, onTap: deleteTask),
       ],
@@ -973,7 +975,7 @@ class _SubtaskRow extends ConsumerWidget {
         children: [
           GestureDetector(
             onTap: () async {
-              final newStatus = subtask.status == 'done' ? 'todo' : 'done';
+              final newStatus = subtask.status == TaskStatus.done ? TaskStatus.todo : TaskStatus.done;
               final syncNotifier = ref.read(syncStateProvider.notifier);
               try {
                 await ref.read(dbProvider).updateSubtask(
@@ -989,8 +991,8 @@ class _SubtaskRow extends ConsumerWidget {
               }
             },
             child: Icon(
-              subtask.status == 'done' ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: subtask.status == 'done' ? AppColors.completedFg : AppColors.textMuted,
+              subtask.status == TaskStatus.done ? Icons.check_circle : Icons.radio_button_unchecked,
+              color: subtask.status == TaskStatus.done ? AppColors.completedFg : AppColors.textMuted,
               size: 20,
             ),
           ),
@@ -999,8 +1001,8 @@ class _SubtaskRow extends ConsumerWidget {
             child: Text(
               subtask.title,
               style: AppText.body.copyWith(
-                decoration: subtask.status == 'done' ? TextDecoration.lineThrough : null,
-                color: subtask.status == 'done' ? AppColors.textMuted : AppColors.textPrimary,
+                decoration: subtask.status == TaskStatus.done ? TextDecoration.lineThrough : null,
+                color: subtask.status == TaskStatus.done ? AppColors.textMuted : AppColors.textPrimary,
               ),
             ),
           ),
@@ -1067,7 +1069,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
   int? _assigneeServerId;
   int? _categoryServerId;
 
-  static const _statuses    = ['todo', 'in_progress', 'done', 'cancelled'];
+  static const _statuses    = [TaskStatus.todo, TaskStatus.inProgress, TaskStatus.done, TaskStatus.cancelled];
   static const _priorities  = ['low', 'medium', 'high'];
   static const _recurrences = ['none', 'daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'semiannual', 'yearly'];
 
@@ -1077,7 +1079,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
     final e = widget.existing;
     _title       = TextEditingController(text: e?.title ?? '');
     _description = TextEditingController(text: e?.description ?? '');
-    _status      = e?.status ?? 'todo';
+    _status      = e?.status ?? TaskStatus.todo;
     _priority    = e?.priority ?? 'medium';
     _recurrence  = e?.recurrence ?? 'none';
     _dueDate     = e?.dueDate ?? DateTime.now().toIso8601String().substring(0, 10);

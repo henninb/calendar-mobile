@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/constants.dart';
 import '../core/theme.dart';
 
 class StatusBadge extends StatelessWidget {
@@ -9,11 +10,11 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg, label) = switch (status) {
-      'upcoming'  => (AppColors.upcomingBg,  AppColors.upcomingFg,  'UPCOMING'),
-      'overdue'   => (AppColors.overdueBg,   AppColors.overdueFg,   'OVERDUE'),
-      'completed' => (AppColors.completedBg, AppColors.completedFg, 'DONE'),
-      'skipped'   => (AppColors.skippedBg,   AppColors.skippedFg,   'SKIPPED'),
-      _           => (AppColors.skippedBg,   AppColors.skippedFg,   status.toUpperCase()),
+      OccurrenceStatus.upcoming  => (AppColors.upcomingBg,  AppColors.upcomingFg,  'UPCOMING'),
+      OccurrenceStatus.overdue   => (AppColors.overdueBg,   AppColors.overdueFg,   'OVERDUE'),
+      OccurrenceStatus.completed => (AppColors.completedBg, AppColors.completedFg, 'DONE'),
+      OccurrenceStatus.skipped   => (AppColors.skippedBg,   AppColors.skippedFg,   'SKIPPED'),
+      _                          => (AppColors.skippedBg,   AppColors.skippedFg,   status.toUpperCase()),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -42,11 +43,11 @@ class TaskStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg, label) = switch (status) {
-      'todo'        => (AppColors.upcomingBg,  AppColors.upcomingFg,  'TODO'),
-      'in_progress' => (const Color(0xFFFEF3C7), const Color(0xFF92400E), 'IN PROGRESS'),
-      'done'        => (AppColors.completedBg, AppColors.completedFg, 'DONE'),
-      'cancelled'   => (AppColors.skippedBg,   AppColors.skippedFg,   'CANCELLED'),
-      _             => (AppColors.skippedBg,   AppColors.skippedFg,   status.toUpperCase()),
+      TaskStatus.todo        => (AppColors.upcomingBg,  AppColors.upcomingFg,  'TODO'),
+      TaskStatus.inProgress  => (const Color(0xFFFEF3C7), const Color(0xFF92400E), 'IN PROGRESS'),
+      TaskStatus.done        => (AppColors.completedBg, AppColors.completedFg, 'DONE'),
+      TaskStatus.cancelled   => (AppColors.skippedBg,   AppColors.skippedFg,   'CANCELLED'),
+      _                      => (AppColors.skippedBg,   AppColors.skippedFg,   status.toUpperCase()),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),

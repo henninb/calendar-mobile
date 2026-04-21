@@ -252,12 +252,12 @@ class _ActionRow extends StatelessWidget {
       spacing: 6,
       runSpacing: 6,
       children: [
-        if (status != 'completed')
-          _Btn(label: 'Done', color: AppColors.btnGreen, onTap: () => onStatusChange('completed')),
-        if (status != 'skipped')
-          _Btn(label: 'Skip', color: AppColors.btnGrayBg, textColor: AppColors.btnGrayFg, onTap: () => onStatusChange('skipped')),
-        if (status == 'completed' || status == 'skipped')
-          _Btn(label: 'Reopen', color: AppColors.btnBlue, onTap: () => onStatusChange('upcoming')),
+        if (status != OccurrenceStatus.completed)
+          _Btn(label: 'Done', color: AppColors.btnGreen, onTap: () => onStatusChange(OccurrenceStatus.completed)),
+        if (status != OccurrenceStatus.skipped)
+          _Btn(label: 'Skip', color: AppColors.btnGrayBg, textColor: AppColors.btnGrayFg, onTap: () => onStatusChange(OccurrenceStatus.skipped)),
+        if (status == OccurrenceStatus.completed || status == OccurrenceStatus.skipped)
+          _Btn(label: 'Reopen', color: AppColors.btnBlue, onTap: () => onStatusChange(OccurrenceStatus.upcoming)),
         _Btn(
           label: 'Delete',
           color: AppColors.btnRed,

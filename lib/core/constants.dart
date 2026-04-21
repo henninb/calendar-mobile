@@ -18,6 +18,20 @@ class AppConstants {
   static const Duration connectCheck  = Duration(seconds: 5);
 }
 
+abstract final class TaskStatus {
+  static const String todo       = 'todo';
+  static const String inProgress = 'in_progress';
+  static const String done       = 'done';
+  static const String cancelled  = 'cancelled';
+}
+
+abstract final class OccurrenceStatus {
+  static const String upcoming  = 'upcoming';
+  static const String completed = 'completed';
+  static const String skipped   = 'skipped';
+  static const String overdue   = 'overdue';
+}
+
 // Fix #12: enum gives exhaustive switch checking; explicit .value property
 // maps to the integer stored in SQLite (column type stays IntColumn).
 enum SyncStatus {

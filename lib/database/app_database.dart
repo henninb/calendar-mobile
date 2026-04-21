@@ -283,7 +283,7 @@ class AppDatabase extends _$AppDatabase {
     await (update(occurrences)..where((o) => o.id.equals(localId))).write(
       OccurrencesCompanion(
         serverId: Value(serverId),
-        syncStatus: const Value(0),
+        syncStatus: Value(SyncStatus.synced.value),
       ),
     );
   }
@@ -340,7 +340,7 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> markTaskSynced(int localId, int serverId) async {
     await (update(tasks)..where((t) => t.id.equals(localId))).write(
-      TasksCompanion(serverId: Value(serverId), syncStatus: const Value(0)),
+      TasksCompanion(serverId: Value(serverId), syncStatus: Value(SyncStatus.synced.value)),
     );
   }
 
@@ -358,6 +358,8 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ── Subtask DAO ─────────────────────────────────────────────────────────────
+
+  Future<List<Subtask>> getAllSubtasks() => select(subtasks).get();
 
   Future<List<Subtask>> getSubtasksForTask(int taskLocalId) {
     return (select(subtasks)
@@ -397,7 +399,7 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> markSubtaskSynced(int localId, int serverId) async {
     await (update(subtasks)..where((s) => s.id.equals(localId))).write(
-      SubtasksCompanion(serverId: Value(serverId), syncStatus: const Value(0)),
+      SubtasksCompanion(serverId: Value(serverId), syncStatus: Value(SyncStatus.synced.value)),
     );
   }
 
@@ -450,7 +452,7 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> markCreditCardSynced(int localId, int serverId) async {
     await (update(creditCards)..where((c) => c.id.equals(localId))).write(
-      CreditCardsCompanion(serverId: Value(serverId), syncStatus: const Value(0)),
+      CreditCardsCompanion(serverId: Value(serverId), syncStatus: Value(SyncStatus.synced.value)),
     );
   }
 

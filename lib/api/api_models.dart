@@ -1,5 +1,7 @@
 // API response models (mirrors backend Pydantic schemas)
+import 'package:flutter/foundation.dart' show immutable;
 
+@immutable
 class ApiCategory {
   final int id;
   final String name;
@@ -24,6 +26,7 @@ class ApiCategory {
       );
 }
 
+@immutable
 class ApiPerson {
   final int id;
   final String name;
@@ -38,6 +41,7 @@ class ApiPerson {
       );
 }
 
+@immutable
 class ApiEvent {
   final int id;
   final String title;
@@ -83,6 +87,7 @@ class ApiEvent {
       );
 }
 
+@immutable
 class ApiOccurrence {
   final int id;
   final int eventId;
@@ -106,10 +111,13 @@ class ApiOccurrence {
         occurrenceDate: j['occurrence_date'] as String,
         status: j['status'] as String? ?? 'upcoming',
         notes: j['notes'] as String?,
-        event: j['event'] != null ? ApiEvent.fromJson(j['event'] as Map<String, dynamic>) : null,
+        event: j['event'] != null
+            ? ApiEvent.fromJson(j['event'] as Map<String, dynamic>)
+            : null,
       );
 }
 
+@immutable
 class ApiSubtask {
   final int id;
   final int taskId;
@@ -140,6 +148,7 @@ class ApiSubtask {
       );
 }
 
+@immutable
 class ApiTask {
   final int id;
   final String title;
@@ -194,8 +203,12 @@ class ApiTask {
         recurrence: j['recurrence'] as String? ?? 'none',
         occurrenceId: (j['occurrence_id'] as num?)?.toInt(),
         order: (j['order'] as num?)?.toInt() ?? 0,
-        assignee: j['assignee'] != null ? ApiPerson.fromJson(j['assignee'] as Map<String, dynamic>) : null,
-        category: j['category'] != null ? ApiCategory.fromJson(j['category'] as Map<String, dynamic>) : null,
+        assignee: j['assignee'] != null
+            ? ApiPerson.fromJson(j['assignee'] as Map<String, dynamic>)
+            : null,
+        category: j['category'] != null
+            ? ApiCategory.fromJson(j['category'] as Map<String, dynamic>)
+            : null,
         subtasks: (j['subtasks'] as List? ?? [])
             .map((s) => ApiSubtask.fromJson(s as Map<String, dynamic>))
             .toList(),
@@ -205,6 +218,7 @@ class ApiTask {
       );
 }
 
+@immutable
 class ApiCreditCard {
   final int id;
   final String name;
@@ -253,6 +267,7 @@ class ApiCreditCard {
       );
 }
 
+@immutable
 class ApiTrackerRow {
   final int id;
   final String name;

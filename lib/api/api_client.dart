@@ -32,14 +32,13 @@ class ApiClient {
     return dio;
   }
 
-  void updateBaseUrl(String baseUrl) {
-    if (baseUrl.isEmpty) return; // not yet configured — keep placeholder
-    final uri = Uri.tryParse(baseUrl);
-    assert(
-      uri != null && uri.hasScheme && uri.scheme == 'https',
-      'ApiClient.updateBaseUrl: only https:// URLs are accepted',
-    );
-    _dio.options.baseUrl = '$baseUrl/api';
+  void updateBaseUrl(String url) {
+    if (url.isEmpty) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme || uri.scheme != 'https') {
+      throw ArgumentError.value(url, 'url', 'Only https:// URLs are accepted');
+    }
+    _dio.options.baseUrl = '$url/api';
   }
 
   void updateApiKey(String apiKey) {

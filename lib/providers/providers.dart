@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as dev;
+import 'package:flutter/foundation.dart' show immutable;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +10,12 @@ import '../api/api_client.dart';
 import '../core/constants.dart';
 import '../database/app_database.dart';
 import '../services/sync_service.dart';
+
+// ── Package Info ─────────────────────────────────────────────────────────────
+
+final packageInfoProvider = FutureProvider<PackageInfo>(
+  (_) => PackageInfo.fromPlatform(),
+);
 
 // ── Shared Preferences ───────────────────────────────────────────────────────
 
@@ -199,6 +207,7 @@ final connectivityProvider = StreamProvider<List<ConnectivityResult>>((ref) {
 
 enum SyncPhase { idle, pulling, pushing, error }
 
+@immutable
 class SyncState {
   final SyncPhase phase;
   final String? errorMessage;

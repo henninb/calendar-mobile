@@ -336,6 +336,7 @@ class _CardFormState extends ConsumerState<_CardForm> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final db = ref.read(dbProvider);
+    final syncNotifier = ref.read(syncStateProvider.notifier);
 
     if (widget.existing == null) {
       await db.insertCreditCard(CreditCardsCompanion(
@@ -360,9 +361,8 @@ class _CardFormState extends ConsumerState<_CardForm> {
       );
     }
 
-    if (mounted) Navigator.pop(context);
-    if (ref.read(isOnlineProvider)) {
-      ref.read(syncStateProvider.notifier).sync();
-    }
+    if (!mounted) return;
+    Navigator.pop(context);
+    syncNotifier.syncIfOnline();
   }
 }

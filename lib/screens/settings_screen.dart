@@ -215,7 +215,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _Section(
           title: 'About',
           children: [
-            _InfoRow(label: 'App', value: 'Calendar Mobile v1.0.0'),
+            _InfoRow(
+              label: 'App',
+              value: ref.watch(packageInfoProvider).when(
+                data: (info) => 'Calendar Mobile v${info.version}+${info.buildNumber}',
+                loading: () => 'Calendar Mobile',
+                error: (_, e) => 'Calendar Mobile',
+              ),
+            ),
             _InfoRow(label: 'Backend', value: ref.watch(baseUrlProvider)),
             _InfoRow(label: 'Offline support', value: 'Full CRUD with sync queue'),
           ],

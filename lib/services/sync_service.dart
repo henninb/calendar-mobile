@@ -174,16 +174,18 @@ class SyncService {
       await _db.upsertSubtasks(allSubtasks);
     }
 
-    // Fix: purge subtasks that were deleted server-side for tasks that still
-    // exist. Previously only task-level orphans were cleaned up; subtask
-    // deletions made via the web UI or another client persisted locally forever.
+    // Fetch all local subtasks in one query and group by task to avoid N+1.
+    final allLocalSubtasks = await _db.getAllSubtasks();
+    final subtasksByLocalTaskId = <int, List<Subtask>>{};
+    for (final s in allLocalSubtasks) {
+      subtasksByLocalTaskId.putIfAbsent(s.taskLocalId, () => []).add(s);
+    }
     final orphanSubtaskIds = <int>[];
     for (final t in apiTasks) {
       final localTaskId = serverToLocal[t.id];
       if (localTaskId == null) continue;
       final serverSubtaskIds = t.subtasks.map((s) => s.id).toSet();
-      final localSubtasks = await _db.getSubtasksForTask(localTaskId);
-      for (final s in localSubtasks) {
+      for (final s in subtasksByLocalTaskId[localTaskId] ?? []) {
         if (s.serverId != null && !serverSubtaskIds.contains(s.serverId)) {
           dev.log('_refreshTasks: purging orphan subtask local=${s.id} serverId=${s.serverId}', name: 'sync');
           orphanSubtaskIds.add(s.id);
