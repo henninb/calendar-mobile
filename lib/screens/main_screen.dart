@@ -6,6 +6,7 @@ import 'calendar_screen.dart';
 import 'occurrence_list_screen.dart';
 import 'task_list_screen.dart';
 import 'credit_card_screen.dart';
+import 'grocery_screen.dart';
 import 'settings_screen.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
@@ -19,11 +20,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   int _tabIndex = 0;
 
   static const _tabs = [
-    _Tab(icon: Icons.check_circle_outline,      activeIcon: Icons.check_circle,     label: 'Tasks'),
-    _Tab(icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month, label: 'Calendar'),
-    _Tab(icon: Icons.list_alt_outlined,        activeIcon: Icons.list_alt,        label: 'Upcoming'),
-    _Tab(icon: Icons.credit_card_outlined,      activeIcon: Icons.credit_card,      label: 'Cards'),
-    _Tab(icon: Icons.settings_outlined,         activeIcon: Icons.settings,         label: 'Settings'),
+    _Tab(icon: Icons.check_circle_outline,    activeIcon: Icons.check_circle,    label: 'Tasks'),
+    _Tab(icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month,  label: 'Calendar'),
+    _Tab(icon: Icons.list_alt_outlined,       activeIcon: Icons.list_alt,        label: 'Upcoming'),
+    _Tab(icon: Icons.credit_card_outlined,    activeIcon: Icons.credit_card,     label: 'Cards'),
+    _Tab(icon: Icons.shopping_cart_outlined,  activeIcon: Icons.shopping_cart,   label: 'Grocery'),
+    _Tab(icon: Icons.settings_outlined,       activeIcon: Icons.settings,        label: 'Settings'),
   ];
 
   static const _titles = [
@@ -31,6 +33,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     'Calendar',
     'Upcoming',
     'Credit Cards',
+    'Grocery',
     'Settings',
   ];
 
@@ -87,7 +90,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       1 => const CalendarScreen(),
       2 => const OccurrenceListScreen(),
       3 => const CreditCardScreen(),
-      4 => const SettingsScreen(),
+      4 => const GroceryScreen(),
+      5 => const SettingsScreen(),
       _ => const SizedBox.shrink(),
     };
   }

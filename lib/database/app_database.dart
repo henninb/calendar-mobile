@@ -99,6 +99,68 @@ class CreditCards extends Table {
   IntColumn  get syncStatus          => integer().withDefault(const Constant(0))();
 }
 
+// ── Grocery Tables ────────────────────────────────────────────────────────────
+
+class GroceryStores extends Table {
+  IntColumn  get id        => integer().autoIncrement()();
+  IntColumn  get serverId  => integer().nullable()();
+  TextColumn get name      => text()();
+  TextColumn get location  => text().nullable()();
+  BoolColumn get isActive  =>
+      boolean().withDefault(const Constant(true))();
+}
+
+class GroceryItems extends Table {
+  IntColumn  get id                   => integer().autoIncrement()();
+  IntColumn  get serverId             => integer().nullable()();
+  TextColumn get name                 => text()();
+  TextColumn get defaultUnit          =>
+      text().withDefault(const Constant('each'))();
+  IntColumn  get defaultStoreServerId => integer().nullable()();
+}
+
+/// On-hand inventory. Uniquely keyed by itemServerId (GroceryItem server id)
+/// rather than the on-hand record's own server id because all API operations
+/// use the item id as the path parameter.
+class GroceryOnHand extends Table {
+  IntColumn  get id           => integer().autoIncrement()();
+  IntColumn  get itemServerId => integer()();
+  RealColumn get quantity     =>
+      real().withDefault(const Constant(0.0))();
+  TextColumn get unit         =>
+      text().withDefault(const Constant('each'))();
+}
+
+class GroceryLists extends Table {
+  IntColumn  get id            => integer().autoIncrement()();
+  IntColumn  get serverId      => integer().nullable()();
+  TextColumn get name          => text()();
+  IntColumn  get storeServerId => integer().nullable()();
+  TextColumn get status        =>
+      text().withDefault(const Constant('draft'))();
+  TextColumn get shoppingDate  => text().nullable()();
+  IntColumn  get syncStatus    =>
+      integer().withDefault(const Constant(0))();
+}
+
+class GroceryListItems extends Table {
+  IntColumn  get id           => integer().autoIncrement()();
+  IntColumn  get serverId     => integer().nullable()();
+  IntColumn  get listLocalId  => integer()();
+  IntColumn  get listServerId => integer().nullable()();
+  IntColumn  get itemServerId => integer()();
+  RealColumn get quantity     =>
+      real().withDefault(const Constant(1.0))();
+  TextColumn get unit         =>
+      text().withDefault(const Constant('each'))();
+  RealColumn get price        => real().nullable()();
+  TextColumn get status       =>
+      text().withDefault(const Constant('needed'))();
+  TextColumn get notes        => text().nullable()();
+  IntColumn  get syncStatus   =>
+      integer().withDefault(const Constant(0))();
+}
+
 class CreditCardTrackerCache extends Table {
   IntColumn  get id              => integer().autoIncrement()();
   IntColumn  get cardServerId    => integer()();
@@ -128,17 +190,23 @@ class CreditCardTrackerCache extends Table {
   Subtasks,
   CreditCards,
   CreditCardTrackerCache,
+  GroceryStores,
+  GroceryItems,
+  GroceryOnHand,
+  GroceryLists,
+  GroceryListItems,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   // Table names derived from Drift-generated TableInfo objects so they are
   // never user-controlled. The assert enforces the safe character set.
   List<TableInfo<Table, dynamic>> get _tablesWithServerId => [
     categories, persons, events, occurrences, tasks, subtasks, creditCards,
+    groceryStores, groceryItems, groceryLists, groceryListItems,
   ];
 
   @override
@@ -150,6 +218,7 @@ class AppDatabase extends _$AppDatabase {
     onCreate: (m) async {
       await m.createAll();
       await _createServerIdIndexes();
+      await _createGroceryIndexes();
     },
     onUpgrade: (m, from, to) async {
       dev.log('AppDatabase: migrating v$from → v$to', name: 'db');
@@ -169,6 +238,16 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(events, events.amount);
         await m.addColumn(events, events.location);
         await m.addColumn(events, events.durationDays);
+      }
+      if (from < 5) {
+        await m.createTable(groceryStores);
+        await m.createTable(groceryItems);
+        await m.createTable(groceryOnHand);
+        await m.createTable(groceryLists);
+        await m.createTable(groceryListItems);
+        // Idempotent — creates for all tables including the new ones.
+        await _createServerIdIndexes();
+        await _createGroceryIndexes();
       }
     },
   );
@@ -194,6 +273,16 @@ class AppDatabase extends _$AppDatabase {
         'CREATE UNIQUE INDEX IF NOT EXISTS idx_${name}_server_id ON $name(server_id)',
       );
     }
+  }
+
+  /// Unique index for GroceryOnHand keyed on item_server_id rather than
+  /// server_id because all on-hand API operations use the item id.
+  Future<void> _createGroceryIndexes() async {
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS '
+      'idx_grocery_on_hand_item_server_id '
+      'ON grocery_on_hand(item_server_id)',
+    );
   }
 
   static QueryExecutor _openConnection() {
@@ -476,12 +565,302 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<CreditCardTrackerCacheData>> watchTrackerCache() =>
       select(creditCardTrackerCache).watch();
 
-  Future<void> replaceTrackerCache(List<CreditCardTrackerCacheCompanion> rows) async {
+  Future<void> replaceTrackerCache(
+    List<CreditCardTrackerCacheCompanion> rows,
+  ) async {
     await transaction(() async {
       await delete(creditCardTrackerCache).go();
       await batch((b) {
         b.insertAll(creditCardTrackerCache, rows);
       });
     });
+  }
+
+  // ── Grocery Store DAO ───────────────────────────────────────────────────────
+
+  Stream<List<GroceryStore>> watchGroceryStores() =>
+      select(groceryStores).watch();
+
+  Future<void> upsertGroceryStores(
+    List<GroceryStoresCompanion> rows,
+  ) async {
+    await batch((b) {
+      for (final row in rows) {
+        b.insert(
+          groceryStores,
+          row,
+          onConflict: DoUpdate(
+            (old) => row,
+            target: [groceryStores.serverId],
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> purgeGroceryStores(Set<int> keepServerIds) async {
+    await (delete(groceryStores)
+          ..where(
+            (s) =>
+                s.serverId.isNotNull() & s.serverId.isNotIn(keepServerIds),
+          ))
+        .go();
+  }
+
+  // ── Grocery Item DAO ────────────────────────────────────────────────────────
+
+  Stream<List<GroceryItem>> watchGroceryItems() =>
+      (select(groceryItems)..orderBy([(i) => OrderingTerm.asc(i.name)]))
+          .watch();
+
+  Future<List<GroceryItem>> getGroceryItems() => select(groceryItems).get();
+
+  Future<void> upsertGroceryItems(
+    List<GroceryItemsCompanion> rows,
+  ) async {
+    await batch((b) {
+      for (final row in rows) {
+        b.insert(
+          groceryItems,
+          row,
+          onConflict: DoUpdate(
+            (old) => row,
+            target: [groceryItems.serverId],
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> purgeGroceryItems(Set<int> keepServerIds) async {
+    await (delete(groceryItems)
+          ..where(
+            (i) =>
+                i.serverId.isNotNull() & i.serverId.isNotIn(keepServerIds),
+          ))
+        .go();
+  }
+
+  // ── Grocery On Hand DAO ─────────────────────────────────────────────────────
+
+  Stream<List<GroceryOnHandData>> watchGroceryOnHand() =>
+      select(groceryOnHand).watch();
+
+  Future<void> upsertGroceryOnHand(
+    List<GroceryOnHandCompanion> rows,
+  ) async {
+    await batch((b) {
+      for (final row in rows) {
+        b.insert(
+          groceryOnHand,
+          row,
+          onConflict: DoUpdate(
+            (old) => row,
+            target: [groceryOnHand.itemServerId],
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> purgeGroceryOnHand(Set<int> keepItemServerIds) async {
+    await (delete(groceryOnHand)
+          ..where(
+            (o) => o.itemServerId.isNotIn(keepItemServerIds),
+          ))
+        .go();
+  }
+
+  // ── Grocery List DAO ────────────────────────────────────────────────────────
+
+  Stream<List<GroceryList>> watchGroceryLists() =>
+      select(groceryLists).watch();
+
+  Future<List<GroceryList>> getGroceryLists() =>
+      select(groceryLists).get();
+
+  Future<List<GroceryList>> getPendingGroceryLists() {
+    return (select(groceryLists)
+          ..where((l) => l.syncStatus.isNotValue(0)))
+        .get();
+  }
+
+  Future<int> insertGroceryList(GroceryListsCompanion row) =>
+      into(groceryLists).insert(row);
+
+  Future<void> updateGroceryListStatus(
+    int localId,
+    String status,
+  ) async {
+    await (update(groceryLists)..where((l) => l.id.equals(localId))).write(
+      GroceryListsCompanion(
+        status: Value(status),
+        syncStatus: Value(SyncStatus.pendingUpdate.value),
+      ),
+    );
+  }
+
+  Future<void> markGroceryListDeleted(int localId) async {
+    final list = await (select(groceryLists)
+          ..where((l) => l.id.equals(localId)))
+        .getSingleOrNull();
+    if (list == null) return;
+    if (list.serverId == null) {
+      await deleteGroceryListLocal(localId);
+    } else {
+      await (update(groceryLists)
+            ..where((l) => l.id.equals(localId)))
+          .write(
+        GroceryListsCompanion(
+          syncStatus: Value(SyncStatus.pendingDelete.value),
+        ),
+      );
+    }
+  }
+
+  Future<void> markGroceryListSynced(int localId, int serverId) async {
+    await (update(groceryLists)..where((l) => l.id.equals(localId))).write(
+      GroceryListsCompanion(
+        serverId: Value(serverId),
+        syncStatus: Value(SyncStatus.synced.value),
+      ),
+    );
+    // Back-fill listServerId on any items that were queued before the list
+    // was synced (they had listServerId == null).
+    await (update(groceryListItems)
+          ..where((i) => i.listLocalId.equals(localId)))
+        .write(GroceryListItemsCompanion(listServerId: Value(serverId)));
+  }
+
+  Future<void> deleteGroceryListLocal(int localId) async {
+    await (delete(groceryLists)..where((l) => l.id.equals(localId))).go();
+    await (delete(groceryListItems)
+          ..where((i) => i.listLocalId.equals(localId)))
+        .go();
+  }
+
+  Future<void> upsertGroceryLists(
+    List<GroceryListsCompanion> rows,
+  ) async {
+    await batch((b) {
+      for (final row in rows) {
+        b.insert(
+          groceryLists,
+          row,
+          onConflict: DoUpdate(
+            (old) => row,
+            target: [groceryLists.serverId],
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> deleteGroceryListsLocalBatch(List<int> ids) async {
+    if (ids.isEmpty) return;
+    for (final id in ids) {
+      await deleteGroceryListLocal(id);
+    }
+  }
+
+  // ── Grocery List Item DAO ───────────────────────────────────────────────────
+
+  Stream<List<GroceryListItem>> watchGroceryListItems() =>
+      select(groceryListItems).watch();
+
+  Stream<List<GroceryListItem>> watchGroceryListItemsForList(
+    int listLocalId,
+  ) {
+    return (select(groceryListItems)
+          ..where((i) => i.listLocalId.equals(listLocalId)))
+        .watch();
+  }
+
+  Future<List<GroceryListItem>> getGroceryListItems() =>
+      select(groceryListItems).get();
+
+  Future<List<GroceryListItem>> getPendingGroceryListItems() {
+    return (select(groceryListItems)
+          ..where((i) => i.syncStatus.isNotValue(0)))
+        .get();
+  }
+
+  Future<int> insertGroceryListItem(GroceryListItemsCompanion row) =>
+      into(groceryListItems).insert(row);
+
+  Future<void> updateGroceryListItemStatus(
+    int localId,
+    String status,
+  ) async {
+    await (update(groceryListItems)
+          ..where((i) => i.id.equals(localId)))
+        .write(
+      GroceryListItemsCompanion(
+        status: Value(status),
+        syncStatus: Value(SyncStatus.pendingUpdate.value),
+      ),
+    );
+  }
+
+  Future<void> markGroceryListItemDeleted(int localId) async {
+    final item = await (select(groceryListItems)
+          ..where((i) => i.id.equals(localId)))
+        .getSingleOrNull();
+    if (item == null) return;
+    if (item.serverId == null) {
+      await deleteGroceryListItemLocal(localId);
+    } else {
+      await (update(groceryListItems)
+            ..where((i) => i.id.equals(localId)))
+          .write(
+        GroceryListItemsCompanion(
+          syncStatus: Value(SyncStatus.pendingDelete.value),
+        ),
+      );
+    }
+  }
+
+  Future<void> markGroceryListItemSynced(
+    int localId,
+    int serverId,
+  ) async {
+    await (update(groceryListItems)
+          ..where((i) => i.id.equals(localId)))
+        .write(
+      GroceryListItemsCompanion(
+        serverId: Value(serverId),
+        syncStatus: Value(SyncStatus.synced.value),
+      ),
+    );
+  }
+
+  Future<void> deleteGroceryListItemLocal(int localId) async {
+    await (delete(groceryListItems)
+          ..where((i) => i.id.equals(localId)))
+        .go();
+  }
+
+  Future<void> upsertGroceryListItems(
+    List<GroceryListItemsCompanion> rows,
+  ) async {
+    await batch((b) {
+      for (final row in rows) {
+        b.insert(
+          groceryListItems,
+          row,
+          onConflict: DoUpdate(
+            (old) => row,
+            target: [groceryListItems.serverId],
+          ),
+        );
+      }
+    });
+  }
+
+  Future<void> deleteGroceryListItemsLocalBatch(List<int> ids) async {
+    if (ids.isEmpty) return;
+    await (delete(groceryListItems)
+          ..where((i) => i.id.isIn(ids)))
+        .go();
   }
 }

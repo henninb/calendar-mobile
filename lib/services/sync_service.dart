@@ -27,6 +27,7 @@ class SyncService {
       _refreshTasks().catchError((e) { errors.add('tasks: $e'); return; }),
       _refreshCreditCardList().catchError((e) { errors.add('credit cards: $e'); return; }),
       _refreshCreditCardTracker().catchError((e) { errors.add('credit card tracker: $e'); return; }),
+      _refreshGrocery().catchError((e) { errors.add('grocery: $e'); return; }),
     ]);
 
     if (errors.isNotEmpty) {
@@ -251,6 +252,8 @@ class SyncService {
     pushed += await _pushTasks(errors);
     pushed += await _pushSubtasks(errors);
     pushed += await _pushCreditCards(errors);
+    pushed += await _pushGroceryLists(errors);
+    pushed += await _pushGroceryListItems(errors);
 
     dev.log('pushPending: pushed=$pushed errors=${errors.length}', name: 'sync');
     return SyncResult(pushed: pushed, errors: errors);
@@ -401,6 +404,237 @@ class SyncService {
     }
     return count;
   }
+
+  // ── Grocery ──────────────────────────────────────────────────────────────────
+
+  Future<void> _refreshGrocery() async {
+    await Future.wait([
+      _refreshGroceryStores(),
+      _refreshGroceryItems(),
+      _refreshGroceryOnHand(),
+      _refreshGroceryLists(),
+    ]);
+  }
+
+  Future<void> _refreshGroceryStores() async {
+    final stores = await _api.fetchStores();
+    await _db.upsertGroceryStores(stores
+        .map((s) => GroceryStoresCompanion(
+              serverId: Value(s.id),
+              name: Value(s.name),
+              location: Value(s.location),
+              isActive: Value(s.isActive),
+            ))
+        .toList());
+    await _db.purgeGroceryStores(stores.map((s) => s.id).toSet());
+  }
+
+  Future<void> _refreshGroceryItems() async {
+    final items = await _api.fetchGroceryItems();
+    await _db.upsertGroceryItems(items
+        .map((i) => GroceryItemsCompanion(
+              serverId: Value(i.id),
+              name: Value(i.name),
+              defaultUnit: Value(i.defaultUnit),
+              defaultStoreServerId: Value(i.defaultStoreId),
+            ))
+        .toList());
+    await _db.purgeGroceryItems(items.map((i) => i.id).toSet());
+  }
+
+  Future<void> _refreshGroceryOnHand() async {
+    final onHand = await _api.fetchOnHand();
+    await _db.upsertGroceryOnHand(onHand
+        .map((o) => GroceryOnHandCompanion(
+              itemServerId: Value(o.itemId),
+              quantity: Value(o.quantity),
+              unit: Value(o.unit),
+            ))
+        .toList());
+    await _db.purgeGroceryOnHand(onHand.map((o) => o.itemId).toSet());
+  }
+
+  Future<void> _refreshGroceryLists() async {
+    final apiLists = await _api.fetchGroceryLists();
+
+    await _db.upsertGroceryLists(apiLists
+        .map((l) => GroceryListsCompanion(
+              serverId: Value(l.id),
+              name: Value(l.name),
+              storeServerId: Value(l.storeId),
+              status: Value(l.status),
+              shoppingDate: Value(l.shoppingDate),
+              syncStatus: Value(SyncStatus.synced.value),
+            ))
+        .toList());
+
+    // Purge local lists deleted on the server.
+    final serverListIds = apiLists.map((l) => l.id).toSet();
+    final localLists = await _db.getGroceryLists();
+    final orphanLists = localLists
+        .where(
+          (l) => l.serverId != null && !serverListIds.contains(l.serverId),
+        )
+        .toList();
+    await _db.deleteGroceryListsLocalBatch(
+      orphanLists.map((l) => l.id).toList(),
+    );
+
+    // Resolve local list ids for list item upserts.
+    final serverToLocalList = {
+      for (final l in localLists) l.serverId: l.id,
+    };
+
+    // Collect all list items from the embedded payload.
+    final allItems = <GroceryListItemsCompanion>[];
+    for (final l in apiLists) {
+      final localListId = serverToLocalList[l.id];
+      if (localListId == null) continue;
+      allItems.addAll(l.items.map((i) => GroceryListItemsCompanion(
+            serverId: Value(i.id),
+            listLocalId: Value(localListId),
+            listServerId: Value(l.id),
+            itemServerId: Value(i.itemId),
+            quantity: Value(i.quantity),
+            unit: Value(i.unit),
+            price: Value(i.price),
+            status: Value(i.status),
+            notes: Value(i.notes),
+            syncStatus: Value(SyncStatus.synced.value),
+          )));
+    }
+    if (allItems.isNotEmpty) await _db.upsertGroceryListItems(allItems);
+
+    // Purge orphan list items for lists that still exist.
+    final serverItemIds = {
+      for (final l in apiLists)
+        for (final i in l.items) i.id,
+    };
+    final localItems = await _db.getGroceryListItems();
+    final orphanItemIds = localItems
+        .where(
+          (i) =>
+              i.serverId != null &&
+              serverListIds.contains(i.listServerId) &&
+              !serverItemIds.contains(i.serverId),
+        )
+        .map((i) => i.id)
+        .toList();
+    await _db.deleteGroceryListItemsLocalBatch(orphanItemIds);
+  }
+
+  Future<int> _pushGroceryLists(List<String> errors) async {
+    int count = 0;
+    final pending = await _db.getPendingGroceryLists();
+    for (final list in pending) {
+      try {
+        switch (SyncStatus.fromInt(list.syncStatus)) {
+          case SyncStatus.synced:
+            break;
+          case SyncStatus.pendingCreate:
+            final body = _groceryListToJson(list);
+            final created = await _api.createGroceryList(body);
+            await _db.markGroceryListSynced(list.id, created.id);
+            count++;
+          case SyncStatus.pendingUpdate:
+            if (list.serverId == null) break;
+            final body = _groceryListToJson(list);
+            await _api.updateGroceryList(list.serverId!, body);
+            await _db.markGroceryListSynced(list.id, list.serverId!);
+            count++;
+          case SyncStatus.pendingDelete:
+            if (list.serverId == null) break;
+            await _api.deleteGroceryList(list.serverId!);
+            await _db.deleteGroceryListLocal(list.id);
+            count++;
+        }
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          dev.log(
+            '_pushGroceryLists: 404 for local=${list.id}, removing orphan',
+            name: 'sync',
+          );
+          await _db.deleteGroceryListLocal(list.id);
+        } else {
+          final detail = _dioErrorDetail(e);
+          dev.log(
+            '_pushGroceryLists: local=${list.id} $detail',
+            name: 'sync',
+            level: 900,
+          );
+          errors.add('GroceryList ${list.id}: $detail');
+        }
+      }
+    }
+    return count;
+  }
+
+  Future<int> _pushGroceryListItems(List<String> errors) async {
+    int count = 0;
+    final pending = await _db.getPendingGroceryListItems();
+    for (final item in pending) {
+      try {
+        switch (SyncStatus.fromInt(item.syncStatus)) {
+          case SyncStatus.synced:
+            break;
+          case SyncStatus.pendingCreate:
+            // Parent list must be synced before creating items.
+            if (item.listServerId == null) break;
+            final created = await _api.addGroceryListItem(
+              item.listServerId!,
+              {
+                'item_id': item.itemServerId,
+                'quantity': item.quantity,
+                'unit': item.unit,
+                if (item.price != null) 'price': item.price,
+                if (item.notes != null) 'notes': item.notes,
+              },
+            );
+            await _db.markGroceryListItemSynced(item.id, created.id);
+            count++;
+          case SyncStatus.pendingUpdate:
+            if (item.listServerId == null || item.serverId == null) break;
+            await _api.updateGroceryListItem(
+              item.listServerId!,
+              item.itemServerId,
+              {
+                'status': item.status,
+                'quantity': item.quantity,
+                'unit': item.unit,
+                if (item.price != null) 'price': item.price,
+                if (item.notes != null) 'notes': item.notes,
+              },
+            );
+            await _db.markGroceryListItemSynced(item.id, item.serverId!);
+            count++;
+          case SyncStatus.pendingDelete:
+            if (item.listServerId == null) break;
+            await _api.removeGroceryListItem(
+              item.listServerId!,
+              item.itemServerId,
+            );
+            await _db.deleteGroceryListItemLocal(item.id);
+            count++;
+        }
+      } on DioException catch (e) {
+        final detail = _dioErrorDetail(e);
+        dev.log(
+          '_pushGroceryListItems: local=${item.id} $detail',
+          name: 'sync',
+          level: 900,
+        );
+        errors.add('GroceryListItem ${item.id}: $detail');
+      }
+    }
+    return count;
+  }
+
+  Map<String, dynamic> _groceryListToJson(GroceryList l) => {
+        'name': l.name,
+        'status': l.status,
+        if (l.storeServerId != null) 'store_id': l.storeServerId,
+        if (l.shoppingDate != null) 'shopping_date': l.shoppingDate,
+      };
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 

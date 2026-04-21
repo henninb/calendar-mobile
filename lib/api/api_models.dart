@@ -267,6 +267,180 @@ class ApiCreditCard {
       );
 }
 
+// ── Grocery ───────────────────────────────────────────────────────────────────
+
+// Python's Decimal type serializes to JSON strings (e.g. "2.500") rather than
+// numbers. This helper accepts both so parsing is robust against both backends
+// that configure Pydantic to emit floats and those that emit strings.
+double _decimalToDouble(Object? v, double fallback) {
+  if (v == null) return fallback;
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v) ?? fallback;
+  return fallback;
+}
+
+double? _decimalToDoubleNullable(Object? v) {
+  if (v == null) return null;
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v);
+  return null;
+}
+
+const List<String> groceryUnits = [
+  'each', 'lb', 'oz', 'fl_oz', 'g', 'kg', 'liter', 'ml',
+  'bunch', 'bag', 'box', 'can', 'jar', 'pack',
+];
+
+@immutable
+class ApiStore {
+  final int id;
+  final String name;
+  final String? location;
+  final bool isActive;
+
+  const ApiStore({
+    required this.id,
+    required this.name,
+    this.location,
+    required this.isActive,
+  });
+
+  factory ApiStore.fromJson(Map<String, dynamic> j) => ApiStore(
+        id: (j['id'] as num).toInt(),
+        name: j['name'] as String,
+        location: j['location'] as String?,
+        isActive: j['is_active'] as bool? ?? true,
+      );
+}
+
+@immutable
+class ApiGroceryItem {
+  final int id;
+  final String name;
+  final String defaultUnit;
+  final int? defaultStoreId;
+
+  const ApiGroceryItem({
+    required this.id,
+    required this.name,
+    required this.defaultUnit,
+    this.defaultStoreId,
+  });
+
+  factory ApiGroceryItem.fromJson(Map<String, dynamic> j) => ApiGroceryItem(
+        id: (j['id'] as num).toInt(),
+        name: j['name'] as String,
+        defaultUnit: j['default_unit'] as String? ?? 'each',
+        defaultStoreId: (j['default_store_id'] as num?)?.toInt(),
+      );
+}
+
+@immutable
+class ApiOnHand {
+  final int id;
+  final int itemId;
+  final double quantity;
+  final String unit;
+  final ApiGroceryItem? item;
+
+  const ApiOnHand({
+    required this.id,
+    required this.itemId,
+    required this.quantity,
+    required this.unit,
+    this.item,
+  });
+
+  factory ApiOnHand.fromJson(Map<String, dynamic> j) => ApiOnHand(
+        id: (j['id'] as num).toInt(),
+        itemId: (j['item_id'] as num).toInt(),
+        quantity: _decimalToDouble(j['quantity'], 0.0),
+        unit: j['unit'] as String? ?? 'each',
+        item: j['item'] != null
+            ? ApiGroceryItem.fromJson(j['item'] as Map<String, dynamic>)
+            : null,
+      );
+}
+
+@immutable
+class ApiGroceryListItem {
+  final int id;
+  final int listId;
+  final int itemId;
+  final double quantity;
+  final String unit;
+  final double? price;
+  final String status;
+  final String? notes;
+  final ApiGroceryItem? item;
+
+  const ApiGroceryListItem({
+    required this.id,
+    required this.listId,
+    required this.itemId,
+    required this.quantity,
+    required this.unit,
+    this.price,
+    required this.status,
+    this.notes,
+    this.item,
+  });
+
+  factory ApiGroceryListItem.fromJson(Map<String, dynamic> j) =>
+      ApiGroceryListItem(
+        id: (j['id'] as num).toInt(),
+        listId: (j['list_id'] as num).toInt(),
+        itemId: (j['item_id'] as num).toInt(),
+        quantity: _decimalToDouble(j['quantity'], 1.0),
+        unit: j['unit'] as String? ?? 'each',
+        price: _decimalToDoubleNullable(j['price']),
+        status: j['status'] as String? ?? 'needed',
+        notes: j['notes'] as String?,
+        item: j['item'] != null
+            ? ApiGroceryItem.fromJson(j['item'] as Map<String, dynamic>)
+            : null,
+      );
+}
+
+@immutable
+class ApiGroceryList {
+  final int id;
+  final String name;
+  final int? storeId;
+  final String status;
+  final String? shoppingDate;
+  final ApiStore? store;
+  final List<ApiGroceryListItem> items;
+
+  const ApiGroceryList({
+    required this.id,
+    required this.name,
+    this.storeId,
+    required this.status,
+    this.shoppingDate,
+    this.store,
+    required this.items,
+  });
+
+  factory ApiGroceryList.fromJson(Map<String, dynamic> j) => ApiGroceryList(
+        id: (j['id'] as num).toInt(),
+        name: j['name'] as String,
+        storeId: (j['store_id'] as num?)?.toInt(),
+        status: j['status'] as String? ?? 'draft',
+        shoppingDate: j['shopping_date'] as String?,
+        store: j['store'] != null
+            ? ApiStore.fromJson(j['store'] as Map<String, dynamic>)
+            : null,
+        items: (j['items'] as List? ?? [])
+            .map(
+              (i) => ApiGroceryListItem.fromJson(i as Map<String, dynamic>),
+            )
+            .toList(),
+      );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 @immutable
 class ApiTrackerRow {
   final int id;

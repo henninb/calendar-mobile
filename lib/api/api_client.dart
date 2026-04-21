@@ -164,4 +164,152 @@ class ApiClient {
         .map(ApiTrackerRow.fromJson)
         .toList();
   }
+
+  // ── Stores ───────────────────────────────────────────────────────────────────
+
+  Future<List<ApiStore>> fetchStores() async {
+    final res = await _dio.get<List>('/stores');
+    return (res.data ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ApiStore.fromJson)
+        .toList();
+  }
+
+  Future<ApiStore> createStore(Map<String, dynamic> data) async {
+    final res =
+        await _dio.post<Map<String, dynamic>>('/stores', data: data);
+    return ApiStore.fromJson(res.data!);
+  }
+
+  Future<ApiStore> updateStore(
+    int serverId,
+    Map<String, dynamic> data,
+  ) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/stores/$serverId',
+      data: data,
+    );
+    return ApiStore.fromJson(res.data!);
+  }
+
+  Future<void> deleteStore(int serverId) async {
+    await _dio.delete('/stores/$serverId');
+  }
+
+  // ── Grocery Items ─────────────────────────────────────────────────────────────
+
+  Future<List<ApiGroceryItem>> fetchGroceryItems({
+    String? search,
+  }) async {
+    final params = <String, dynamic>{};
+    if (search != null && search.isNotEmpty) params['search'] = search;
+    final res = await _dio.get<List>(
+      '/grocery/items',
+      queryParameters: params,
+    );
+    return (res.data ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ApiGroceryItem.fromJson)
+        .toList();
+  }
+
+  Future<ApiGroceryItem> createGroceryItem(
+    Map<String, dynamic> data,
+  ) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/grocery/items',
+      data: data,
+    );
+    return ApiGroceryItem.fromJson(res.data!);
+  }
+
+  Future<void> deleteGroceryItem(int serverId) async {
+    await _dio.delete('/grocery/items/$serverId');
+  }
+
+  // ── On Hand ──────────────────────────────────────────────────────────────────
+
+  Future<List<ApiOnHand>> fetchOnHand() async {
+    final res = await _dio.get<List>('/grocery/on-hand');
+    return (res.data ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ApiOnHand.fromJson)
+        .toList();
+  }
+
+  // ── Grocery Lists ─────────────────────────────────────────────────────────────
+
+  Future<List<ApiGroceryList>> fetchGroceryLists({
+    String? status,
+  }) async {
+    final params = <String, dynamic>{};
+    if (status != null) params['status'] = status;
+    final res = await _dio.get<List>(
+      '/grocery/lists',
+      queryParameters: params,
+    );
+    return (res.data ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ApiGroceryList.fromJson)
+        .toList();
+  }
+
+  Future<ApiGroceryList> createGroceryList(
+    Map<String, dynamic> data,
+  ) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/grocery/lists',
+      data: data,
+    );
+    return ApiGroceryList.fromJson(res.data!);
+  }
+
+  Future<ApiGroceryList> updateGroceryList(
+    int serverId,
+    Map<String, dynamic> data,
+  ) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/grocery/lists/$serverId',
+      data: data,
+    );
+    return ApiGroceryList.fromJson(res.data!);
+  }
+
+  Future<void> deleteGroceryList(int serverId) async {
+    await _dio.delete('/grocery/lists/$serverId');
+  }
+
+  // ── Grocery List Items ────────────────────────────────────────────────────────
+
+  Future<ApiGroceryListItem> addGroceryListItem(
+    int listServerId,
+    Map<String, dynamic> data,
+  ) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/grocery/lists/$listServerId/items',
+      data: data,
+    );
+    return ApiGroceryListItem.fromJson(res.data!);
+  }
+
+  Future<ApiGroceryListItem> updateGroceryListItem(
+    int listServerId,
+    int itemServerId,
+    Map<String, dynamic> data,
+  ) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/grocery/lists/$listServerId/items/$itemServerId',
+      data: data,
+    );
+    return ApiGroceryListItem.fromJson(res.data!);
+  }
+
+  Future<void> removeGroceryListItem(
+    int listServerId,
+    int itemServerId,
+  ) async {
+    await _dio.delete(
+      '/grocery/lists/$listServerId/items/$itemServerId',
+    );
+  }
 }

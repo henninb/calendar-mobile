@@ -391,6 +391,38 @@ final personsProvider = StreamProvider<List<Person>>((ref) {
   return ref.watch(dbProvider).watchPersons();
 });
 
-final subtasksForTaskProvider = StreamProvider.autoDispose.family<List<Subtask>, int>((ref, taskLocalId) {
-  return ref.watch(dbProvider).watchSubtasksForTask(taskLocalId);
+final subtasksForTaskProvider =
+    StreamProvider.autoDispose.family<List<Subtask>, int>(
+  (ref, taskLocalId) =>
+      ref.watch(dbProvider).watchSubtasksForTask(taskLocalId),
+);
+
+// ── Grocery Streams ───────────────────────────────────────────────────────────
+
+final groceryStoresProvider = StreamProvider<List<GroceryStore>>((ref) {
+  return ref.watch(dbProvider).watchGroceryStores();
 });
+
+final groceryItemsProvider = StreamProvider<List<GroceryItem>>((ref) {
+  return ref.watch(dbProvider).watchGroceryItems();
+});
+
+final groceryOnHandProvider =
+    StreamProvider<List<GroceryOnHandData>>((ref) {
+  return ref.watch(dbProvider).watchGroceryOnHand();
+});
+
+final groceryListsProvider = StreamProvider<List<GroceryList>>((ref) {
+  return ref.watch(dbProvider).watchGroceryLists();
+});
+
+final groceryListItemsProvider =
+    StreamProvider<List<GroceryListItem>>((ref) {
+  return ref.watch(dbProvider).watchGroceryListItems();
+});
+
+final groceryListItemsForListProvider =
+    StreamProvider.autoDispose.family<List<GroceryListItem>, int>(
+  (ref, listLocalId) =>
+      ref.watch(dbProvider).watchGroceryListItemsForList(listLocalId),
+);
