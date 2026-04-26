@@ -46,14 +46,12 @@ class BaseUrlNotifier extends Notifier<String> {
     return prefs.getString(AppConstants.prefBaseUrl) ?? AppConstants.defaultBaseUrl;
   }
 
-  void set(String url) {
+  bool set(String url) {
     final uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme || uri.scheme != 'https') {
-      dev.log('BaseUrlNotifier.set: rejected non-https URL', name: 'settings');
-      return;
-    }
+    if (uri == null || !uri.hasScheme || uri.scheme != 'https') return false;
     state = url;
     ref.read(sharedPreferencesProvider).setString(AppConstants.prefBaseUrl, url);
+    return true;
   }
 }
 
@@ -105,7 +103,7 @@ class ApiClientNotifier extends Notifier<ApiClient> {
 // ── Sync Service ─────────────────────────────────────────────────────────────
 
 final syncServiceProvider = Provider<SyncService>((ref) {
-  return SyncService(ref.watch(dbProvider), ref.watch(apiClientProvider));
+  return SyncService(ref.read(dbProvider), ref.read(apiClientProvider));
 });
 
 // ── Forced Offline Toggle ────────────────────────────────────────────────────

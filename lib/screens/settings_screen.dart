@@ -220,7 +220,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               value: ref.watch(packageInfoProvider).when(
                 data: (info) => 'Calendar Mobile v${info.version}+${info.buildNumber}',
                 loading: () => 'Calendar Mobile',
-                error: (_, e) => 'Calendar Mobile',
+                error: (err, st) => 'Calendar Mobile',
               ),
             ),
             _InfoRow(label: 'Backend', value: ref.watch(baseUrlProvider)),
@@ -262,18 +262,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _saveUrl() {
     final url = _urlCtrl.text.trim();
     if (url.isEmpty) return;
-    // Fix #1: reject non-HTTP/HTTPS URLs before they reach the API client.
-    final uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme || uri.scheme != 'https') {
+    final accepted = ref.read(baseUrlProvider.notifier).set(url);
+    if (!accepted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Invalid URL — must start with https://')),
       );
       return;
     }
-    // Fix #2: setting baseUrlProvider invalidates apiClientProvider, which
-    // Riverpod rebuilds automatically — the manual updateBaseUrl call was
-    // mutating a stale instance that was about to be discarded.
-    ref.read(baseUrlProvider.notifier).set(url);
     setState(() => _saved = true);
   }
 

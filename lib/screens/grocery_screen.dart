@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../api/api_models.dart' show groceryUnits;
 import '../core/constants.dart';
 import '../database/app_database.dart';
 import '../providers/providers.dart';
@@ -277,7 +278,6 @@ class _ListDetailView extends ConsumerWidget {
     final items = ref
             .watch(groceryListItemsForListProvider(listLocalId))
             .asData?.value ??
-
         [];
     final catalog = ref.watch(groceryItemsProvider).asData?.value ?? [];
     final catalogById = {
@@ -451,7 +451,7 @@ class _ListItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = catalogItem?.name ?? 'Item #${listItem.itemServerId}';
-    final qty = _fmtQty(listItem.quantity, listItem.unit);
+    final qty = _fmtListQty(listItem.quantity, listItem.unit);
 
     return Opacity(
       opacity: faded ? 0.5 : 1.0,
@@ -479,18 +479,6 @@ class _ListItemRow extends StatelessWidget {
     );
   }
 
-  static String _fmtQty(double qty, String unit) {
-    if (unit == 'each') {
-      if (qty == qty.roundToDouble()) {
-        return qty == 1.0 ? '' : '× ${qty.toInt()}';
-      }
-      return '× $qty';
-    }
-    final qtyStr = qty == qty.roundToDouble()
-        ? qty.toInt().toString()
-        : qty.toString();
-    return '$qtyStr $unit';
-  }
 }
 
 // ── Create List Sheet ─────────────────────────────────────────────────────────
@@ -735,7 +723,7 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
                       child: DropdownButton<String>(
                     value: _unit,
                     isExpanded: true,
-                    items: _groceryUnits
+                    items: groceryUnits
                         .map(
                           (u) => DropdownMenuItem(
                             value: u,
@@ -792,10 +780,25 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
   }
 }
 
-const _groceryUnits = [
-  'each', 'lb', 'oz', 'fl_oz', 'g', 'kg', 'liter', 'ml',
-  'bunch', 'bag', 'box', 'can', 'jar', 'pack',
-];
+// ── Quantity formatting helpers ───────────────────────────────────────────────
+
+// Shopping-list style: '× N' for each quantities; '' for exactly 1.
+String _fmtListQty(double qty, String unit) {
+  if (unit == 'each') {
+    if (qty == qty.roundToDouble()) return qty == 1.0 ? '' : '× ${qty.toInt()}';
+    return '× $qty';
+  }
+  final n = qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString();
+  return '$n $unit';
+}
+
+// Pantry/on-hand style: always show the raw number.
+String _fmtOnHandQty(double qty, String unit) {
+  final n = qty == qty.roundToDouble()
+      ? qty.toInt().toString()
+      : qty.toStringAsFixed(2);
+  return unit == 'each' ? n : '$n $unit';
+}
 
 // ── On Hand Tab ───────────────────────────────────────────────────────────────
 
@@ -855,7 +858,7 @@ class _OnHandTabState extends ConsumerState<_OnHandTab> {
                       title: Text(item.name),
                       trailing: oh != null
                           ? Text(
-                              _fmtQty(oh.quantity, oh.unit),
+                              _fmtOnHandQty(oh.quantity, oh.unit),
                               style: TextStyle(
                                 color: oh.quantity > 0
                                     ? null
@@ -875,26 +878,15 @@ class _OnHandTabState extends ConsumerState<_OnHandTab> {
     );
   }
 
-  static String _fmtQty(double qty, String unit) {
-    final qtyStr = qty == qty.roundToDouble()
-        ? qty.toInt().toString()
-        : qty.toStringAsFixed(2);
-    return unit == 'each' ? qtyStr : '$qtyStr $unit';
-  }
 }
 
 // ── Stores Tab ────────────────────────────────────────────────────────────────
 
-class _StoresTab extends ConsumerStatefulWidget {
+class _StoresTab extends ConsumerWidget {
   const _StoresTab();
 
   @override
-  ConsumerState<_StoresTab> createState() => _StoresTabState();
-}
-
-class _StoresTabState extends ConsumerState<_StoresTab> {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final storesAsync = ref.watch(groceryStoresProvider);
 
     return Scaffold(
@@ -1027,9 +1019,16 @@ class _CreateStoreSheetState extends ConsumerState<_CreateStoreSheet> {
           'location': _locationCtrl.text.trim(),
       });
       await ref.read(syncStateProvider.notifier).silentRefresh();
+      if (mounted) Navigator.of(context).pop();
     } catch (_) {
-      // silentRefresh will surface network errors through the sync banner
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to create store — check your connection'),
+          ),
+        );
+      }
     }
-    if (mounted) Navigator.of(context).pop();
   }
 }

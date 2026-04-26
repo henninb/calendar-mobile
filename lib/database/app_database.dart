@@ -434,8 +434,10 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> deleteTaskLocal(int localId) async {
-    await (delete(tasks)..where((t) => t.id.equals(localId))).go();
-    await (delete(subtasks)..where((s) => s.taskLocalId.equals(localId))).go();
+    await transaction(() async {
+      await (delete(tasks)..where((t) => t.id.equals(localId))).go();
+      await (delete(subtasks)..where((s) => s.taskLocalId.equals(localId))).go();
+    });
   }
 
   Future<void> upsertTasks(List<TasksCompanion> rows) async {
@@ -733,10 +735,12 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> deleteGroceryListLocal(int localId) async {
-    await (delete(groceryLists)..where((l) => l.id.equals(localId))).go();
-    await (delete(groceryListItems)
-          ..where((i) => i.listLocalId.equals(localId)))
-        .go();
+    await transaction(() async {
+      await (delete(groceryLists)..where((l) => l.id.equals(localId))).go();
+      await (delete(groceryListItems)
+            ..where((i) => i.listLocalId.equals(localId)))
+          .go();
+    });
   }
 
   Future<void> upsertGroceryLists(
@@ -758,9 +762,10 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteGroceryListsLocalBatch(List<int> ids) async {
     if (ids.isEmpty) return;
-    for (final id in ids) {
-      await deleteGroceryListLocal(id);
-    }
+    await transaction(() async {
+      await (delete(groceryLists)..where((l) => l.id.isIn(ids))).go();
+      await (delete(groceryListItems)..where((i) => i.listLocalId.isIn(ids))).go();
+    });
   }
 
   // ── Grocery List Item DAO ───────────────────────────────────────────────────
@@ -854,6 +859,14 @@ class AppDatabase extends _$AppDatabase {
           ),
         );
       }
+    });
+  }
+
+  Future<void> deleteTasksLocalBatch(List<int> ids) async {
+    if (ids.isEmpty) return;
+    await transaction(() async {
+      await (delete(tasks)..where((t) => t.id.isIn(ids))).go();
+      await (delete(subtasks)..where((s) => s.taskLocalId.isIn(ids))).go();
     });
   }
 

@@ -151,7 +151,7 @@ class SyncService {
     for (final local in orphanTasks) {
       dev.log('_refreshTasks: purging orphan local=${local.id} serverId=${local.serverId}', name: 'sync');
     }
-    await Future.wait(orphanTasks.map((t) => _db.deleteTaskLocal(t.id)));
+    await _db.deleteTasksLocalBatch(orphanTasks.map((t) => t.id).toList());
 
     // Fix #8: collect all subtasks first, then upsert in a single transaction.
     final serverToLocal = {for (final t in localTasks) t.serverId: t.id};
@@ -594,6 +594,8 @@ class SyncService {
             count++;
           case SyncStatus.pendingUpdate:
             if (item.listServerId == null || item.serverId == null) break;
+            // Route is /lists/{listId}/items/{itemServerId} — the server keys
+            // on the catalog item id, not the list-item record's own server id.
             await _api.updateGroceryListItem(
               item.listServerId!,
               item.itemServerId,
