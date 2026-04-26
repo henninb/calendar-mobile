@@ -192,7 +192,9 @@ class _SyncButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final syncState = ref.watch(syncStateProvider);
     final isOnline  = ref.watch(isOnlineProvider);
-    final busy      = syncState.phase != SyncPhase.idle;
+    // Only pulling/pushing are active work — offline and error are terminal
+    // states that should not keep the spinner running.
+    final busy = syncState.phase == SyncPhase.pulling || syncState.phase == SyncPhase.pushing;
 
     return IconButton(
       tooltip: busy ? 'Syncing…' : 'Sync now',

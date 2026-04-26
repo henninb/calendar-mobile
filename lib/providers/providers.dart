@@ -322,6 +322,7 @@ class SyncNotifier extends Notifier<SyncState> {
   // Called on a timer. Also pushes pending items so mutations queued while
   // offline are sent as soon as connectivity is restored between timer ticks.
   Future<void> silentRefresh() async {
+    if (!ref.read(isOnlineProvider)) return;
     if (ref.read(baseUrlProvider).isEmpty) return; // not yet configured
     if (state.phase != SyncPhase.idle) return;
     dev.log('SyncNotifier.silentRefresh: start', name: 'sync');
