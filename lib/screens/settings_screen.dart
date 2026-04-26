@@ -1,11 +1,10 @@
 import 'dart:io' show Platform;
-import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/theme.dart';
 import '../providers/providers.dart';
+import '../services/wireguard_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -20,14 +19,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       'category=android.intent.category.LAUNCHER;'
       'package=com.wireguard.android;end';
   static const _wireGuardIosUri = 'wireguard://';
-  static const _wgTunnel     = 'k8';
-  static const _wgPackage   = 'com.wireguard.android';
-  // Explicit receiver required on Android 8+ — implicit broadcasts to static
-  // receivers are blocked unless the component is named directly.
-  static const _wgReceiver   = 'com.wireguard.android.model.TunnelManager\$IntentReceiver';
-  static const _wgActionUp   = 'com.wireguard.android.action.SET_TUNNEL_UP';
-  static const _wgActionDown = 'com.wireguard.android.action.SET_TUNNEL_DOWN';
-  static const _wgChannel    = MethodChannel('wireguard_permission');
   late TextEditingController _urlCtrl;
   late TextEditingController _keyCtrl;
   bool _saved = false;
@@ -159,7 +150,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 8),
             SwitchListTile(
               title: const Text('Force offline mode'),
-              subtitle: const Text('Pause sync and disconnect WireGuard tunnel "$_wgTunnel"'),
+              subtitle: Text('Pause sync and disconnect WireGuard tunnel "$wgTunnelName"'),
               value: forcedOffline,
               onChanged: (val) {
                 ref.read(forcedOfflineProvider.notifier).toggle();
@@ -295,63 +286,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _toggleWireGuardTunnel({
     required bool goOffline,
     required BuildContext context,
-  }) async {
-    if (!Platform.isAndroid) return;
-
-    // Ensure the CONTROL_TUNNELS permission is granted before broadcasting.
-    // It is a custom dangerous permission defined by WireGuard and must be
-    // requested at runtime — declaring it in the manifest is not enough.
-    final granted = await _wgChannel.invokeMethod<bool>('request') ?? false;
-    if (!granted) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Permission denied — grant "WireGuard Remote Control" '
-              'to this app in Android Settings → Apps → Permissions',
-            ),
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
-      return;
-    }
-
-    try {
-      // componentName makes this an explicit broadcast, required on Android 8+.
-      // Implicit broadcasts to static manifest receivers are blocked since Oreo.
-      final intent = AndroidIntent(
-        action: goOffline ? _wgActionDown : _wgActionUp,
-        package: _wgPackage,
-        componentName: _wgReceiver,
-        arguments: <String, dynamic>{'tunnel': _wgTunnel},
-      );
-      await intent.sendBroadcast();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              goOffline
-                  ? 'WireGuard: bringing tunnel "$_wgTunnel" down…'
-                  : 'WireGuard: bringing tunnel "$_wgTunnel" up…',
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'WireGuard tunnel control failed — '
-              '${e.toString().split('\n').first}',
-            ),
-          ),
-        );
-      }
-    }
-  }
+  }) => toggleWireGuardTunnel(goOffline: goOffline, context: context);
 
   Future<void> _saveKey() async {
     await ref.read(apiKeyProvider.notifier).set(_keyCtrl.text.trim());

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
+import '../services/wireguard_service.dart';
 import '../widgets/sync_banner.dart';
 import 'calendar_screen.dart';
 import 'occurrence_list_screen.dart';
@@ -170,16 +171,15 @@ class _OfflineToggleButton extends ConsumerWidget {
                 : Colors.white38,
       ),
       onPressed: () {
-        ref.read(forcedOfflineProvider.notifier).toggle();
         final next = !forcedOffline;
+        ref.read(forcedOfflineProvider.notifier).toggle();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              next ? 'Offline mode enabled — sync paused' : 'Offline mode disabled — sync resumed',
-            ),
+            content: Text(next ? 'Offline mode enabled' : 'Offline mode disabled'),
             duration: const Duration(seconds: 2),
           ),
         );
+        toggleWireGuardTunnel(goOffline: next, context: context);
       },
     );
   }
