@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,6 +19,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       'category=android.intent.category.LAUNCHER;'
       'package=com.wireguard.android;end';
   static const _wireGuardIosUri = 'wireguard://';
+  static const _wgTunnel = 'k8';
+  static const _wgActionUp   = 'com.wireguard.android.action.SET_TUNNEL_UP';
+  static const _wgActionDown = 'com.wireguard.android.action.SET_TUNNEL_DOWN';
   late TextEditingController _urlCtrl;
   late TextEditingController _keyCtrl;
   bool _saved = false;
@@ -151,8 +155,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: const Text('Force offline mode'),
               subtitle: const Text('Pause sync while keeping local edits'),
               value: forcedOffline,
-              onChanged: (_) =>
-                  ref.read(forcedOfflineProvider.notifier).toggle(),
+              onChanged: (val) {
+                ref.read(forcedOfflineProvider.notifier).toggle();
+                _toggleWireGuardTunnel(goOffline: val, context: context);
+              },
               dense: true,
               contentPadding: EdgeInsets.zero,
             ),
@@ -261,6 +267,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('WireGuard not found — please install or open it manually')),
       );
+    }
+  }
+
+  /// Sends a WireGuard tunnel-control broadcast on Android.
+  ///
+  /// Validates: (1) platform is Android, (2) WireGuard app is installed.
+  /// The tunnel name is hardcoded to [_wgTunnel]; the broadcast silently
+  /// no-ops inside WireGuard if that tunnel name doesn't exist.
+  Future<void> _toggleWireGuardTunnel({
+    required bool goOffline,
+    required BuildContext context,
+  }) async {
+    if (!Platform.isAndroid) return;
+
+    final wgUri = Uri.parse(_wireGuardAndroidUri);
+    if (!await canLaunchUrl(wgUri)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('WireGuard not installed — tunnel "$_wgTunnel" cannot be toggled'),
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final intent = AndroidIntent(
+        action: goOffline ? _wgActionDown : _wgActionUp,
+        package: 'com.wireguard.android',
+        arguments: <String, dynamic>{'tunnel': _wgTunnel},
+      );
+      await intent.sendBroadcast();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'WireGuard tunnel control failed — '
+              '${e.toString().split('\n').first}',
+            ),
+          ),
+        );
+      }
     }
   }
 
