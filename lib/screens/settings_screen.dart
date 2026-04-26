@@ -146,6 +146,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
             ],
+            const SizedBox(height: 8),
+            SwitchListTile(
+              title: const Text('Force offline mode'),
+              subtitle: const Text('Pause sync while keeping local edits'),
+              value: forcedOffline,
+              onChanged: (_) =>
+                  ref.read(forcedOfflineProvider.notifier).toggle(),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
           ],
         ),
 
@@ -276,6 +286,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         SyncPhase.idle    => 'Idle',
         SyncPhase.pushing => 'Pushing changes…',
         SyncPhase.pulling => 'Pulling data…',
+        SyncPhase.offline => 'Offline — sync suppressed',
         SyncPhase.error   => 'Error',
       };
 }

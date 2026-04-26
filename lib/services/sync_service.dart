@@ -252,6 +252,7 @@ class SyncService {
     pushed += await _pushTasks(errors);
     pushed += await _pushSubtasks(errors);
     pushed += await _pushCreditCards(errors);
+    pushed += await _pushGroceryStores(errors);
     pushed += await _pushGroceryLists(errors);
     pushed += await _pushGroceryListItems(errors);
 
@@ -355,9 +356,14 @@ class SyncService {
             count++;
         }
       } on DioException catch (e) {
-        final detail = _dioErrorDetail(e);
-        dev.log('_pushSubtasks: local=${sub.id} $detail', name: 'sync', level: 900);
-        errors.add('Subtask ${sub.id}: $detail');
+        if (e.response?.statusCode == 404) {
+          dev.log('_pushSubtasks: 404 for local=${sub.id}, removing orphan', name: 'sync');
+          await _db.deleteSubtaskLocal(sub.id);
+        } else {
+          final detail = _dioErrorDetail(e);
+          dev.log('_pushSubtasks: local=${sub.id} $detail', name: 'sync', level: 900);
+          errors.add('Subtask ${sub.id}: $detail');
+        }
       }
     }
     return count;
@@ -424,6 +430,7 @@ class SyncService {
               name: Value(s.name),
               location: Value(s.location),
               isActive: Value(s.isActive),
+              syncStatus: Value(SyncStatus.synced.value),
             ))
         .toList());
     await _db.purgeGroceryStores(stores.map((s) => s.id).toSet());
@@ -444,14 +451,26 @@ class SyncService {
 
   Future<void> _refreshGroceryOnHand() async {
     final onHand = await _api.fetchOnHand();
-    await _db.upsertGroceryOnHand(onHand
+    // Fetch pending rows before upserting so we can skip overwriting them
+    // with stale server data — protects any quantity edits queued offline.
+    final pending = await _db.getPendingGroceryOnHand();
+    final pendingItemIds = pending.map((o) => o.itemServerId).toSet();
+    final toUpsert = onHand
+        .where((o) => !pendingItemIds.contains(o.itemId))
         .map((o) => GroceryOnHandCompanion(
               itemServerId: Value(o.itemId),
               quantity: Value(o.quantity),
               unit: Value(o.unit),
+              syncStatus: const Value(0),
             ))
-        .toList());
-    await _db.purgeGroceryOnHand(onHand.map((o) => o.itemId).toSet());
+        .toList();
+    if (toUpsert.isNotEmpty) await _db.upsertGroceryOnHand(toUpsert);
+    // Purge catalog-deleted items, but never remove rows that are pending push.
+    final keepIds = {
+      ...onHand.map((o) => o.itemId),
+      ...pendingItemIds,
+    };
+    await _db.purgeGroceryOnHand(keepIds);
   }
 
   Future<void> _refreshGroceryLists() async {
@@ -521,6 +540,50 @@ class SyncService {
         .map((i) => i.id)
         .toList();
     await _db.deleteGroceryListItemsLocalBatch(orphanItemIds);
+  }
+
+  Future<int> _pushGroceryStores(List<String> errors) async {
+    int count = 0;
+    final pending = await _db.getPendingGroceryStores();
+    for (final store in pending) {
+      try {
+        switch (SyncStatus.fromInt(store.syncStatus)) {
+          case SyncStatus.synced:
+            break;
+          case SyncStatus.pendingCreate:
+            final created = await _api.createStore(_storeToJson(store));
+            await _db.markGroceryStoreSynced(store.id, created.id);
+            count++;
+          case SyncStatus.pendingUpdate:
+            if (store.serverId == null) break;
+            await _api.updateStore(store.serverId!, _storeToJson(store));
+            await _db.markGroceryStoreSynced(store.id, store.serverId!);
+            count++;
+          case SyncStatus.pendingDelete:
+            if (store.serverId == null) break;
+            await _api.deleteStore(store.serverId!);
+            await _db.deleteGroceryStoreLocal(store.id);
+            count++;
+        }
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          dev.log(
+            '_pushGroceryStores: 404 for local=${store.id}, removing orphan',
+            name: 'sync',
+          );
+          await _db.deleteGroceryStoreLocal(store.id);
+        } else {
+          final detail = _dioErrorDetail(e);
+          dev.log(
+            '_pushGroceryStores: local=${store.id} $detail',
+            name: 'sync',
+            level: 900,
+          );
+          errors.add('GroceryStore ${store.id}: $detail');
+        }
+      }
+    }
+    return count;
   }
 
   Future<int> _pushGroceryLists(List<String> errors) async {
@@ -630,6 +693,12 @@ class SyncService {
     }
     return count;
   }
+
+  Map<String, dynamic> _storeToJson(GroceryStore s) => {
+        'name': s.name,
+        if (s.location != null) 'location': s.location,
+        'is_active': s.isActive,
+      };
 
   Map<String, dynamic> _groceryListToJson(GroceryList l) => {
         'name': l.name,

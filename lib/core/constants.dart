@@ -1,3 +1,5 @@
+import 'dart:developer' as dev;
+
 class AppConstants {
   AppConstants._();
 
@@ -44,10 +46,18 @@ enum SyncStatus {
   final int value;
 
   /// Converts the raw SQLite integer back to the enum.
-  /// Falls back to [synced] for unexpected values so callers never crash,
-  /// but the unknown value will simply not be pushed.
-  static SyncStatus fromInt(int v) => SyncStatus.values.firstWhere(
-        (s) => s.value == v,
-        orElse: () => SyncStatus.synced,
+  /// Falls back to [pendingUpdate] for unrecognised values so the row is
+  /// retried rather than silently dropped.
+  static SyncStatus fromInt(int v) {
+    final result = SyncStatus.values.where((s) => s.value == v).firstOrNull;
+    if (result == null) {
+      dev.log(
+        'SyncStatus.fromInt: unexpected value $v, treating as pendingUpdate',
+        name: 'db',
+        level: 900,
       );
+      return SyncStatus.pendingUpdate;
+    }
+    return result;
+  }
 }

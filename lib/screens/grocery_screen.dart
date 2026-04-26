@@ -343,15 +343,15 @@ class _ListDetailView extends ConsumerWidget {
     );
   }
 
-  void _toggle(WidgetRef ref, GroceryListItem item) {
+  Future<void> _toggle(WidgetRef ref, GroceryListItem item) async {
     final next =
         item.status == 'needed' ? 'purchased' : 'needed';
-    ref.read(dbProvider).updateGroceryListItemStatus(item.id, next);
+    await ref.read(dbProvider).updateGroceryListItemStatus(item.id, next);
     ref.read(syncStateProvider.notifier).syncIfOnline();
   }
 
-  void _removeItem(WidgetRef ref, GroceryListItem item) {
-    ref.read(dbProvider).markGroceryListItemDeleted(item.id);
+  Future<void> _removeItem(WidgetRef ref, GroceryListItem item) async {
+    await ref.read(dbProvider).markGroceryListItemDeleted(item.id);
     ref.read(syncStateProvider.notifier).syncIfOnline();
   }
 
@@ -1012,23 +1012,16 @@ class _CreateStoreSheetState extends ConsumerState<_CreateStoreSheet> {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
     setState(() => _saving = true);
-    try {
-      await ref.read(apiClientProvider).createStore({
-        'name': name,
-        if (_locationCtrl.text.trim().isNotEmpty)
-          'location': _locationCtrl.text.trim(),
-      });
-      await ref.read(syncStateProvider.notifier).silentRefresh();
-      if (mounted) Navigator.of(context).pop();
-    } catch (_) {
-      if (mounted) {
-        setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to create store — check your connection'),
+    final location = _locationCtrl.text.trim();
+    await ref.read(dbProvider).insertGroceryStore(
+          GroceryStoresCompanion(
+            name: Value(name),
+            location: Value(location.isNotEmpty ? location : null),
+            isActive: const Value(true),
+            syncStatus: Value(SyncStatus.pendingCreate.value),
           ),
         );
-      }
-    }
+    ref.read(syncStateProvider.notifier).syncIfOnline();
+    if (mounted) Navigator.of(context).pop();
   }
 }

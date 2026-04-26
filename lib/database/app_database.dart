@@ -108,6 +108,8 @@ class GroceryStores extends Table {
   TextColumn get location  => text().nullable()();
   BoolColumn get isActive  =>
       boolean().withDefault(const Constant(true))();
+  IntColumn  get syncStatus =>
+      integer().withDefault(const Constant(0))();
 }
 
 class GroceryItems extends Table {
@@ -129,6 +131,8 @@ class GroceryOnHand extends Table {
       real().withDefault(const Constant(0.0))();
   TextColumn get unit         =>
       text().withDefault(const Constant('each'))();
+  IntColumn  get syncStatus   =>
+      integer().withDefault(const Constant(0))();
 }
 
 class GroceryLists extends Table {
@@ -200,7 +204,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 7;
 
   // Table names derived from Drift-generated TableInfo objects so they are
   // never user-controlled. The assert enforces the safe character set.
@@ -248,6 +252,12 @@ class AppDatabase extends _$AppDatabase {
         // Idempotent — creates for all tables including the new ones.
         await _createServerIdIndexes();
         await _createGroceryIndexes();
+      }
+      if (from < 6) {
+        await m.addColumn(groceryStores, groceryStores.syncStatus);
+      }
+      if (from < 7) {
+        await m.addColumn(groceryOnHand, groceryOnHand.syncStatus);
       }
     },
   );
@@ -360,12 +370,21 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> updateOccurrenceStatus(int localId, String status) async {
-    await (update(occurrences)..where((o) => o.id.equals(localId))).write(
-      OccurrencesCompanion(
-        status: Value(status),
-        syncStatus: Value(SyncStatus.pendingUpdate.value),
-      ),
-    );
+    await transaction(() async {
+      final row = await (select(occurrences)
+            ..where((o) => o.id.equals(localId)))
+          .getSingleOrNull();
+      if (row == null) return;
+      final nextSync = row.syncStatus == SyncStatus.synced.value
+          ? SyncStatus.pendingUpdate.value
+          : row.syncStatus;
+      await (update(occurrences)..where((o) => o.id.equals(localId))).write(
+        OccurrencesCompanion(
+          status: Value(status),
+          syncStatus: Value(nextSync),
+        ),
+      );
+    });
   }
 
   Future<void> markOccurrenceSynced(int localId, int serverId) async {
@@ -609,6 +628,44 @@ class AppDatabase extends _$AppDatabase {
         .go();
   }
 
+  Future<List<GroceryStore>> getPendingGroceryStores() {
+    return (select(groceryStores)
+          ..where((s) => s.syncStatus.isNotValue(0)))
+        .get();
+  }
+
+  Future<int> insertGroceryStore(GroceryStoresCompanion row) =>
+      into(groceryStores).insert(row);
+
+  Future<void> markGroceryStoreSynced(int localId, int serverId) async {
+    await (update(groceryStores)..where((s) => s.id.equals(localId))).write(
+      GroceryStoresCompanion(
+        serverId: Value(serverId),
+        syncStatus: Value(SyncStatus.synced.value),
+      ),
+    );
+  }
+
+  Future<void> markGroceryStoreDeleted(int localId) async {
+    final store = await (select(groceryStores)
+          ..where((s) => s.id.equals(localId)))
+        .getSingleOrNull();
+    if (store == null) return;
+    if (store.serverId == null) {
+      await (delete(groceryStores)..where((s) => s.id.equals(localId))).go();
+    } else {
+      await (update(groceryStores)..where((s) => s.id.equals(localId))).write(
+        GroceryStoresCompanion(
+          syncStatus: Value(SyncStatus.pendingDelete.value),
+        ),
+      );
+    }
+  }
+
+  Future<void> deleteGroceryStoreLocal(int localId) async {
+    await (delete(groceryStores)..where((s) => s.id.equals(localId))).go();
+  }
+
   // ── Grocery Item DAO ────────────────────────────────────────────────────────
 
   Stream<List<GroceryItem>> watchGroceryItems() =>
@@ -673,6 +730,18 @@ class AppDatabase extends _$AppDatabase {
         .go();
   }
 
+  Future<List<GroceryOnHandData>> getPendingGroceryOnHand() {
+    return (select(groceryOnHand)
+          ..where((o) => o.syncStatus.isNotValue(0)))
+        .get();
+  }
+
+  Future<void> markGroceryOnHandSynced(int localId) async {
+    await (update(groceryOnHand)..where((o) => o.id.equals(localId))).write(
+      GroceryOnHandCompanion(syncStatus: const Value(0)),
+    );
+  }
+
   // ── Grocery List DAO ────────────────────────────────────────────────────────
 
   Stream<List<GroceryList>> watchGroceryLists() =>
@@ -694,12 +763,21 @@ class AppDatabase extends _$AppDatabase {
     int localId,
     String status,
   ) async {
-    await (update(groceryLists)..where((l) => l.id.equals(localId))).write(
-      GroceryListsCompanion(
-        status: Value(status),
-        syncStatus: Value(SyncStatus.pendingUpdate.value),
-      ),
-    );
+    await transaction(() async {
+      final row = await (select(groceryLists)
+            ..where((l) => l.id.equals(localId)))
+          .getSingleOrNull();
+      if (row == null) return;
+      final nextSync = row.syncStatus == SyncStatus.synced.value
+          ? SyncStatus.pendingUpdate.value
+          : row.syncStatus;
+      await (update(groceryLists)..where((l) => l.id.equals(localId))).write(
+        GroceryListsCompanion(
+          status: Value(status),
+          syncStatus: Value(nextSync),
+        ),
+      );
+    });
   }
 
   Future<void> markGroceryListDeleted(int localId) async {
@@ -797,14 +875,23 @@ class AppDatabase extends _$AppDatabase {
     int localId,
     String status,
   ) async {
-    await (update(groceryListItems)
-          ..where((i) => i.id.equals(localId)))
-        .write(
-      GroceryListItemsCompanion(
-        status: Value(status),
-        syncStatus: Value(SyncStatus.pendingUpdate.value),
-      ),
-    );
+    await transaction(() async {
+      final row = await (select(groceryListItems)
+            ..where((i) => i.id.equals(localId)))
+          .getSingleOrNull();
+      if (row == null) return;
+      final nextSync = row.syncStatus == SyncStatus.synced.value
+          ? SyncStatus.pendingUpdate.value
+          : row.syncStatus;
+      await (update(groceryListItems)
+            ..where((i) => i.id.equals(localId)))
+          .write(
+        GroceryListItemsCompanion(
+          status: Value(status),
+          syncStatus: Value(nextSync),
+        ),
+      );
+    });
   }
 
   Future<void> markGroceryListItemDeleted(int localId) async {

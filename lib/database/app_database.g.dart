@@ -5272,6 +5272,18 @@ class $GroceryStoresTable extends GroceryStores
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<int> syncStatus = GeneratedColumn<int>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -5279,6 +5291,7 @@ class $GroceryStoresTable extends GroceryStores
     name,
     location,
     isActive,
+    syncStatus,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5321,6 +5334,12 @@ class $GroceryStoresTable extends GroceryStores
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
     return context;
   }
 
@@ -5350,6 +5369,10 @@ class $GroceryStoresTable extends GroceryStores
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sync_status'],
+      )!,
     );
   }
 
@@ -5365,12 +5388,14 @@ class GroceryStore extends DataClass implements Insertable<GroceryStore> {
   final String name;
   final String? location;
   final bool isActive;
+  final int syncStatus;
   const GroceryStore({
     required this.id,
     this.serverId,
     required this.name,
     this.location,
     required this.isActive,
+    required this.syncStatus,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -5384,6 +5409,7 @@ class GroceryStore extends DataClass implements Insertable<GroceryStore> {
       map['location'] = Variable<String>(location);
     }
     map['is_active'] = Variable<bool>(isActive);
+    map['sync_status'] = Variable<int>(syncStatus);
     return map;
   }
 
@@ -5398,6 +5424,7 @@ class GroceryStore extends DataClass implements Insertable<GroceryStore> {
           ? const Value.absent()
           : Value(location),
       isActive: Value(isActive),
+      syncStatus: Value(syncStatus),
     );
   }
 
@@ -5412,6 +5439,7 @@ class GroceryStore extends DataClass implements Insertable<GroceryStore> {
       name: serializer.fromJson<String>(json['name']),
       location: serializer.fromJson<String?>(json['location']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      syncStatus: serializer.fromJson<int>(json['syncStatus']),
     );
   }
   @override
@@ -5423,6 +5451,7 @@ class GroceryStore extends DataClass implements Insertable<GroceryStore> {
       'name': serializer.toJson<String>(name),
       'location': serializer.toJson<String?>(location),
       'isActive': serializer.toJson<bool>(isActive),
+      'syncStatus': serializer.toJson<int>(syncStatus),
     };
   }
 
@@ -5432,12 +5461,14 @@ class GroceryStore extends DataClass implements Insertable<GroceryStore> {
     String? name,
     Value<String?> location = const Value.absent(),
     bool? isActive,
+    int? syncStatus,
   }) => GroceryStore(
     id: id ?? this.id,
     serverId: serverId.present ? serverId.value : this.serverId,
     name: name ?? this.name,
     location: location.present ? location.value : this.location,
     isActive: isActive ?? this.isActive,
+    syncStatus: syncStatus ?? this.syncStatus,
   );
   GroceryStore copyWithCompanion(GroceryStoresCompanion data) {
     return GroceryStore(
@@ -5446,6 +5477,9 @@ class GroceryStore extends DataClass implements Insertable<GroceryStore> {
       name: data.name.present ? data.name.value : this.name,
       location: data.location.present ? data.location.value : this.location,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
     );
   }
 
@@ -5456,13 +5490,15 @@ class GroceryStore extends DataClass implements Insertable<GroceryStore> {
           ..write('serverId: $serverId, ')
           ..write('name: $name, ')
           ..write('location: $location, ')
-          ..write('isActive: $isActive')
+          ..write('isActive: $isActive, ')
+          ..write('syncStatus: $syncStatus')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, serverId, name, location, isActive);
+  int get hashCode =>
+      Object.hash(id, serverId, name, location, isActive, syncStatus);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5471,7 +5507,8 @@ class GroceryStore extends DataClass implements Insertable<GroceryStore> {
           other.serverId == this.serverId &&
           other.name == this.name &&
           other.location == this.location &&
-          other.isActive == this.isActive);
+          other.isActive == this.isActive &&
+          other.syncStatus == this.syncStatus);
 }
 
 class GroceryStoresCompanion extends UpdateCompanion<GroceryStore> {
@@ -5480,12 +5517,14 @@ class GroceryStoresCompanion extends UpdateCompanion<GroceryStore> {
   final Value<String> name;
   final Value<String?> location;
   final Value<bool> isActive;
+  final Value<int> syncStatus;
   const GroceryStoresCompanion({
     this.id = const Value.absent(),
     this.serverId = const Value.absent(),
     this.name = const Value.absent(),
     this.location = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.syncStatus = const Value.absent(),
   });
   GroceryStoresCompanion.insert({
     this.id = const Value.absent(),
@@ -5493,6 +5532,7 @@ class GroceryStoresCompanion extends UpdateCompanion<GroceryStore> {
     required String name,
     this.location = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.syncStatus = const Value.absent(),
   }) : name = Value(name);
   static Insertable<GroceryStore> custom({
     Expression<int>? id,
@@ -5500,6 +5540,7 @@ class GroceryStoresCompanion extends UpdateCompanion<GroceryStore> {
     Expression<String>? name,
     Expression<String>? location,
     Expression<bool>? isActive,
+    Expression<int>? syncStatus,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5507,6 +5548,7 @@ class GroceryStoresCompanion extends UpdateCompanion<GroceryStore> {
       if (name != null) 'name': name,
       if (location != null) 'location': location,
       if (isActive != null) 'is_active': isActive,
+      if (syncStatus != null) 'sync_status': syncStatus,
     });
   }
 
@@ -5516,6 +5558,7 @@ class GroceryStoresCompanion extends UpdateCompanion<GroceryStore> {
     Value<String>? name,
     Value<String?>? location,
     Value<bool>? isActive,
+    Value<int>? syncStatus,
   }) {
     return GroceryStoresCompanion(
       id: id ?? this.id,
@@ -5523,6 +5566,7 @@ class GroceryStoresCompanion extends UpdateCompanion<GroceryStore> {
       name: name ?? this.name,
       location: location ?? this.location,
       isActive: isActive ?? this.isActive,
+      syncStatus: syncStatus ?? this.syncStatus,
     );
   }
 
@@ -5544,6 +5588,9 @@ class GroceryStoresCompanion extends UpdateCompanion<GroceryStore> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<int>(syncStatus.value);
+    }
     return map;
   }
 
@@ -5554,7 +5601,8 @@ class GroceryStoresCompanion extends UpdateCompanion<GroceryStore> {
           ..write('serverId: $serverId, ')
           ..write('name: $name, ')
           ..write('location: $location, ')
-          ..write('isActive: $isActive')
+          ..write('isActive: $isActive, ')
+          ..write('syncStatus: $syncStatus')
           ..write(')'))
         .toString();
   }
@@ -5979,8 +6027,26 @@ class $GroceryOnHandTable extends GroceryOnHand
     requiredDuringInsert: false,
     defaultValue: const Constant('each'),
   );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, itemServerId, quantity, unit];
+  late final GeneratedColumn<int> syncStatus = GeneratedColumn<int>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    itemServerId,
+    quantity,
+    unit,
+    syncStatus,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -6019,6 +6085,12 @@ class $GroceryOnHandTable extends GroceryOnHand
         unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
       );
     }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
     return context;
   }
 
@@ -6044,6 +6116,10 @@ class $GroceryOnHandTable extends GroceryOnHand
         DriftSqlType.string,
         data['${effectivePrefix}unit'],
       )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sync_status'],
+      )!,
     );
   }
 
@@ -6059,11 +6135,13 @@ class GroceryOnHandData extends DataClass
   final int itemServerId;
   final double quantity;
   final String unit;
+  final int syncStatus;
   const GroceryOnHandData({
     required this.id,
     required this.itemServerId,
     required this.quantity,
     required this.unit,
+    required this.syncStatus,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6072,6 +6150,7 @@ class GroceryOnHandData extends DataClass
     map['item_server_id'] = Variable<int>(itemServerId);
     map['quantity'] = Variable<double>(quantity);
     map['unit'] = Variable<String>(unit);
+    map['sync_status'] = Variable<int>(syncStatus);
     return map;
   }
 
@@ -6081,6 +6160,7 @@ class GroceryOnHandData extends DataClass
       itemServerId: Value(itemServerId),
       quantity: Value(quantity),
       unit: Value(unit),
+      syncStatus: Value(syncStatus),
     );
   }
 
@@ -6094,6 +6174,7 @@ class GroceryOnHandData extends DataClass
       itemServerId: serializer.fromJson<int>(json['itemServerId']),
       quantity: serializer.fromJson<double>(json['quantity']),
       unit: serializer.fromJson<String>(json['unit']),
+      syncStatus: serializer.fromJson<int>(json['syncStatus']),
     );
   }
   @override
@@ -6104,6 +6185,7 @@ class GroceryOnHandData extends DataClass
       'itemServerId': serializer.toJson<int>(itemServerId),
       'quantity': serializer.toJson<double>(quantity),
       'unit': serializer.toJson<String>(unit),
+      'syncStatus': serializer.toJson<int>(syncStatus),
     };
   }
 
@@ -6112,11 +6194,13 @@ class GroceryOnHandData extends DataClass
     int? itemServerId,
     double? quantity,
     String? unit,
+    int? syncStatus,
   }) => GroceryOnHandData(
     id: id ?? this.id,
     itemServerId: itemServerId ?? this.itemServerId,
     quantity: quantity ?? this.quantity,
     unit: unit ?? this.unit,
+    syncStatus: syncStatus ?? this.syncStatus,
   );
   GroceryOnHandData copyWithCompanion(GroceryOnHandCompanion data) {
     return GroceryOnHandData(
@@ -6126,6 +6210,9 @@ class GroceryOnHandData extends DataClass
           : this.itemServerId,
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
       unit: data.unit.present ? data.unit.value : this.unit,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
     );
   }
 
@@ -6135,13 +6222,14 @@ class GroceryOnHandData extends DataClass
           ..write('id: $id, ')
           ..write('itemServerId: $itemServerId, ')
           ..write('quantity: $quantity, ')
-          ..write('unit: $unit')
+          ..write('unit: $unit, ')
+          ..write('syncStatus: $syncStatus')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, itemServerId, quantity, unit);
+  int get hashCode => Object.hash(id, itemServerId, quantity, unit, syncStatus);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -6149,7 +6237,8 @@ class GroceryOnHandData extends DataClass
           other.id == this.id &&
           other.itemServerId == this.itemServerId &&
           other.quantity == this.quantity &&
-          other.unit == this.unit);
+          other.unit == this.unit &&
+          other.syncStatus == this.syncStatus);
 }
 
 class GroceryOnHandCompanion extends UpdateCompanion<GroceryOnHandData> {
@@ -6157,29 +6246,34 @@ class GroceryOnHandCompanion extends UpdateCompanion<GroceryOnHandData> {
   final Value<int> itemServerId;
   final Value<double> quantity;
   final Value<String> unit;
+  final Value<int> syncStatus;
   const GroceryOnHandCompanion({
     this.id = const Value.absent(),
     this.itemServerId = const Value.absent(),
     this.quantity = const Value.absent(),
     this.unit = const Value.absent(),
+    this.syncStatus = const Value.absent(),
   });
   GroceryOnHandCompanion.insert({
     this.id = const Value.absent(),
     required int itemServerId,
     this.quantity = const Value.absent(),
     this.unit = const Value.absent(),
+    this.syncStatus = const Value.absent(),
   }) : itemServerId = Value(itemServerId);
   static Insertable<GroceryOnHandData> custom({
     Expression<int>? id,
     Expression<int>? itemServerId,
     Expression<double>? quantity,
     Expression<String>? unit,
+    Expression<int>? syncStatus,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (itemServerId != null) 'item_server_id': itemServerId,
       if (quantity != null) 'quantity': quantity,
       if (unit != null) 'unit': unit,
+      if (syncStatus != null) 'sync_status': syncStatus,
     });
   }
 
@@ -6188,12 +6282,14 @@ class GroceryOnHandCompanion extends UpdateCompanion<GroceryOnHandData> {
     Value<int>? itemServerId,
     Value<double>? quantity,
     Value<String>? unit,
+    Value<int>? syncStatus,
   }) {
     return GroceryOnHandCompanion(
       id: id ?? this.id,
       itemServerId: itemServerId ?? this.itemServerId,
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
+      syncStatus: syncStatus ?? this.syncStatus,
     );
   }
 
@@ -6212,6 +6308,9 @@ class GroceryOnHandCompanion extends UpdateCompanion<GroceryOnHandData> {
     if (unit.present) {
       map['unit'] = Variable<String>(unit.value);
     }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<int>(syncStatus.value);
+    }
     return map;
   }
 
@@ -6221,7 +6320,8 @@ class GroceryOnHandCompanion extends UpdateCompanion<GroceryOnHandData> {
           ..write('id: $id, ')
           ..write('itemServerId: $itemServerId, ')
           ..write('quantity: $quantity, ')
-          ..write('unit: $unit')
+          ..write('unit: $unit, ')
+          ..write('syncStatus: $syncStatus')
           ..write(')'))
         .toString();
   }
@@ -9868,6 +9968,7 @@ typedef $$GroceryStoresTableCreateCompanionBuilder =
       required String name,
       Value<String?> location,
       Value<bool> isActive,
+      Value<int> syncStatus,
     });
 typedef $$GroceryStoresTableUpdateCompanionBuilder =
     GroceryStoresCompanion Function({
@@ -9876,6 +9977,7 @@ typedef $$GroceryStoresTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String?> location,
       Value<bool> isActive,
+      Value<int> syncStatus,
     });
 
 class $$GroceryStoresTableFilterComposer
@@ -9909,6 +10011,11 @@ class $$GroceryStoresTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9946,6 +10053,11 @@ class $$GroceryStoresTableOrderingComposer
     column: $table.isActive,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$GroceryStoresTableAnnotationComposer
@@ -9971,6 +10083,11 @@ class $$GroceryStoresTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<int> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
 }
 
 class $$GroceryStoresTableTableManager
@@ -10009,12 +10126,14 @@ class $$GroceryStoresTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String?> location = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<int> syncStatus = const Value.absent(),
               }) => GroceryStoresCompanion(
                 id: id,
                 serverId: serverId,
                 name: name,
                 location: location,
                 isActive: isActive,
+                syncStatus: syncStatus,
               ),
           createCompanionCallback:
               ({
@@ -10023,12 +10142,14 @@ class $$GroceryStoresTableTableManager
                 required String name,
                 Value<String?> location = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<int> syncStatus = const Value.absent(),
               }) => GroceryStoresCompanion.insert(
                 id: id,
                 serverId: serverId,
                 name: name,
                 location: location,
                 isActive: isActive,
+                syncStatus: syncStatus,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -10259,6 +10380,7 @@ typedef $$GroceryOnHandTableCreateCompanionBuilder =
       required int itemServerId,
       Value<double> quantity,
       Value<String> unit,
+      Value<int> syncStatus,
     });
 typedef $$GroceryOnHandTableUpdateCompanionBuilder =
     GroceryOnHandCompanion Function({
@@ -10266,6 +10388,7 @@ typedef $$GroceryOnHandTableUpdateCompanionBuilder =
       Value<int> itemServerId,
       Value<double> quantity,
       Value<String> unit,
+      Value<int> syncStatus,
     });
 
 class $$GroceryOnHandTableFilterComposer
@@ -10294,6 +10417,11 @@ class $$GroceryOnHandTableFilterComposer
 
   ColumnFilters<String> get unit => $composableBuilder(
     column: $table.unit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10326,6 +10454,11 @@ class $$GroceryOnHandTableOrderingComposer
     column: $table.unit,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$GroceryOnHandTableAnnotationComposer
@@ -10350,6 +10483,11 @@ class $$GroceryOnHandTableAnnotationComposer
 
   GeneratedColumn<String> get unit =>
       $composableBuilder(column: $table.unit, builder: (column) => column);
+
+  GeneratedColumn<int> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
 }
 
 class $$GroceryOnHandTableTableManager
@@ -10391,11 +10529,13 @@ class $$GroceryOnHandTableTableManager
                 Value<int> itemServerId = const Value.absent(),
                 Value<double> quantity = const Value.absent(),
                 Value<String> unit = const Value.absent(),
+                Value<int> syncStatus = const Value.absent(),
               }) => GroceryOnHandCompanion(
                 id: id,
                 itemServerId: itemServerId,
                 quantity: quantity,
                 unit: unit,
+                syncStatus: syncStatus,
               ),
           createCompanionCallback:
               ({
@@ -10403,11 +10543,13 @@ class $$GroceryOnHandTableTableManager
                 required int itemServerId,
                 Value<double> quantity = const Value.absent(),
                 Value<String> unit = const Value.absent(),
+                Value<int> syncStatus = const Value.absent(),
               }) => GroceryOnHandCompanion.insert(
                 id: id,
                 itemServerId: itemServerId,
                 quantity: quantity,
                 unit: unit,
+                syncStatus: syncStatus,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

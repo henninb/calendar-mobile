@@ -173,10 +173,16 @@ class ConnectivityNotifier extends Notifier<bool> {
   }
 
   Future<void> _init() async {
-    final results = await _connectivity.checkConnectivity();
-    if (!_active) return;
-    _networkOnline = _isOnline(results);
-    state = _networkOnline && !ref.read(forcedOfflineProvider);
+    try {
+      final results = await _connectivity.checkConnectivity();
+      if (!_active) return;
+      _networkOnline = _isOnline(results);
+      state = _networkOnline && !ref.read(forcedOfflineProvider);
+    } catch (e) {
+      dev.log('ConnectivityNotifier._init failed: $e', name: 'connectivity', level: 900);
+      // Leave the optimistic initial state in place; sync errors will surface
+      // when the user triggers a manual sync.
+    }
 
     _sub = _connectivity.onConnectivityChanged.listen((results) {
       if (!_active) return;
@@ -203,7 +209,7 @@ final connectivityProvider = StreamProvider<List<ConnectivityResult>>((ref) {
 
 // ── Sync State ───────────────────────────────────────────────────────────────
 
-enum SyncPhase { idle, pulling, pushing, error }
+enum SyncPhase { idle, pulling, pushing, offline, error }
 
 @immutable
 class SyncState {
@@ -239,6 +245,7 @@ final syncStateProvider = NotifierProvider<SyncNotifier, SyncState>(SyncNotifier
 
 class SyncNotifier extends Notifier<SyncState> {
   Timer? _periodicTimer;
+  Timer? _debounce;
 
   @override
   SyncState build() {
@@ -248,11 +255,18 @@ class SyncNotifier extends Notifier<SyncState> {
       // SyncPhase.error every 5 minutes and show a spurious error banner.
       (_) { if (ref.read(isOnlineProvider) && ref.read(baseUrlProvider).isNotEmpty) silentRefresh(); },
     );
-    ref.onDispose(() => _periodicTimer?.cancel());
+    ref.onDispose(() {
+      _periodicTimer?.cancel();
+      _debounce?.cancel();
+    });
     return const SyncState();
   }
 
   Future<void> sync() async {
+    if (!ref.read(isOnlineProvider)) {
+      state = state.copyWith(phase: SyncPhase.offline, errorMessage: null);
+      return;
+    }
     if (ref.read(baseUrlProvider).isEmpty) {
       state = state.copyWith(
         phase: SyncPhase.error,
@@ -262,7 +276,11 @@ class SyncNotifier extends Notifier<SyncState> {
     }
     // Allow retrying from error state so a single push failure doesn't
     // permanently block future syncs (e.g. recurring task chain breaks).
-    if (state.phase != SyncPhase.idle && state.phase != SyncPhase.error) return;
+    if (state.phase != SyncPhase.idle &&
+        state.phase != SyncPhase.error &&
+        state.phase != SyncPhase.offline) {
+      return;
+    }
     dev.log('SyncNotifier.sync: start', name: 'sync');
 
     final syncSvc = ref.read(syncServiceProvider);
@@ -332,11 +350,12 @@ class SyncNotifier extends Notifier<SyncState> {
     }
   }
 
-  /// Triggers a full sync only when the app has effective connectivity.
-  /// Safe to call after a widget's ref has been disposed because this method
-  /// uses the notifier's own internal ref, not the caller's widget ref.
+  /// Triggers a debounced sync when the app has effective connectivity.
+  /// Rapid mutations coalesce into one sync after [AppConstants.syncDebounce].
   void syncIfOnline() {
-    if (ref.read(isOnlineProvider)) sync();
+    if (!ref.read(isOnlineProvider)) return;
+    _debounce?.cancel();
+    _debounce = Timer(AppConstants.syncDebounce, sync);
   }
 
   void clearError() {
