@@ -22,7 +22,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   final Map<String, bool> _collapsedSections = {};
 
   bool _isCollapsed(String key, bool isEmpty) =>
-      _collapsedSections[key] ?? isEmpty;
+      _collapsedSections[key] ?? (key != 'overdue_today');
 
   void _toggleSection(String key, bool isEmpty) {
     setState(() {
@@ -339,6 +339,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: () => _showDetail(context),
+        onLongPress: () => _showEdit(context),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -456,6 +457,18 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => _TaskDetailSheet(task: widget.task, catMap: widget.catMap),
+    );
+  }
+
+  void _showEdit(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _TaskForm(existing: widget.task),
     );
   }
 }
