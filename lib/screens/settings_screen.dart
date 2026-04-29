@@ -152,9 +152,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: const Text('Force offline mode'),
               subtitle: Text('Pause sync and disconnect WireGuard tunnel "$wgTunnelName"'),
               value: forcedOffline,
-              onChanged: (val) {
+              onChanged: (val) async {
                 ref.read(forcedOfflineProvider.notifier).toggle();
-                _toggleWireGuardTunnel(goOffline: val, context: context);
+                final ok = await _toggleWireGuardTunnel(goOffline: val, context: context);
+                if (!ok && context.mounted) {
+                  // WireGuard failed — revert the offline state so the switch
+                  // doesn't stay out of sync with the actual tunnel state.
+                  ref.read(forcedOfflineProvider.notifier).toggle();
+                }
               },
               dense: true,
               contentPadding: EdgeInsets.zero,
@@ -283,7 +288,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _toggleWireGuardTunnel({
+  Future<bool> _toggleWireGuardTunnel({
     required bool goOffline,
     required BuildContext context,
   }) => toggleWireGuardTunnel(goOffline: goOffline, context: context);

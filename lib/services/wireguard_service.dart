@@ -1,3 +1,4 @@
+import 'dart:async' show TimeoutException;
 import 'dart:io' show Platform;
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
@@ -15,19 +16,32 @@ const _wgChannel    = MethodChannel('wireguard_permission');
 /// Toggles the WireGuard tunnel [wgTunnelName].
 ///
 /// [goOffline] true → bring tunnel DOWN; false → bring tunnel UP.
+/// Returns true if the broadcast was dispatched, false on any failure.
 /// Shows SnackBar feedback. No-ops silently on non-Android platforms.
-Future<void> toggleWireGuardTunnel({
+Future<bool> toggleWireGuardTunnel({
   required bool goOffline,
   required BuildContext context,
 }) async {
-  if (!Platform.isAndroid) return;
+  if (!Platform.isAndroid) return true;
 
-  // Request CONTROL_TUNNELS — custom dangerous permission from WireGuard.
-  // Must be granted at runtime; wrap in try/catch so a MissingPluginException
-  // or channel error doesn't silently kill the function.
   bool granted;
   try {
-    granted = await _wgChannel.invokeMethod<bool>('request') ?? false;
+    // Let TimeoutException propagate so it shows a distinct message from
+    // a genuine permission denial.
+    granted = await _wgChannel
+            .invokeMethod<bool>('request')
+            .timeout(const Duration(seconds: 15)) ??
+        false;
+  } on TimeoutException {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('WireGuard permission request timed out — try again'),
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
+    return false;
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -37,7 +51,7 @@ Future<void> toggleWireGuardTunnel({
         ),
       );
     }
-    return;
+    return false;
   }
 
   if (!granted) {
@@ -52,7 +66,7 @@ Future<void> toggleWireGuardTunnel({
         ),
       );
     }
-    return;
+    return false;
   }
 
   try {
@@ -75,6 +89,7 @@ Future<void> toggleWireGuardTunnel({
         ),
       );
     }
+    return true;
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -86,5 +101,6 @@ Future<void> toggleWireGuardTunnel({
         ),
       );
     }
+    return false;
   }
 }

@@ -13,7 +13,7 @@ class MainActivity : FlutterActivity() {
     private val channelName = "wireguard_permission"
     private val requestCode = 1001
 
-    private var pendingResult: MethodChannel.Result? = null
+    private val pendingResults = mutableListOf<MethodChannel.Result>()
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -30,13 +30,25 @@ class MainActivity : FlutterActivity() {
                                 PackageManager.PERMISSION_GRANTED) {
                             result.success(true)
                         } else {
-                            pendingResult = result
-                            ActivityCompat.requestPermissions(this, arrayOf(wgPermission), requestCode)
+                            pendingResults.add(result)
+                            // Only launch the dialog for the first queued request;
+                            // subsequent ones share the same dialog outcome.
+                            if (pendingResults.size == 1) {
+                                ActivityCompat.requestPermissions(this, arrayOf(wgPermission), requestCode)
+                            }
                         }
                     }
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Fail any in-flight permission requests so their Dart Futures
+        // resolve immediately rather than hanging until the 15s timeout.
+        pendingResults.forEach { it.success(false) }
+        pendingResults.clear()
     }
 
     override fun onRequestPermissionsResult(
@@ -48,8 +60,9 @@ class MainActivity : FlutterActivity() {
         if (requestCode == this.requestCode) {
             val granted = grantResults.isNotEmpty() &&
                     grantResults[0] == PackageManager.PERMISSION_GRANTED
-            pendingResult?.success(granted)
-            pendingResult = null
+            val pending = pendingResults.toList()
+            pendingResults.clear()
+            pending.forEach { it.success(granted) }
         }
     }
 }
