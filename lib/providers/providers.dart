@@ -334,7 +334,10 @@ class SyncNotifier extends Notifier<SyncState> {
   Future<void> silentRefresh() async {
     if (!ref.read(isOnlineProvider)) return;
     if (ref.read(baseUrlProvider).isEmpty) return; // not yet configured
-    if (state.phase != SyncPhase.idle) return;
+    // Block only while a sync is actively in-progress. Allow retry from
+    // error/offline so the periodic timer and the connectivity-restored
+    // listener can auto-recover without requiring user interaction.
+    if (state.phase == SyncPhase.pulling || state.phase == SyncPhase.pushing) return;
     dev.log('SyncNotifier.silentRefresh: start', name: 'sync');
     state = state.copyWith(phase: SyncPhase.pulling);
     final svc = ref.read(syncServiceProvider);

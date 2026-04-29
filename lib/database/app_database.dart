@@ -751,6 +751,10 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  Future<void> deleteGroceryOnHandLocal(int localId) async {
+    await (delete(groceryOnHand)..where((o) => o.id.equals(localId))).go();
+  }
+
   // ── Grocery List DAO ────────────────────────────────────────────────────────
 
   Stream<List<GroceryList>> watchGroceryLists() =>

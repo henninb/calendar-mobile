@@ -237,6 +237,15 @@ class ApiClient {
         .toList();
   }
 
+  Future<ApiOnHand> upsertOnHand(int itemServerId, Map<String, dynamic> data) async {
+    final res = await _dio.put<Map<String, dynamic>>('/grocery/on-hand/$itemServerId', data: data);
+    return ApiOnHand.fromJson(res.data!);
+  }
+
+  Future<void> deleteOnHand(int itemServerId) async {
+    await _dio.delete('/grocery/on-hand/$itemServerId');
+  }
+
   // ── Grocery Lists ─────────────────────────────────────────────────────────────
 
   Future<List<ApiGroceryList>> fetchGroceryLists({

@@ -252,6 +252,7 @@ class SyncService {
     pushed += await _pushTasks(errors);
     pushed += await _pushSubtasks(errors);
     pushed += await _pushCreditCards(errors);
+    pushed += await _pushGroceryOnHand(errors);
     pushed += await _pushGroceryStores(errors);
     pushed += await _pushGroceryLists(errors);
     // Items are pushed after lists so markGroceryListSynced() has already
@@ -560,6 +561,47 @@ class SyncService {
         .map((i) => i.id)
         .toList();
     await _db.deleteGroceryListItemsLocalBatch(orphanItemIds);
+  }
+
+  Future<int> _pushGroceryOnHand(List<String> errors) async {
+    int count = 0;
+    final pending = await _db.getPendingGroceryOnHand();
+    for (final oh in pending) {
+      try {
+        switch (SyncStatus.fromInt(oh.syncStatus)) {
+          case SyncStatus.synced:
+            break;
+          case SyncStatus.pendingCreate:
+          case SyncStatus.pendingUpdate:
+            // PUT is an idempotent upsert keyed on item_id, so create and
+            // update are handled identically — safe to replay on retry.
+            await _api.upsertOnHand(oh.itemServerId, {
+              'quantity': oh.quantity,
+              'unit': oh.unit,
+            });
+            await _db.markGroceryOnHandSynced(oh.id);
+            count++;
+          case SyncStatus.pendingDelete:
+            await _api.deleteOnHand(oh.itemServerId);
+            await _db.deleteGroceryOnHandLocal(oh.id);
+            count++;
+        }
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 404) {
+          // Item deleted on server; remove the orphaned local record.
+          dev.log('_pushGroceryOnHand: 404 for local=${oh.id}, removing orphan', name: 'sync');
+          await _db.deleteGroceryOnHandLocal(oh.id);
+        } else {
+          final detail = _dioErrorDetail(e);
+          dev.log('_pushGroceryOnHand: local=${oh.id} $detail', name: 'sync', level: 900);
+          errors.add('GroceryOnHand ${oh.id}: $detail');
+        }
+      } catch (e) {
+        dev.log('_pushGroceryOnHand: local=${oh.id} unexpected: $e', name: 'sync', level: 900);
+        errors.add('GroceryOnHand ${oh.id}: unexpected error');
+      }
+    }
+    return count;
   }
 
   Future<int> _pushGroceryStores(List<String> errors) async {
