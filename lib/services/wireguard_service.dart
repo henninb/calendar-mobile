@@ -13,6 +13,19 @@ const _wgActionUp   = 'com.wireguard.android.action.SET_TUNNEL_UP';
 const _wgActionDown = 'com.wireguard.android.action.SET_TUNNEL_DOWN';
 const _wgChannel    = MethodChannel('wireguard_permission');
 
+/// Returns whether a VPN transport is currently active on this device.
+Future<bool> isWireGuardActive() async {
+  if (!Platform.isAndroid) return false;
+  try {
+    return await _wgChannel
+            .invokeMethod<bool>('isVpnActive')
+            .timeout(const Duration(seconds: 3)) ??
+        false;
+  } catch (_) {
+    return false;
+  }
+}
+
 /// Toggles the WireGuard tunnel [wgTunnelName].
 ///
 /// [goOffline] true → bring tunnel DOWN; false → bring tunnel UP.
@@ -23,6 +36,11 @@ Future<bool> toggleWireGuardTunnel({
   required BuildContext context,
 }) async {
   if (!Platform.isAndroid) return true;
+
+  // Pre-flight: skip the broadcast if the tunnel is already in the desired state.
+  final alreadyActive = await isWireGuardActive();
+  if (goOffline && !alreadyActive) return true;   // want DOWN, already DOWN
+  if (!goOffline && alreadyActive) return true;   // want UP, already UP
 
   bool granted;
   try {
@@ -77,13 +95,35 @@ Future<bool> toggleWireGuardTunnel({
       arguments: <String, dynamic>{'tunnel': wgTunnelName},
     );
     await intent.sendBroadcast();
+
+    // For the UP case, verify the VPN actually came up — WireGuard may be
+    // stopped and unable to process the broadcast (e.g. no VPN permission
+    // accepted yet). Give it 2 seconds before declaring failure.
+    if (!goOffline) {
+      await Future.delayed(const Duration(seconds: 2));
+      final nowActive = await isWireGuardActive();
+      if (!nowActive) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'WireGuard tunnel did not start — open the WireGuard app and bring the tunnel up manually',
+              ),
+              duration: Duration(seconds: 6),
+            ),
+          );
+        }
+        return false;
+      }
+    }
+
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             goOffline
                 ? 'WireGuard: bringing tunnel "$wgTunnelName" down…'
-                : 'WireGuard: bringing tunnel "$wgTunnelName" up…',
+                : 'WireGuard: tunnel "$wgTunnelName" is up',
           ),
           duration: const Duration(seconds: 2),
         ),

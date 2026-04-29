@@ -1,6 +1,8 @@
 package com.henninb.calendar_mobile
 
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
@@ -24,6 +26,14 @@ class MainActivity : FlutterActivity() {
                         val granted = ContextCompat.checkSelfPermission(this, wgPermission) ==
                                 PackageManager.PERMISSION_GRANTED
                         result.success(granted)
+                    }
+                    "isVpnActive" -> {
+                        val cm = getSystemService(ConnectivityManager::class.java)
+                        val active = cm.allNetworks.any { network ->
+                            cm.getNetworkCapabilities(network)
+                                ?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
+                        }
+                        result.success(active)
                     }
                     "request" -> {
                         if (ContextCompat.checkSelfPermission(this, wgPermission) ==
