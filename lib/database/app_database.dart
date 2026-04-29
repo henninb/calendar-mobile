@@ -447,10 +447,19 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> markTaskSynced(int localId, int serverId) async {
-    await (update(tasks)..where((t) => t.id.equals(localId))).write(
-      TasksCompanion(serverId: Value(serverId), syncStatus: Value(SyncStatus.synced.value)),
-    );
+    await transaction(() async {
+      await (update(tasks)..where((t) => t.id.equals(localId))).write(
+        TasksCompanion(serverId: Value(serverId), syncStatus: Value(SyncStatus.synced.value)),
+      );
+      // Back-fill taskServerId on subtasks queued before this task was synced.
+      await (update(subtasks)..where((s) => s.taskLocalId.equals(localId))).write(
+        SubtasksCompanion(taskServerId: Value(serverId)),
+      );
+    });
   }
+
+  Future<Task?> getTaskById(int localId) =>
+      (select(tasks)..where((t) => t.id.equals(localId))).getSingleOrNull();
 
   Future<void> deleteTaskLocal(int localId) async {
     await transaction(() async {
@@ -797,6 +806,9 @@ class AppDatabase extends _$AppDatabase {
       );
     }
   }
+
+  Future<GroceryList?> getGroceryListById(int localId) =>
+      (select(groceryLists)..where((l) => l.id.equals(localId))).getSingleOrNull();
 
   Future<void> markGroceryListSynced(int localId, int serverId) async {
     await (update(groceryLists)..where((l) => l.id.equals(localId))).write(

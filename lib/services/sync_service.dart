@@ -254,6 +254,8 @@ class SyncService {
     pushed += await _pushCreditCards(errors);
     pushed += await _pushGroceryStores(errors);
     pushed += await _pushGroceryLists(errors);
+    // Items are pushed after lists so markGroceryListSynced() has already
+    // back-filled listServerId on any items whose parent list was just pushed.
     pushed += await _pushGroceryListItems(errors);
 
     dev.log('pushPending: pushed=$pushed errors=${errors.length}', name: 'sync');
@@ -284,6 +286,9 @@ class SyncService {
         final detail = _dioErrorDetail(e);
         dev.log('_pushOccurrences: serverId=${occ.serverId} $detail', name: 'sync', level: 900);
         errors.add('Occurrence ${occ.serverId}: $detail');
+      } catch (e) {
+        dev.log('_pushOccurrences: local=${occ.id} unexpected: $e', name: 'sync', level: 900);
+        errors.add('Occurrence ${occ.id}: unexpected error');
       }
     }
     return count;
@@ -324,6 +329,9 @@ class SyncService {
           dev.log('_pushTasks: local=${task.id} $detail', name: 'sync', level: 900);
           errors.add('Task ${task.id}: $detail');
         }
+      } catch (e) {
+        dev.log('_pushTasks: local=${task.id} unexpected: $e', name: 'sync', level: 900);
+        errors.add('Task ${task.id}: unexpected error');
       }
     }
     return count;
@@ -338,20 +346,29 @@ class SyncService {
           case SyncStatus.synced:
             break;
           case SyncStatus.pendingCreate:
-            if (sub.taskServerId == null) break;
-            final body = _subtaskToJson(sub);
-            final created = await _api.createSubtask(sub.taskServerId!, body);
+            // markTaskSynced() back-fills taskServerId, but the snapshot was
+            // taken before _pushTasks ran, so re-read from the DB when null.
+            final createTaskServerId = sub.taskServerId ??
+                (await _db.getTaskById(sub.taskLocalId))?.serverId;
+            if (createTaskServerId == null) break;
+            final createBody = _subtaskToJson(sub);
+            final created = await _api.createSubtask(createTaskServerId, createBody);
             await _db.markSubtaskSynced(sub.id, created.id);
             count++;
           case SyncStatus.pendingUpdate:
-            if (sub.serverId == null || sub.taskServerId == null) break;
-            final body = _subtaskToJson(sub);
-            await _api.patchSubtask(sub.taskServerId!, sub.serverId!, body);
+            // Similarly, re-read taskServerId if it is missing in the snapshot.
+            final updateTaskServerId = sub.taskServerId ??
+                (await _db.getTaskById(sub.taskLocalId))?.serverId;
+            if (sub.serverId == null || updateTaskServerId == null) break;
+            final updateBody = _subtaskToJson(sub);
+            await _api.patchSubtask(updateTaskServerId, sub.serverId!, updateBody);
             await _db.markSubtaskSynced(sub.id, sub.serverId!);
             count++;
           case SyncStatus.pendingDelete:
-            if (sub.serverId == null || sub.taskServerId == null) break;
-            await _api.deleteSubtask(sub.taskServerId!, sub.serverId!);
+            final deleteTaskServerId = sub.taskServerId ??
+                (await _db.getTaskById(sub.taskLocalId))?.serverId;
+            if (sub.serverId == null || deleteTaskServerId == null) break;
+            await _api.deleteSubtask(deleteTaskServerId, sub.serverId!);
             await _db.deleteSubtaskLocal(sub.id);
             count++;
         }
@@ -364,6 +381,9 @@ class SyncService {
           dev.log('_pushSubtasks: local=${sub.id} $detail', name: 'sync', level: 900);
           errors.add('Subtask ${sub.id}: $detail');
         }
+      } catch (e) {
+        dev.log('_pushSubtasks: local=${sub.id} unexpected: $e', name: 'sync', level: 900);
+        errors.add('Subtask ${sub.id}: unexpected error');
       }
     }
     return count;
@@ -581,6 +601,9 @@ class SyncService {
           );
           errors.add('GroceryStore ${store.id}: $detail');
         }
+      } catch (e) {
+        dev.log('_pushGroceryStores: local=${store.id} unexpected: $e', name: 'sync', level: 900);
+        errors.add('GroceryStore ${store.id}: unexpected error');
       }
     }
     return count;
@@ -627,6 +650,9 @@ class SyncService {
           );
           errors.add('GroceryList ${list.id}: $detail');
         }
+      } catch (e) {
+        dev.log('_pushGroceryLists: local=${list.id} unexpected: $e', name: 'sync', level: 900);
+        errors.add('GroceryList ${list.id}: unexpected error');
       }
     }
     return count;
@@ -641,10 +667,13 @@ class SyncService {
           case SyncStatus.synced:
             break;
           case SyncStatus.pendingCreate:
-            // Parent list must be synced before creating items.
-            if (item.listServerId == null) break;
+            // markGroceryListSynced() back-fills listServerId on child items,
+            // but the snapshot predates _pushGroceryLists, so re-read when null.
+            final createListServerId = item.listServerId ??
+                (await _db.getGroceryListById(item.listLocalId))?.serverId;
+            if (createListServerId == null) break;
             final created = await _api.addGroceryListItem(
-              item.listServerId!,
+              createListServerId,
               {
                 'item_id': item.itemServerId,
                 'quantity': item.quantity,
@@ -656,11 +685,13 @@ class SyncService {
             await _db.markGroceryListItemSynced(item.id, created.id);
             count++;
           case SyncStatus.pendingUpdate:
-            if (item.listServerId == null || item.serverId == null) break;
             // Route is /lists/{listId}/items/{itemServerId} — the server keys
             // on the catalog item id, not the list-item record's own server id.
+            final updateListServerId = item.listServerId ??
+                (await _db.getGroceryListById(item.listLocalId))?.serverId;
+            if (updateListServerId == null || item.serverId == null) break;
             await _api.updateGroceryListItem(
-              item.listServerId!,
+              updateListServerId,
               item.itemServerId,
               {
                 'status': item.status,
@@ -673,22 +704,25 @@ class SyncService {
             await _db.markGroceryListItemSynced(item.id, item.serverId!);
             count++;
           case SyncStatus.pendingDelete:
-            if (item.listServerId == null) break;
-            await _api.removeGroceryListItem(
-              item.listServerId!,
-              item.itemServerId,
-            );
+            final deleteListServerId = item.listServerId ??
+                (await _db.getGroceryListById(item.listLocalId))?.serverId;
+            if (deleteListServerId == null) break;
+            await _api.removeGroceryListItem(deleteListServerId, item.itemServerId);
             await _db.deleteGroceryListItemLocal(item.id);
             count++;
         }
       } on DioException catch (e) {
-        final detail = _dioErrorDetail(e);
-        dev.log(
-          '_pushGroceryListItems: local=${item.id} $detail',
-          name: 'sync',
-          level: 900,
-        );
-        errors.add('GroceryListItem ${item.id}: $detail');
+        if (e.response?.statusCode == 404) {
+          dev.log('_pushGroceryListItems: 404 for local=${item.id}, removing orphan', name: 'sync');
+          await _db.deleteGroceryListItemLocal(item.id);
+        } else {
+          final detail = _dioErrorDetail(e);
+          dev.log('_pushGroceryListItems: local=${item.id} $detail', name: 'sync', level: 900);
+          errors.add('GroceryListItem ${item.id}: $detail');
+        }
+      } catch (e) {
+        dev.log('_pushGroceryListItems: local=${item.id} unexpected: $e', name: 'sync', level: 900);
+        errors.add('GroceryListItem ${item.id}: unexpected error');
       }
     }
     return count;

@@ -251,10 +251,20 @@ class SyncNotifier extends Notifier<SyncState> {
   SyncState build() {
     _periodicTimer = Timer.periodic(
       const Duration(minutes: 5),
-      // Fix: skip the refresh when offline so we don't transition to
+      // Skip the refresh when offline so we don't transition to
       // SyncPhase.error every 5 minutes and show a spurious error banner.
       (_) { if (ref.read(isOnlineProvider) && ref.read(baseUrlProvider).isNotEmpty) silentRefresh(); },
     );
+
+    // When the device comes back online after being offline, immediately
+    // push any mutations queued while offline and pull fresh data.
+    ref.listen<bool>(isOnlineProvider, (prev, next) {
+      if (prev == false && next == true && ref.read(baseUrlProvider).isNotEmpty) {
+        dev.log('SyncNotifier: connectivity restored, triggering silentRefresh', name: 'sync');
+        silentRefresh();
+      }
+    });
+
     ref.onDispose(() {
       _periodicTimer?.cancel();
       _debounce?.cancel();
