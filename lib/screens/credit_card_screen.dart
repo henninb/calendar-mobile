@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
@@ -337,32 +338,39 @@ class _CardFormState extends ConsumerState<_CardForm> {
     if (!_formKey.currentState!.validate()) return;
     final db = ref.read(dbProvider);
     final syncNotifier = ref.read(syncStateProvider.notifier);
-
-    if (widget.existing == null) {
-      await db.insertCreditCard(CreditCardsCompanion(
-        name: Value(_name.text.trim()),
-        issuer: Value(_issuer.text.trim().isEmpty ? null : _issuer.text.trim()),
-        lastFour: Value(_lastFour.text.trim().isEmpty ? null : _lastFour.text.trim()),
-        statementCloseDay: Value(int.tryParse(_closeDay.text)),
-        gracePeriodDays: Value(int.tryParse(_graceDays.text)),
-        syncStatus: Value(SyncStatus.pendingCreate.value),
-      ));
-    } else {
-      await db.updateCreditCard(
-        widget.existing!.id,
-        CreditCardsCompanion(
+    try {
+      if (widget.existing == null) {
+        await db.insertCreditCard(CreditCardsCompanion(
           name: Value(_name.text.trim()),
           issuer: Value(_issuer.text.trim().isEmpty ? null : _issuer.text.trim()),
           lastFour: Value(_lastFour.text.trim().isEmpty ? null : _lastFour.text.trim()),
           statementCloseDay: Value(int.tryParse(_closeDay.text)),
           gracePeriodDays: Value(int.tryParse(_graceDays.text)),
-          syncStatus: Value(SyncStatus.pendingUpdate.value),
-        ),
-      );
+          syncStatus: Value(SyncStatus.pendingCreate.value),
+        ));
+      } else {
+        await db.updateCreditCard(
+          widget.existing!.id,
+          CreditCardsCompanion(
+            name: Value(_name.text.trim()),
+            issuer: Value(_issuer.text.trim().isEmpty ? null : _issuer.text.trim()),
+            lastFour: Value(_lastFour.text.trim().isEmpty ? null : _lastFour.text.trim()),
+            statementCloseDay: Value(int.tryParse(_closeDay.text)),
+            gracePeriodDays: Value(int.tryParse(_graceDays.text)),
+            syncStatus: Value(SyncStatus.pendingUpdate.value),
+          ),
+        );
+      }
+      if (!mounted) return;
+      Navigator.pop(context);
+      syncNotifier.syncIfOnline();
+    } catch (e, st) {
+      dev.log('_CardFormState._save: $e', name: 'credit_cards', level: 900, stackTrace: st);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save card. Please try again.')),
+        );
+      }
     }
-
-    if (!mounted) return;
-    Navigator.pop(context);
-    syncNotifier.syncIfOnline();
   }
 }

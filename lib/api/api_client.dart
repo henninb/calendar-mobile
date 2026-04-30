@@ -53,14 +53,20 @@ class ApiClient {
 
   Future<List<ApiCategory>> fetchCategories() async {
     final res = await _dio.get<List>('/categories');
-    return (res.data ?? []).map((j) => ApiCategory.fromJson(j)).toList();
+    return (res.data ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ApiCategory.fromJson)
+        .toList();
   }
 
   // ── Persons ──────────────────────────────────────────────────────────────────
 
   Future<List<ApiPerson>> fetchPersons() async {
     final res = await _dio.get<List>('/persons');
-    return (res.data ?? []).map((j) => ApiPerson.fromJson(j)).toList();
+    return (res.data ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ApiPerson.fromJson)
+        .toList();
   }
 
   // ── Occurrences ──────────────────────────────────────────────────────────────
@@ -79,7 +85,10 @@ class ApiClient {
     if (categoryId != null) params['category_id'] = categoryId;
 
     final res = await _dio.get<List>('/occurrences', queryParameters: params);
-    return (res.data ?? []).map((j) => ApiOccurrence.fromJson(j)).toList();
+    return (res.data ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ApiOccurrence.fromJson)
+        .toList();
   }
 
   Future<void> patchOccurrence(int serverId, Map<String, dynamic> data) async {
@@ -98,7 +107,10 @@ class ApiClient {
 
   Future<List<ApiTask>> fetchTasks({int limit = 500}) async {
     final res = await _dio.get<List>('/tasks', queryParameters: {'limit': limit});
-    return (res.data ?? []).map((j) => ApiTask.fromJson(j)).toList();
+    return (res.data ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ApiTask.fromJson)
+        .toList();
   }
 
   Future<ApiTask> createTask(Map<String, dynamic> data) async {

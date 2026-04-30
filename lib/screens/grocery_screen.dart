@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -589,16 +590,26 @@ class _CreateListSheetState extends ConsumerState<_CreateListSheet> {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
     setState(() => _saving = true);
-    await ref.read(dbProvider).insertGroceryList(
-          GroceryListsCompanion(
-            name: Value(name),
-            status: const Value('draft'),
-            storeServerId: Value(_storeServerId),
-            syncStatus: Value(SyncStatus.pendingCreate.value),
-          ),
+    try {
+      await ref.read(dbProvider).insertGroceryList(
+            GroceryListsCompanion(
+              name: Value(name),
+              status: const Value('draft'),
+              storeServerId: Value(_storeServerId),
+              syncStatus: Value(SyncStatus.pendingCreate.value),
+            ),
+          );
+      ref.read(syncStateProvider.notifier).syncIfOnline();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e, st) {
+      dev.log('_CreateListSheet._save: $e', name: 'grocery', level: 900, stackTrace: st);
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to create list. Please try again.')),
         );
-    ref.read(syncStateProvider.notifier).syncIfOnline();
-    if (mounted) Navigator.of(context).pop();
+      }
+    }
   }
 }
 
@@ -763,20 +774,29 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
     final item = _selected;
     if (item?.serverId == null) return;
     setState(() => _saving = true);
-
-    await ref.read(dbProvider).insertGroceryListItem(
-          GroceryListItemsCompanion(
-            listLocalId: Value(widget.list.id),
-            listServerId: Value(widget.list.serverId),
-            itemServerId: Value(item!.serverId!),
-            quantity: Value(_qty),
-            unit: Value(_unit),
-            status: const Value('needed'),
-            syncStatus: Value(SyncStatus.pendingCreate.value),
-          ),
+    try {
+      await ref.read(dbProvider).insertGroceryListItem(
+            GroceryListItemsCompanion(
+              listLocalId: Value(widget.list.id),
+              listServerId: Value(widget.list.serverId),
+              itemServerId: Value(item!.serverId!),
+              quantity: Value(_qty),
+              unit: Value(_unit),
+              status: const Value('needed'),
+              syncStatus: Value(SyncStatus.pendingCreate.value),
+            ),
+          );
+      ref.read(syncStateProvider.notifier).syncIfOnline();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e, st) {
+      dev.log('_AddItemSheet._save: $e', name: 'grocery', level: 900, stackTrace: st);
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to add item. Please try again.')),
         );
-    ref.read(syncStateProvider.notifier).syncIfOnline();
-    if (mounted) Navigator.of(context).pop();
+      }
+    }
   }
 }
 
@@ -1013,15 +1033,25 @@ class _CreateStoreSheetState extends ConsumerState<_CreateStoreSheet> {
     if (name.isEmpty) return;
     setState(() => _saving = true);
     final location = _locationCtrl.text.trim();
-    await ref.read(dbProvider).insertGroceryStore(
-          GroceryStoresCompanion(
-            name: Value(name),
-            location: Value(location.isNotEmpty ? location : null),
-            isActive: const Value(true),
-            syncStatus: Value(SyncStatus.pendingCreate.value),
-          ),
+    try {
+      await ref.read(dbProvider).insertGroceryStore(
+            GroceryStoresCompanion(
+              name: Value(name),
+              location: Value(location.isNotEmpty ? location : null),
+              isActive: const Value(true),
+              syncStatus: Value(SyncStatus.pendingCreate.value),
+            ),
+          );
+      ref.read(syncStateProvider.notifier).syncIfOnline();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e, st) {
+      dev.log('_CreateStoreSheet._save: $e', name: 'grocery', level: 900, stackTrace: st);
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to create store. Please try again.')),
         );
-    ref.read(syncStateProvider.notifier).syncIfOnline();
-    if (mounted) Navigator.of(context).pop();
+      }
+    }
   }
 }
