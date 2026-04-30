@@ -10,7 +10,7 @@ echo "==> Flutter pub get"
 flutter pub get
 
 echo "==> Drift code generation"
-flutter pub run build_runner build --delete-conflicting-outputs
+/opt/flutter/bin/dart run build_runner build
 
 echo "==> Building Linux ($MODE)"
 flutter build linux "--$MODE"
