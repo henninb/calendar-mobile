@@ -47,10 +47,11 @@ class BaseUrlNotifier extends Notifier<String> {
   }
 
   bool set(String url) {
-    final uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme || uri.scheme != 'https') return false;
-    state = url;
-    ref.read(sharedPreferencesProvider).setString(AppConstants.prefBaseUrl, url);
+    final trimmed = url.trim();
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null || !uri.hasScheme || uri.scheme != 'https' || uri.host.isEmpty) return false;
+    state = trimmed;
+    ref.read(sharedPreferencesProvider).setString(AppConstants.prefBaseUrl, trimmed);
     return true;
   }
 }

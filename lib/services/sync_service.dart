@@ -31,8 +31,9 @@ class SyncService {
     ]);
 
     if (errors.isNotEmpty) {
-      dev.log('fullRefresh: errors — ${errors.join(' | ')}', name: 'sync', level: 900);
-      throw Exception(errors.join(' | '));
+      final summary = errors.take(5).join(' | ');
+      dev.log('fullRefresh: errors — $summary', name: 'sync', level: 900);
+      throw Exception(summary);
     }
     dev.log('fullRefresh: complete', name: 'sync');
   }

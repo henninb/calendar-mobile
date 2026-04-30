@@ -103,7 +103,9 @@ class ApiClient {
 
   Future<ApiTask> createTask(Map<String, dynamic> data) async {
     final res = await _dio.post<Map<String, dynamic>>('/tasks', data: data);
-    return ApiTask.fromJson(res.data!);
+    final body = res.data;
+    if (body == null) throw const FormatException('Server returned an empty body for createTask');
+    return ApiTask.fromJson(body);
   }
 
   Future<void> patchTask(int serverId, Map<String, dynamic> data) async {
@@ -118,7 +120,9 @@ class ApiClient {
 
   Future<ApiSubtask> createSubtask(int taskServerId, Map<String, dynamic> data) async {
     final res = await _dio.post<Map<String, dynamic>>('/tasks/$taskServerId/subtasks', data: data);
-    return ApiSubtask.fromJson(res.data!);
+    final body = res.data;
+    if (body == null) throw const FormatException('Server returned an empty body for createSubtask');
+    return ApiSubtask.fromJson(body);
   }
 
   Future<void> patchSubtask(int taskServerId, int subtaskServerId, Map<String, dynamic> data) async {
@@ -178,7 +182,9 @@ class ApiClient {
   Future<ApiStore> createStore(Map<String, dynamic> data) async {
     final res =
         await _dio.post<Map<String, dynamic>>('/stores', data: data);
-    return ApiStore.fromJson(res.data!);
+    final body = res.data;
+    if (body == null) throw const FormatException('Server returned an empty body for createStore');
+    return ApiStore.fromJson(body);
   }
 
   Future<ApiStore> updateStore(
@@ -189,7 +195,9 @@ class ApiClient {
       '/stores/$serverId',
       data: data,
     );
-    return ApiStore.fromJson(res.data!);
+    final body = res.data;
+    if (body == null) throw const FormatException('Server returned an empty body for updateStore');
+    return ApiStore.fromJson(body);
   }
 
   Future<void> deleteStore(int serverId) async {
@@ -220,7 +228,9 @@ class ApiClient {
       '/grocery/items',
       data: data,
     );
-    return ApiGroceryItem.fromJson(res.data!);
+    final body = res.data;
+    if (body == null) throw const FormatException('Server returned an empty body for createGroceryItem');
+    return ApiGroceryItem.fromJson(body);
   }
 
   Future<void> deleteGroceryItem(int serverId) async {
@@ -239,7 +249,9 @@ class ApiClient {
 
   Future<ApiOnHand> upsertOnHand(int itemServerId, Map<String, dynamic> data) async {
     final res = await _dio.put<Map<String, dynamic>>('/grocery/on-hand/$itemServerId', data: data);
-    return ApiOnHand.fromJson(res.data!);
+    final body = res.data;
+    if (body == null) throw const FormatException('Server returned an empty body for upsertOnHand');
+    return ApiOnHand.fromJson(body);
   }
 
   Future<void> deleteOnHand(int itemServerId) async {
@@ -270,7 +282,9 @@ class ApiClient {
       '/grocery/lists',
       data: data,
     );
-    return ApiGroceryList.fromJson(res.data!);
+    final body = res.data;
+    if (body == null) throw const FormatException('Server returned an empty body for createGroceryList');
+    return ApiGroceryList.fromJson(body);
   }
 
   Future<ApiGroceryList> updateGroceryList(
@@ -281,7 +295,9 @@ class ApiClient {
       '/grocery/lists/$serverId',
       data: data,
     );
-    return ApiGroceryList.fromJson(res.data!);
+    final body = res.data;
+    if (body == null) throw const FormatException('Server returned an empty body for updateGroceryList');
+    return ApiGroceryList.fromJson(body);
   }
 
   Future<void> deleteGroceryList(int serverId) async {
@@ -298,7 +314,9 @@ class ApiClient {
       '/grocery/lists/$listServerId/items',
       data: data,
     );
-    return ApiGroceryListItem.fromJson(res.data!);
+    final body = res.data;
+    if (body == null) throw const FormatException('Server returned an empty body for addGroceryListItem');
+    return ApiGroceryListItem.fromJson(body);
   }
 
   Future<ApiGroceryListItem> updateGroceryListItem(
@@ -310,7 +328,9 @@ class ApiClient {
       '/grocery/lists/$listServerId/items/$itemServerId',
       data: data,
     );
-    return ApiGroceryListItem.fromJson(res.data!);
+    final body = res.data;
+    if (body == null) throw const FormatException('Server returned an empty body for updateGroceryListItem');
+    return ApiGroceryListItem.fromJson(body);
   }
 
   Future<void> removeGroceryListItem(
