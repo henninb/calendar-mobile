@@ -59,6 +59,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ],
         ),
         actions: [
+          if (_tabIndex == 0)
+            const _TaskSearchButton(),
           if (_tabIndex == 1)
             const _GenerateButton(),
           const _OfflineToggleButton(),
@@ -95,6 +97,23 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       5 => const SettingsScreen(),
       _ => const SizedBox.shrink(),
     };
+  }
+}
+
+class _TaskSearchButton extends ConsumerWidget {
+  const _TaskSearchButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final visible = ref.watch(taskSearchVisibleProvider);
+    return IconButton(
+      tooltip: visible ? 'Hide search' : 'Search tasks',
+      icon: Icon(
+        visible ? Icons.search_off : Icons.search,
+        color: visible ? Colors.white : Colors.white70,
+      ),
+      onPressed: () => ref.read(taskSearchVisibleProvider.notifier).toggle(),
+    );
   }
 }
 

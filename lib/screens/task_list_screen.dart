@@ -19,7 +19,15 @@ class TaskListScreen extends ConsumerStatefulWidget {
 
 class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   String _filterStatus = 'active';
+  String _searchQuery = '';
   final Map<String, bool> _collapsedSections = {};
+  final TextEditingController _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   bool _isCollapsed(String key, bool isEmpty) =>
       _collapsedSections[key] ?? (key != 'overdue_today');
@@ -34,6 +42,14 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   Widget build(BuildContext context) {
     final tasksAsync = ref.watch(tasksProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
+    final showSearch = ref.watch(taskSearchVisibleProvider);
+
+    ref.listen<bool>(taskSearchVisibleProvider, (_, visible) {
+      if (!visible) {
+        _searchCtrl.clear();
+        setState(() => _searchQuery = '');
+      }
+    });
 
     return tasksAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -60,6 +76,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         } else if (_filterStatus != 'all') {
           filtered = filtered.where((t) => t.status == _filterStatus).toList();
         }
+        if (_searchQuery.isNotEmpty) {
+          final q = _searchQuery.toLowerCase();
+          filtered = filtered.where((t) =>
+            t.title.toLowerCase().contains(q) ||
+            (t.description?.toLowerCase().contains(q) ?? false),
+          ).toList();
+        }
         filtered.sort((a, b) {
           if (a.dueDate == null && b.dueDate == null) return _doneWeight(a) - _doneWeight(b);
           if (a.dueDate == null) return 1;
@@ -79,6 +102,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                   selected: _filterStatus,
                   onChanged: (s) => setState(() => _filterStatus = s),
                 ),
+                if (showSearch)
+                  _SearchBar(
+                    controller: _searchCtrl,
+                    onChanged: (q) => setState(() => _searchQuery = q),
+                  ),
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () => ref.read(syncStateProvider.notifier).sync(),
@@ -192,6 +220,56 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => _TaskForm(existing: existing),
+    );
+  }
+}
+
+class _SearchBar extends StatelessWidget {
+  const _SearchBar({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.tableHeader,
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        style: AppText.body,
+        decoration: InputDecoration(
+          hintText: 'Search tasks…',
+          hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+          prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+          suffixIcon: controller.text.isNotEmpty
+              ? GestureDetector(
+                  onTap: () {
+                    controller.clear();
+                    onChanged('');
+                  },
+                  child: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
+                )
+              : null,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          filled: true,
+          fillColor: AppColors.surface,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppColors.divider),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppColors.divider),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+          ),
+        ),
+      ),
     );
   }
 }

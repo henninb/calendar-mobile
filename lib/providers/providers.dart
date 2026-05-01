@@ -393,6 +393,19 @@ class SyncNotifier extends Notifier<SyncState> {
   }
 }
 
+// ── Task Search ──────────────────────────────────────────────────────────────
+
+final taskSearchVisibleProvider =
+    NotifierProvider<TaskSearchVisibleNotifier, bool>(TaskSearchVisibleNotifier.new);
+
+class TaskSearchVisibleNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+  void hide() => state = false;
+}
+
 // ── Data Streams ─────────────────────────────────────────────────────────────
 
 final categoriesProvider = StreamProvider<List<Category>>((ref) {
