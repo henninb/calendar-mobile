@@ -1,4 +1,5 @@
 import 'package:calendar_mobile/providers/providers.dart';
+import 'package:calendar_mobile/core/theme.dart';
 import 'package:calendar_mobile/widgets/sync_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -67,6 +68,9 @@ void main() {
 
       expect(find.text('Offline mode enabled — sync paused'), findsOneWidget);
       expect(find.byIcon(Icons.cloud_off_rounded), findsOneWidget);
+
+      final container = tester.widget<Container>(find.byType(Container).first);
+      expect(container.color, AppColors.skippedBg);
     });
 
     testWidgets('shows connectivity offline banner when network is down', (
@@ -85,6 +89,9 @@ void main() {
         findsOneWidget,
       );
       expect(find.byIcon(Icons.wifi_off_rounded), findsOneWidget);
+
+      final container = tester.widget<Container>(find.byType(Container).first);
+      expect(container.color, AppColors.offlineBanner);
     });
 
     testWidgets('shows refreshing banner while pulling', (tester) async {
@@ -98,6 +105,7 @@ void main() {
 
       expect(find.text('Refreshing data…'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsNothing);
     });
 
     testWidgets('shows pushing banner while pushing', (tester) async {
@@ -111,6 +119,7 @@ void main() {
 
       expect(find.text('Pushing changes…'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsNothing);
     });
 
     testWidgets('shows dismissible error banner and clears error on tap', (
