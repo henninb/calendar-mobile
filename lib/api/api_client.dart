@@ -146,6 +146,18 @@ class ApiClient {
   Future<void> generateAllOccurrences() =>
       _dio.post('/occurrences/generate-all');
 
+  Future<ApiTask> createTaskFromOccurrence(int occurrenceServerId) =>
+      _postJson(
+        '/occurrences/$occurrenceServerId/task',
+        data: {},
+        fromJson: ApiTask.fromJson,
+      );
+
+  // ── Events ────────────────────────────────────────────────────────────────
+
+  Future<ApiEvent> createEvent(Map<String, dynamic> data) =>
+      _postJson('/events', data: data, fromJson: ApiEvent.fromJson);
+
   // ── Tasks ─────────────────────────────────────────────────────────────────
 
   Future<List<ApiTask>> fetchTasks({int limit = 500}) =>

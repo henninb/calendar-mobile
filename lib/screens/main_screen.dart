@@ -1,5 +1,7 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/theme.dart';
 import '../providers/providers.dart';
 import '../services/wireguard_service.dart';
 import '../widgets/sync_banner.dart';
@@ -61,8 +63,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         actions: [
           if (_tabIndex == 0)
             const _TaskSearchButton(),
-          if (_tabIndex == 1)
+          if (_tabIndex == 1) ...[
+            const _NewEventButton(),
             const _GenerateButton(),
+          ],
           const _OfflineToggleButton(),
           const _SyncButton(),
         ],
@@ -240,4 +244,292 @@ class _Tab {
   final IconData icon;
   final IconData activeIcon;
   final String label;
+}
+
+// ── New Event Button ──────────────────────────────────────────────────────────
+
+class _NewEventButton extends StatelessWidget {
+  const _NewEventButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: () => showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: AppColors.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (_) => const _EventFormSheet(),
+      ),
+      icon: const Icon(Icons.add, size: 16, color: Colors.white70),
+      label: const Text(
+        'New Event',
+        style: TextStyle(fontSize: 12, color: Colors.white70),
+      ),
+    );
+  }
+}
+
+// ── Event Creation Form ───────────────────────────────────────────────────────
+
+class _EventFormSheet extends ConsumerStatefulWidget {
+  const _EventFormSheet();
+
+  @override
+  ConsumerState<_EventFormSheet> createState() => _EventFormSheetState();
+}
+
+class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  final _amountCtrl = TextEditingController();
+
+  int? _categoryServerId;
+  String _dtstart = _todayStr();
+  int _durationDays = 1;
+  String _rrule = '';
+  String _dtendRule = '';
+  bool _saving = false;
+
+  static const _rruleOptions = [
+    ('', 'One-time'),
+    ('FREQ=DAILY', 'Daily'),
+    ('FREQ=WEEKLY', 'Weekly'),
+    ('FREQ=WEEKLY;INTERVAL=2', 'Biweekly'),
+    ('FREQ=MONTHLY', 'Monthly'),
+    ('FREQ=MONTHLY;INTERVAL=3', 'Every 3 Months'),
+    ('FREQ=MONTHLY;INTERVAL=6', 'Every 6 Months'),
+    ('FREQ=YEARLY', 'Yearly'),
+  ];
+
+  static String _todayStr() {
+    final now = DateTime.now();
+    return '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _descCtrl.dispose();
+    _amountCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isRecurring = _rrule.isNotEmpty;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.textLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text('New Event', style: AppText.heading),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _titleCtrl,
+                decoration: const InputDecoration(labelText: 'Title *'),
+                maxLength: 255,
+                autofocus: true,
+                validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 10),
+              ref.watch(categoriesProvider).when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+                data: (cats) => DropdownButtonFormField<int?>(
+                  initialValue: _categoryServerId,
+                  decoration: const InputDecoration(labelText: 'Category *'),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('Select…')),
+                    ...cats.map((c) => DropdownMenuItem(
+                          value: c.serverId,
+                          child: Text('${c.icon} ${c.name}'),
+                        )),
+                  ],
+                  validator: (v) => v == null ? 'Required' : null,
+                  onChanged: (v) => setState(() => _categoryServerId = v),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.tryParse(_dtstart) ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setState(() => _dtstart =
+                              '${picked.year.toString().padLeft(4, '0')}-'
+                              '${picked.month.toString().padLeft(2, '0')}-'
+                              '${picked.day.toString().padLeft(2, '0')}');
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(labelText: 'Start Date *'),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(_dtstart, style: AppText.body),
+                            const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textMuted),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: _durationDays.toString(),
+                      decoration: const InputDecoration(labelText: 'Duration (days)'),
+                      keyboardType: TextInputType.number,
+                      onChanged: (v) {
+                        final n = int.tryParse(v);
+                        if (n != null && n >= 1) setState(() => _durationDays = n);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                initialValue: _rrule,
+                decoration: const InputDecoration(labelText: 'Recurrence'),
+                items: _rruleOptions
+                    .map((r) => DropdownMenuItem(value: r.$1, child: Text(r.$2)))
+                    .toList(),
+                onChanged: (v) => setState(() {
+                  _rrule = v ?? '';
+                  if (_rrule.isEmpty) _dtendRule = '';
+                }),
+              ),
+              if (isRecurring) ...[
+                const SizedBox(height: 10),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _dtendRule.isNotEmpty
+                          ? (DateTime.tryParse(_dtendRule) ?? DateTime.now().add(const Duration(days: 365)))
+                          : DateTime.now().add(const Duration(days: 365)),
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      setState(() => _dtendRule =
+                          '${picked.year.toString().padLeft(4, '0')}-'
+                          '${picked.month.toString().padLeft(2, '0')}-'
+                          '${picked.day.toString().padLeft(2, '0')}');
+                    }
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(labelText: 'Repeat Until (optional)'),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _dtendRule.isEmpty ? 'No end date' : _dtendRule,
+                          style: AppText.body.copyWith(
+                            color: _dtendRule.isEmpty ? AppColors.textMuted : AppColors.textPrimary,
+                          ),
+                        ),
+                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textMuted),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _descCtrl,
+                decoration: const InputDecoration(labelText: 'Description'),
+                maxLines: 2,
+                maxLength: 2000,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _amountCtrl,
+                decoration: const InputDecoration(labelText: 'Amount (\$)'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: Text(_saving ? 'Creating…' : 'Create Event'),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _saving = true);
+
+    final syncNotifier = ref.read(syncStateProvider.notifier);
+    final payload = <String, dynamic>{
+      'title': _titleCtrl.text.trim(),
+      'category_id': _categoryServerId,
+      'dtstart': _dtstart,
+      'duration_days': _durationDays,
+      if (_rrule.isNotEmpty) 'rrule': _rrule,
+      if (_dtendRule.isNotEmpty) 'dtend_rule': _dtendRule,
+      if (_descCtrl.text.trim().isNotEmpty) 'description': _descCtrl.text.trim(),
+      if (_amountCtrl.text.trim().isNotEmpty) 'amount': _amountCtrl.text.trim(),
+    };
+
+    try {
+      await ref.read(apiClientProvider).createEvent(payload);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (mounted) Navigator.pop(context);
+        await syncNotifier.silentRefresh();
+      });
+    } catch (e, st) {
+      dev.log('_EventFormSheet._save: $e', name: 'events', level: 900, stackTrace: st);
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create event — $e')),
+        );
+      }
+    }
+  }
 }

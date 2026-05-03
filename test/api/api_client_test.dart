@@ -175,6 +175,62 @@ void main() {
     });
   });
 
+  group('ApiClient events', () {
+    test('createEvent sends POST and returns event', () async {
+      final payload = {
+        'id': 1,
+        'title': 'Test Event',
+        'category_id': 1,
+        'dtstart': '2026-05-01',
+        'priority': 'medium',
+        'is_active': true,
+        'category': {'id': 1, 'name': 'Work', 'color': '#3b82f6', 'icon': '💼'},
+        'duration_days': 1,
+      };
+
+      dioAdapter.onPost(
+        '/events',
+        (server) => server.reply(201, payload),
+        data: {'title': 'Test Event', 'category_id': 1, 'dtstart': '2026-05-01'},
+      );
+
+      final result = await client.createEvent({
+        'title': 'Test Event',
+        'category_id': 1,
+        'dtstart': '2026-05-01',
+      });
+      expect(result.id, 1);
+      expect(result.title, 'Test Event');
+      expect(result.dtstart, '2026-05-01');
+    });
+  });
+
+  group('ApiClient occurrence tasks', () {
+    test('createTaskFromOccurrence sends POST and returns task', () async {
+      final payload = {
+        'id': 5,
+        'title': 'Task from occurrence',
+        'status': 'todo',
+        'priority': 'medium',
+        'recurrence': 'none',
+        'order': 0,
+        'subtasks': [],
+        'created_at': '2026-01-01T00:00:00Z',
+        'updated_at': '2026-01-01T00:00:00Z',
+      };
+
+      dioAdapter.onPost(
+        '/occurrences/42/task',
+        (server) => server.reply(201, payload),
+        data: {},
+      );
+
+      final result = await client.createTaskFromOccurrence(42);
+      expect(result.id, 5);
+      expect(result.title, 'Task from occurrence');
+    });
+  });
+
   group('ApiClient other methods', () {
     test('fetchPersons', () async {
       dioAdapter.onGet('/persons', (server) => server.reply(200, []));

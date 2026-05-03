@@ -18,6 +18,16 @@ if ! command -v flutter > /dev/null 2>&1; then
   exit 1
 fi
 
+# Runs a flutter command while suppressing the pub.dev advisory FormatException
+# noise caused by a pub.dev API format change that Dart 3.11.x cannot parse.
+flutter_quiet() {
+  set +e +o pipefail
+  "$@" 2>&1 | grep -v -E "^Failed to decode advisories|^FormatException: advisoriesUpdated|^package:pub/src/source/hosted|^===== asynchronous gap|^/b/s/w/ir/"
+  local _exit=${PIPESTATUS[0]}
+  set -e -o pipefail
+  return $_exit
+}
+
 # ── Device connectivity check ─────────────────────────────────────────────────
 
 echo "==> Checking Android device connectivity..."
@@ -76,13 +86,13 @@ echo "Device ready: $DEVICE_SERIAL"
 # ── Build ─────────────────────────────────────────────────────────────────────
 
 echo "==> Flutter pub get"
-flutter pub get
+flutter_quiet flutter pub get
 
 echo "==> Drift code generation"
 /opt/flutter/bin/dart run build_runner build
 
 echo "==> Building APK ($MODE)"
-flutter build apk "--$MODE"
+flutter_quiet flutter build apk "--$MODE"
 
 if [ ! -f "$APK" ]; then
   echo "APK not found at $APK — build may have failed."

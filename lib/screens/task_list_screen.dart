@@ -30,7 +30,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   }
 
   bool _isCollapsed(String key, bool isEmpty) =>
-      _collapsedSections[key] ?? (key != 'overdue_today');
+      _collapsedSections[key] ?? (key != 'overdue' && key != 'today');
 
   void _toggleSection(String key, bool isEmpty) {
     setState(() {
@@ -172,7 +172,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     String week2EndStr,
   ) {
     final done         = <Task>[];
-    final overdueToday = <Task>[];
+    final overdue      = <Task>[];
+    final todayList    = <Task>[];
     final tomorrowList = <Task>[];
     final thisWeek     = <Task>[];
     final nextWeek     = <Task>[];
@@ -184,8 +185,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         done.add(task);
       } else if (task.dueDate == null) {
         noDate.add(task);
-      } else if (task.dueDate!.compareTo(todayStr) <= 0) {
-        overdueToday.add(task);
+      } else if (task.dueDate!.compareTo(todayStr) < 0) {
+        overdue.add(task);
+      } else if (task.dueDate == todayStr) {
+        todayList.add(task);
       } else if (task.dueDate == tomorrowStr) {
         tomorrowList.add(task);
       } else if (task.dueDate!.compareTo(week1EndStr) <= 0) {
@@ -198,13 +201,14 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     }
 
     return [
-      _TaskSection(key: 'done',          label: 'Done',            tasks: done,         hideWhenEmpty: true),
-      _TaskSection(key: 'overdue_today', label: 'Overdue / Today', tasks: overdueToday),
-      _TaskSection(key: 'tomorrow',      label: 'Tomorrow',        tasks: tomorrowList),
-      _TaskSection(key: 'this_week',     label: 'This Week',       tasks: thisWeek),
-      _TaskSection(key: 'next_week',     label: 'Next Week',       tasks: nextWeek),
-      _TaskSection(key: 'later',         label: 'Later',           tasks: later),
-      _TaskSection(key: 'no_date',       label: 'No Date',         tasks: noDate,        hideWhenEmpty: true),
+      _TaskSection(key: 'done',     label: 'Done',     tasks: done,         hideWhenEmpty: true),
+      _TaskSection(key: 'overdue',  label: 'Overdue',  tasks: overdue),
+      _TaskSection(key: 'today',    label: 'Today',    tasks: todayList),
+      _TaskSection(key: 'tomorrow', label: 'Tomorrow', tasks: tomorrowList),
+      _TaskSection(key: 'this_week', label: 'This Week', tasks: thisWeek),
+      _TaskSection(key: 'next_week', label: 'Next Week', tasks: nextWeek),
+      _TaskSection(key: 'later',    label: 'Later',    tasks: later),
+      _TaskSection(key: 'no_date',  label: 'No Date',  tasks: noDate,        hideWhenEmpty: true),
     ];
   }
 

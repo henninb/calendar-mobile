@@ -18,6 +18,7 @@ class OccurrenceListScreen extends ConsumerStatefulWidget {
 class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
   String _filterStatus = 'all';
   int? _filterCategoryId;
+  int _daysAhead = 90;
 
   static const _statusOptions = [
     'all',
@@ -68,6 +69,12 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
             return event?.categoryServerId == _filterCategoryId;
           }).toList();
         }
+        // Days-ahead filter: show past (overdue) + upcoming within the window.
+        final endDate = today.add(Duration(days: _daysAhead));
+        final endDateStr = '${endDate.year.toString().padLeft(4, '0')}-'
+            '${endDate.month.toString().padLeft(2, '0')}-'
+            '${endDate.day.toString().padLeft(2, '0')}';
+        filtered = filtered.where((o) => o.occurrenceDate.compareTo(endDateStr) <= 0).toList();
 
         // Sort: overdue first, then by date
         filtered.sort((a, b) {
@@ -84,8 +91,10 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
               statusOptions: _statusOptions,
               categories: categories,
               filterCategoryId: _filterCategoryId,
+              daysAhead: _daysAhead,
               onStatusChanged: (v) => setState(() => _filterStatus = v),
               onCategoryChanged: (v) => setState(() => _filterCategoryId = v),
+              onDaysAheadChanged: (v) => setState(() => _daysAhead = v),
             ),
             Expanded(
               child: filtered.isEmpty
@@ -103,6 +112,7 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
                           today: today,
                           onStatusChange: (s) => _updateStatus(occ, s),
                           onDelete: () => _deleteOccurrence(occ),
+                          onCreateTask: () => _createTask(occ),
                         );
                       },
                     ),
@@ -128,6 +138,31 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
       await ref.read(syncStateProvider.notifier).sync();
     }
   }
+
+  Future<void> _createTask(Occurrence occ) async {
+    if (occ.serverId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sync first to create a task from this occurrence')),
+      );
+      return;
+    }
+    try {
+      await ref.read(apiClientProvider).createTaskFromOccurrence(occ.serverId!);
+      if (!mounted) return;
+      await ref.read(syncStateProvider.notifier).sync();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Task created')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to create task — $e')),
+      );
+    }
+  }
 }
 
 class _Toolbar extends StatelessWidget {
@@ -136,55 +171,81 @@ class _Toolbar extends StatelessWidget {
     required this.statusOptions,
     required this.categories,
     required this.filterCategoryId,
+    required this.daysAhead,
     required this.onStatusChanged,
     required this.onCategoryChanged,
+    required this.onDaysAheadChanged,
   });
 
   final String filterStatus;
   final List<String> statusOptions;
   final List<Category> categories;
   final int? filterCategoryId;
+  final int daysAhead;
   final ValueChanged<String> onStatusChanged;
   final ValueChanged<int?> onCategoryChanged;
+  final ValueChanged<int> onDaysAheadChanged;
+
+  static const _daysOptions = [30, 60, 90, 180, 365];
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       color: AppColors.tableHeader,
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: DropdownButtonFormField<String>(
-              initialValue: filterStatus,
-              decoration: const InputDecoration(
-                labelText: 'Status',
-                isDense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: filterStatus,
+                  decoration: const InputDecoration(
+                    labelText: 'Status',
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                  style: AppText.small,
+                  items: statusOptions
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s == 'all' ? 'All' : s)))
+                      .toList(),
+                  onChanged: (v) => v != null ? onStatusChanged(v) : null,
+                ),
               ),
-              style: AppText.small,
-              items: statusOptions
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s == 'all' ? 'All' : s)))
-                  .toList(),
-              onChanged: (v) => v != null ? onStatusChanged(v) : null,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: DropdownButtonFormField<int?>(
-              initialValue: filterCategoryId,
-              decoration: const InputDecoration(
-                labelText: 'Category',
-                isDense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonFormField<int?>(
+                  initialValue: filterCategoryId,
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                  style: AppText.small,
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('All')),
+                    ...categories.map((c) => DropdownMenuItem(value: c.serverId, child: Text(c.name))),
+                  ],
+                  onChanged: onCategoryChanged,
+                ),
               ),
-              style: AppText.small,
-              items: [
-                const DropdownMenuItem(value: null, child: Text('All')),
-                ...categories.map((c) => DropdownMenuItem(value: c.serverId, child: Text(c.name))),
-              ],
-              onChanged: onCategoryChanged,
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonFormField<int>(
+                  initialValue: daysAhead,
+                  decoration: const InputDecoration(
+                    labelText: 'Days ahead',
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                  style: AppText.small,
+                  items: _daysOptions
+                      .map((d) => DropdownMenuItem(value: d, child: Text('$d days')))
+                      .toList(),
+                  onChanged: (v) => v != null ? onDaysAheadChanged(v) : null,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -200,6 +261,7 @@ class _OccurrenceRow extends StatelessWidget {
     required this.today,
     required this.onStatusChange,
     required this.onDelete,
+    required this.onCreateTask,
   });
 
   final Occurrence occurrence;
@@ -210,6 +272,7 @@ class _OccurrenceRow extends StatelessWidget {
   final DateTime today;
   final void Function(String) onStatusChange;
   final VoidCallback onDelete;
+  final VoidCallback onCreateTask;
 
   @override
   Widget build(BuildContext context) {
@@ -285,6 +348,7 @@ class _OccurrenceRow extends StatelessWidget {
         catMap: catMap,
         onStatusChange: onStatusChange,
         onDelete: onDelete,
+        onCreateTask: onCreateTask,
       ),
     );
   }
@@ -361,6 +425,7 @@ class _DetailSheet extends StatelessWidget {
     required this.catMap,
     required this.onStatusChange,
     required this.onDelete,
+    required this.onCreateTask,
   });
 
   final Occurrence occurrence;
@@ -368,6 +433,7 @@ class _DetailSheet extends StatelessWidget {
   final Map<int?, Category> catMap;
   final void Function(String) onStatusChange;
   final VoidCallback onDelete;
+  final VoidCallback onCreateTask;
 
   @override
   Widget build(BuildContext context) {
@@ -436,6 +502,11 @@ class _DetailSheet extends StatelessWidget {
                   color: AppColors.btnBlue,
                   onTap: () { onStatusChange(OccurrenceStatus.upcoming); Navigator.pop(context); },
                 ),
+              _ActionBtn(
+                label: '→ Task',
+                color: const Color(0xFF7C3AED),
+                onTap: () { Navigator.pop(context); onCreateTask(); },
+              ),
               _ActionBtn(
                 label: 'Delete',
                 color: AppColors.btnRed,
