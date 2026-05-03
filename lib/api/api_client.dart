@@ -4,7 +4,8 @@ import 'package:dio/io.dart';
 import 'api_models.dart';
 
 class ApiClient {
-  ApiClient(String baseUrl, {String apiKey = ''}) : _dio = _buildDio(baseUrl, apiKey);
+  ApiClient(String baseUrl, {String apiKey = ''})
+      : _dio = _buildDio(baseUrl, apiKey);
 
   final Dio _dio;
 
@@ -14,7 +15,8 @@ class ApiClient {
     // When no URL has been configured yet, use a local placeholder so Dio can
     // be constructed. Any request fired before the user sets a real URL will
     // fail with a connection error that surfaces as "Cannot reach backend".
-    final effectiveBase = baseUrl.isNotEmpty ? '$baseUrl/api' : 'https://localhost/api';
+    final effectiveBase =
+        baseUrl.isNotEmpty ? '$baseUrl/api' : 'https://localhost/api';
     final dio = Dio(BaseOptions(
       baseUrl: effectiveBase,
       connectTimeout: const Duration(seconds: 10),
@@ -22,9 +24,6 @@ class ApiClient {
       headers: headers,
     ));
     // Explicitly reject any certificate that fails standard validation.
-    // Replace the callback body with fingerprint comparison to enable pinning:
-    //   final fp = _sha256Fingerprint(cert.der);
-    //   return fp == _expectedFingerprint && host == 'your-backend.example.com';
     (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
       return HttpClient()
         ..badCertificateCallback = (cert, host, port) => false;
@@ -49,27 +48,64 @@ class ApiClient {
     }
   }
 
-  // ── Categories ───────────────────────────────────────────────────────────────
+  // ── Private decode helpers ────────────────────────────────────────────────
 
-  Future<List<ApiCategory>> fetchCategories() async {
-    final res = await _dio.get<List>('/categories');
+  Future<List<T>> _getList<T>(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _dio.get<List>(path, queryParameters: queryParameters);
     return (res.data ?? [])
         .whereType<Map<String, dynamic>>()
-        .map(ApiCategory.fromJson)
+        .map(fromJson)
         .toList();
   }
 
-  // ── Persons ──────────────────────────────────────────────────────────────────
-
-  Future<List<ApiPerson>> fetchPersons() async {
-    final res = await _dio.get<List>('/persons');
-    return (res.data ?? [])
-        .whereType<Map<String, dynamic>>()
-        .map(ApiPerson.fromJson)
-        .toList();
+  Future<T> _postJson<T>(
+    String path, {
+    required Object? data,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(path, data: data);
+    final body = res.data;
+    if (body == null) throw FormatException('Empty response body from POST $path');
+    return fromJson(body);
   }
 
-  // ── Occurrences ──────────────────────────────────────────────────────────────
+  Future<T> _putJson<T>(
+    String path, {
+    required Object? data,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _dio.put<Map<String, dynamic>>(path, data: data);
+    final body = res.data;
+    if (body == null) throw FormatException('Empty response body from PUT $path');
+    return fromJson(body);
+  }
+
+  Future<T> _patchJson<T>(
+    String path, {
+    required Object? data,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await _dio.patch<Map<String, dynamic>>(path, data: data);
+    final body = res.data;
+    if (body == null) throw FormatException('Empty response body from PATCH $path');
+    return fromJson(body);
+  }
+
+  // ── Categories ────────────────────────────────────────────────────────────
+
+  Future<List<ApiCategory>> fetchCategories() =>
+      _getList('/categories', fromJson: ApiCategory.fromJson);
+
+  // ── Persons ───────────────────────────────────────────────────────────────
+
+  Future<List<ApiPerson>> fetchPersons() =>
+      _getList('/persons', fromJson: ApiPerson.fromJson);
+
+  // ── Occurrences ───────────────────────────────────────────────────────────
 
   Future<List<ApiOccurrence>> fetchOccurrences({
     String? startDate,
@@ -77,280 +113,195 @@ class ApiClient {
     String? status,
     int? categoryId,
     int limit = 500,
-  }) async {
+  }) {
     final params = <String, dynamic>{'limit': limit};
     if (startDate != null) params['start_date'] = startDate;
     if (endDate != null) params['end_date'] = endDate;
     if (status != null) params['status'] = status;
     if (categoryId != null) params['category_id'] = categoryId;
-
-    final res = await _dio.get<List>('/occurrences', queryParameters: params);
-    return (res.data ?? [])
-        .whereType<Map<String, dynamic>>()
-        .map(ApiOccurrence.fromJson)
-        .toList();
+    return _getList(
+      '/occurrences',
+      queryParameters: params,
+      fromJson: ApiOccurrence.fromJson,
+    );
   }
 
-  Future<void> patchOccurrence(int serverId, Map<String, dynamic> data) async {
-    await _dio.patch('/occurrences/$serverId', data: data);
-  }
+  Future<void> patchOccurrence(int serverId, Map<String, dynamic> data) =>
+      _dio.patch('/occurrences/$serverId', data: data);
 
-  Future<void> deleteOccurrence(int serverId) async {
-    await _dio.delete('/occurrences/$serverId');
-  }
+  Future<void> deleteOccurrence(int serverId) =>
+      _dio.delete('/occurrences/$serverId');
 
-  Future<void> generateAllOccurrences() async {
-    await _dio.post('/occurrences/generate-all');
-  }
+  Future<void> generateAllOccurrences() =>
+      _dio.post('/occurrences/generate-all');
 
-  // ── Tasks ────────────────────────────────────────────────────────────────────
+  // ── Tasks ─────────────────────────────────────────────────────────────────
 
-  Future<List<ApiTask>> fetchTasks({int limit = 500}) async {
-    final res = await _dio.get<List>('/tasks', queryParameters: {'limit': limit});
-    return (res.data ?? [])
-        .whereType<Map<String, dynamic>>()
-        .map(ApiTask.fromJson)
-        .toList();
-  }
+  Future<List<ApiTask>> fetchTasks({int limit = 500}) =>
+      _getList(
+        '/tasks',
+        queryParameters: {'limit': limit},
+        fromJson: ApiTask.fromJson,
+      );
 
-  Future<ApiTask> createTask(Map<String, dynamic> data) async {
-    final res = await _dio.post<Map<String, dynamic>>('/tasks', data: data);
-    final body = res.data;
-    if (body == null) throw const FormatException('Server returned an empty body for createTask');
-    return ApiTask.fromJson(body);
-  }
+  Future<ApiTask> createTask(Map<String, dynamic> data) =>
+      _postJson('/tasks', data: data, fromJson: ApiTask.fromJson);
 
-  Future<void> patchTask(int serverId, Map<String, dynamic> data) async {
-    await _dio.patch('/tasks/$serverId', data: data);
-  }
+  Future<void> patchTask(int serverId, Map<String, dynamic> data) =>
+      _dio.patch('/tasks/$serverId', data: data);
 
-  Future<void> deleteTask(int serverId) async {
-    await _dio.delete('/tasks/$serverId');
-  }
+  Future<void> deleteTask(int serverId) => _dio.delete('/tasks/$serverId');
 
-  // ── Subtasks ─────────────────────────────────────────────────────────────────
+  // ── Subtasks ──────────────────────────────────────────────────────────────
 
-  Future<ApiSubtask> createSubtask(int taskServerId, Map<String, dynamic> data) async {
-    final res = await _dio.post<Map<String, dynamic>>('/tasks/$taskServerId/subtasks', data: data);
-    final body = res.data;
-    if (body == null) throw const FormatException('Server returned an empty body for createSubtask');
-    return ApiSubtask.fromJson(body);
-  }
+  Future<ApiSubtask> createSubtask(
+    int taskServerId,
+    Map<String, dynamic> data,
+  ) =>
+      _postJson(
+        '/tasks/$taskServerId/subtasks',
+        data: data,
+        fromJson: ApiSubtask.fromJson,
+      );
 
-  Future<void> patchSubtask(int taskServerId, int subtaskServerId, Map<String, dynamic> data) async {
-    await _dio.patch('/tasks/$taskServerId/subtasks/$subtaskServerId', data: data);
-  }
+  Future<void> patchSubtask(
+    int taskServerId,
+    int subtaskServerId,
+    Map<String, dynamic> data,
+  ) =>
+      _dio.patch('/tasks/$taskServerId/subtasks/$subtaskServerId', data: data);
 
-  Future<void> deleteSubtask(int taskServerId, int subtaskServerId) async {
-    await _dio.delete('/tasks/$taskServerId/subtasks/$subtaskServerId');
-  }
+  Future<void> deleteSubtask(int taskServerId, int subtaskServerId) =>
+      _dio.delete('/tasks/$taskServerId/subtasks/$subtaskServerId');
 
-  // ── Credit Cards ─────────────────────────────────────────────────────────────
+  // ── Credit Cards ──────────────────────────────────────────────────────────
 
-  Future<List<ApiCreditCard>> fetchCreditCards({int limit = 500}) async {
-    final res = await _dio.get<List>('/credit-cards', queryParameters: {'limit': limit});
-    return (res.data ?? [])
-        .whereType<Map<String, dynamic>>()
-        .map(ApiCreditCard.fromJson)
-        .toList();
-  }
+  Future<List<ApiCreditCard>> fetchCreditCards({int limit = 500}) =>
+      _getList(
+        '/credit-cards',
+        queryParameters: {'limit': limit},
+        fromJson: ApiCreditCard.fromJson,
+      );
 
-  Future<ApiCreditCard> createCreditCard(Map<String, dynamic> data) async {
-    final res = await _dio.post<Map<String, dynamic>>('/credit-cards', data: data);
-    final body = res.data;
-    if (body == null) throw const FormatException('Server returned an empty body for createCreditCard');
-    return ApiCreditCard.fromJson(body);
-  }
+  Future<ApiCreditCard> createCreditCard(Map<String, dynamic> data) =>
+      _postJson('/credit-cards', data: data, fromJson: ApiCreditCard.fromJson);
 
-  Future<ApiCreditCard> updateCreditCard(int serverId, Map<String, dynamic> data) async {
-    final res = await _dio.put<Map<String, dynamic>>('/credit-cards/$serverId', data: data);
-    final body = res.data;
-    if (body == null) throw const FormatException('Server returned an empty body for updateCreditCard');
-    return ApiCreditCard.fromJson(body);
-  }
-
-  Future<void> deleteCreditCard(int serverId) async {
-    await _dio.delete('/credit-cards/$serverId');
-  }
-
-  Future<List<ApiTrackerRow>> fetchTrackerRows() async {
-    final res = await _dio.get<List>('/credit-cards/tracker');
-    return (res.data ?? [])
-        .whereType<Map<String, dynamic>>()
-        .map(ApiTrackerRow.fromJson)
-        .toList();
-  }
-
-  // ── Stores ───────────────────────────────────────────────────────────────────
-
-  Future<List<ApiStore>> fetchStores() async {
-    final res = await _dio.get<List>('/stores');
-    return (res.data ?? [])
-        .whereType<Map<String, dynamic>>()
-        .map(ApiStore.fromJson)
-        .toList();
-  }
-
-  Future<ApiStore> createStore(Map<String, dynamic> data) async {
-    final res =
-        await _dio.post<Map<String, dynamic>>('/stores', data: data);
-    final body = res.data;
-    if (body == null) throw const FormatException('Server returned an empty body for createStore');
-    return ApiStore.fromJson(body);
-  }
-
-  Future<ApiStore> updateStore(
+  Future<ApiCreditCard> updateCreditCard(
     int serverId,
     Map<String, dynamic> data,
-  ) async {
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '/stores/$serverId',
-      data: data,
-    );
-    final body = res.data;
-    if (body == null) throw const FormatException('Server returned an empty body for updateStore');
-    return ApiStore.fromJson(body);
-  }
+  ) =>
+      _putJson(
+        '/credit-cards/$serverId',
+        data: data,
+        fromJson: ApiCreditCard.fromJson,
+      );
 
-  Future<void> deleteStore(int serverId) async {
-    await _dio.delete('/stores/$serverId');
-  }
+  Future<void> deleteCreditCard(int serverId) =>
+      _dio.delete('/credit-cards/$serverId');
 
-  // ── Grocery Items ─────────────────────────────────────────────────────────────
+  Future<List<ApiTrackerRow>> fetchTrackerRows() =>
+      _getList('/credit-cards/tracker', fromJson: ApiTrackerRow.fromJson);
 
-  Future<List<ApiGroceryItem>> fetchGroceryItems({
-    String? search,
-  }) async {
-    final params = <String, dynamic>{};
-    if (search != null && search.isNotEmpty) params['search'] = search;
-    final res = await _dio.get<List>(
-      '/grocery/items',
-      queryParameters: params,
-    );
-    return (res.data ?? [])
-        .whereType<Map<String, dynamic>>()
-        .map(ApiGroceryItem.fromJson)
-        .toList();
-  }
+  // ── Stores ────────────────────────────────────────────────────────────────
 
-  Future<ApiGroceryItem> createGroceryItem(
-    Map<String, dynamic> data,
-  ) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      '/grocery/items',
-      data: data,
-    );
-    final body = res.data;
-    if (body == null) throw const FormatException('Server returned an empty body for createGroceryItem');
-    return ApiGroceryItem.fromJson(body);
-  }
+  Future<List<ApiStore>> fetchStores() =>
+      _getList('/stores', fromJson: ApiStore.fromJson);
 
-  Future<void> deleteGroceryItem(int serverId) async {
-    await _dio.delete('/grocery/items/$serverId');
-  }
+  Future<ApiStore> createStore(Map<String, dynamic> data) =>
+      _postJson('/stores', data: data, fromJson: ApiStore.fromJson);
 
-  // ── On Hand ──────────────────────────────────────────────────────────────────
+  Future<ApiStore> updateStore(int serverId, Map<String, dynamic> data) =>
+      _patchJson('/stores/$serverId', data: data, fromJson: ApiStore.fromJson);
 
-  Future<List<ApiOnHand>> fetchOnHand() async {
-    final res = await _dio.get<List>('/grocery/on-hand');
-    return (res.data ?? [])
-        .whereType<Map<String, dynamic>>()
-        .map(ApiOnHand.fromJson)
-        .toList();
-  }
+  Future<void> deleteStore(int serverId) => _dio.delete('/stores/$serverId');
 
-  Future<ApiOnHand> upsertOnHand(int itemServerId, Map<String, dynamic> data) async {
-    final res = await _dio.put<Map<String, dynamic>>('/grocery/on-hand/$itemServerId', data: data);
-    final body = res.data;
-    if (body == null) throw const FormatException('Server returned an empty body for upsertOnHand');
-    return ApiOnHand.fromJson(body);
-  }
+  // ── Grocery Items ─────────────────────────────────────────────────────────
 
-  Future<void> deleteOnHand(int itemServerId) async {
-    await _dio.delete('/grocery/on-hand/$itemServerId');
-  }
+  Future<List<ApiGroceryItem>> fetchGroceryItems({String? search}) =>
+      _getList(
+        '/grocery/items',
+        queryParameters:
+            search != null && search.isNotEmpty ? {'search': search} : null,
+        fromJson: ApiGroceryItem.fromJson,
+      );
 
-  // ── Grocery Lists ─────────────────────────────────────────────────────────────
+  Future<ApiGroceryItem> createGroceryItem(Map<String, dynamic> data) =>
+      _postJson(
+        '/grocery/items',
+        data: data,
+        fromJson: ApiGroceryItem.fromJson,
+      );
 
-  Future<List<ApiGroceryList>> fetchGroceryLists({
-    String? status,
-  }) async {
-    final params = <String, dynamic>{};
-    if (status != null) params['status'] = status;
-    final res = await _dio.get<List>(
-      '/grocery/lists',
-      queryParameters: params,
-    );
-    return (res.data ?? [])
-        .whereType<Map<String, dynamic>>()
-        .map(ApiGroceryList.fromJson)
-        .toList();
-  }
+  Future<void> deleteGroceryItem(int serverId) =>
+      _dio.delete('/grocery/items/$serverId');
 
-  Future<ApiGroceryList> createGroceryList(
-    Map<String, dynamic> data,
-  ) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      '/grocery/lists',
-      data: data,
-    );
-    final body = res.data;
-    if (body == null) throw const FormatException('Server returned an empty body for createGroceryList');
-    return ApiGroceryList.fromJson(body);
-  }
+  // ── On Hand ───────────────────────────────────────────────────────────────
+
+  Future<List<ApiOnHand>> fetchOnHand() =>
+      _getList('/grocery/on-hand', fromJson: ApiOnHand.fromJson);
+
+  Future<ApiOnHand> upsertOnHand(int itemServerId, Map<String, dynamic> data) =>
+      _putJson(
+        '/grocery/on-hand/$itemServerId',
+        data: data,
+        fromJson: ApiOnHand.fromJson,
+      );
+
+  Future<void> deleteOnHand(int itemServerId) =>
+      _dio.delete('/grocery/on-hand/$itemServerId');
+
+  // ── Grocery Lists ─────────────────────────────────────────────────────────
+
+  Future<List<ApiGroceryList>> fetchGroceryLists({String? status}) =>
+      _getList(
+        '/grocery/lists',
+        queryParameters: status != null ? {'status': status} : null,
+        fromJson: ApiGroceryList.fromJson,
+      );
+
+  Future<ApiGroceryList> createGroceryList(Map<String, dynamic> data) =>
+      _postJson(
+        '/grocery/lists',
+        data: data,
+        fromJson: ApiGroceryList.fromJson,
+      );
 
   Future<ApiGroceryList> updateGroceryList(
     int serverId,
     Map<String, dynamic> data,
-  ) async {
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '/grocery/lists/$serverId',
-      data: data,
-    );
-    final body = res.data;
-    if (body == null) throw const FormatException('Server returned an empty body for updateGroceryList');
-    return ApiGroceryList.fromJson(body);
-  }
+  ) =>
+      _patchJson(
+        '/grocery/lists/$serverId',
+        data: data,
+        fromJson: ApiGroceryList.fromJson,
+      );
 
-  Future<void> deleteGroceryList(int serverId) async {
-    await _dio.delete('/grocery/lists/$serverId');
-  }
+  Future<void> deleteGroceryList(int serverId) =>
+      _dio.delete('/grocery/lists/$serverId');
 
-  // ── Grocery List Items ────────────────────────────────────────────────────────
+  // ── Grocery List Items ────────────────────────────────────────────────────
 
   Future<ApiGroceryListItem> addGroceryListItem(
     int listServerId,
     Map<String, dynamic> data,
-  ) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      '/grocery/lists/$listServerId/items',
-      data: data,
-    );
-    final body = res.data;
-    if (body == null) throw const FormatException('Server returned an empty body for addGroceryListItem');
-    return ApiGroceryListItem.fromJson(body);
-  }
+  ) =>
+      _postJson(
+        '/grocery/lists/$listServerId/items',
+        data: data,
+        fromJson: ApiGroceryListItem.fromJson,
+      );
 
   Future<ApiGroceryListItem> updateGroceryListItem(
     int listServerId,
     int itemServerId,
     Map<String, dynamic> data,
-  ) async {
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '/grocery/lists/$listServerId/items/$itemServerId',
-      data: data,
-    );
-    final body = res.data;
-    if (body == null) throw const FormatException('Server returned an empty body for updateGroceryListItem');
-    return ApiGroceryListItem.fromJson(body);
-  }
+  ) =>
+      _patchJson(
+        '/grocery/lists/$listServerId/items/$itemServerId',
+        data: data,
+        fromJson: ApiGroceryListItem.fromJson,
+      );
 
-  Future<void> removeGroceryListItem(
-    int listServerId,
-    int itemServerId,
-  ) async {
-    await _dio.delete(
-      '/grocery/lists/$listServerId/items/$itemServerId',
-    );
-  }
+  Future<void> removeGroceryListItem(int listServerId, int itemServerId) =>
+      _dio.delete('/grocery/lists/$listServerId/items/$itemServerId');
 }

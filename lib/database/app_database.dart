@@ -299,6 +299,13 @@ class AppDatabase extends _$AppDatabase {
     return driftDatabase(name: 'calendar_mobile');
   }
 
+  /// Returns [pendingUpdate] when transitioning from [synced]; preserves any
+  /// other pending status so an already-queued mutation is not downgraded.
+  static int _nextSyncStatus(int current) =>
+      current == SyncStatus.synced.value
+          ? SyncStatus.pendingUpdate.value
+          : current;
+
   // ── Category DAO ────────────────────────────────────────────────────────────
 
   Future<List<Category>> getAllCategories() => select(categories).get();
@@ -375,9 +382,7 @@ class AppDatabase extends _$AppDatabase {
             ..where((o) => o.id.equals(localId)))
           .getSingleOrNull();
       if (row == null) return;
-      final nextSync = row.syncStatus == SyncStatus.synced.value
-          ? SyncStatus.pendingUpdate.value
-          : row.syncStatus;
+      final nextSync = _nextSyncStatus(row.syncStatus);
       await (update(occurrences)..where((o) => o.id.equals(localId))).write(
         OccurrencesCompanion(
           status: Value(status),
@@ -781,9 +786,7 @@ class AppDatabase extends _$AppDatabase {
             ..where((l) => l.id.equals(localId)))
           .getSingleOrNull();
       if (row == null) return;
-      final nextSync = row.syncStatus == SyncStatus.synced.value
-          ? SyncStatus.pendingUpdate.value
-          : row.syncStatus;
+      final nextSync = _nextSyncStatus(row.syncStatus);
       await (update(groceryLists)..where((l) => l.id.equals(localId))).write(
         GroceryListsCompanion(
           status: Value(status),
@@ -896,9 +899,7 @@ class AppDatabase extends _$AppDatabase {
             ..where((i) => i.id.equals(localId)))
           .getSingleOrNull();
       if (row == null) return;
-      final nextSync = row.syncStatus == SyncStatus.synced.value
-          ? SyncStatus.pendingUpdate.value
-          : row.syncStatus;
+      final nextSync = _nextSyncStatus(row.syncStatus);
       await (update(groceryListItems)
             ..where((i) => i.id.equals(localId)))
           .write(

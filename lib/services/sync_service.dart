@@ -14,20 +14,41 @@ class SyncService {
   final AppDatabase _db;
   final ApiClient _api;
 
-  // ── Full refresh (pull all server data into local DB) ────────────────────────
+  // ── Full refresh (pull all server data into local DB) ────────────────────
 
   Future<void> fullRefresh() async {
     dev.log('fullRefresh: start', name: 'sync');
     final errors = <String>[];
 
     await Future.wait([
-      _refreshCategories().catchError((e) { errors.add('categories: $e'); return; }),
-      _refreshPersons().catchError((e) { errors.add('persons: $e'); return; }),
-      _refreshOccurrences().catchError((e) { errors.add('occurrences: $e'); return; }),
-      _refreshTasks().catchError((e) { errors.add('tasks: $e'); return; }),
-      _refreshCreditCardList().catchError((e) { errors.add('credit cards: $e'); return; }),
-      _refreshCreditCardTracker().catchError((e) { errors.add('credit card tracker: $e'); return; }),
-      _refreshGrocery().catchError((e) { errors.add('grocery: $e'); return; }),
+      _refreshCategories().catchError((e) {
+        errors.add('categories: $e');
+        return;
+      }),
+      _refreshPersons().catchError((e) {
+        errors.add('persons: $e');
+        return;
+      }),
+      _refreshOccurrences().catchError((e) {
+        errors.add('occurrences: $e');
+        return;
+      }),
+      _refreshTasks().catchError((e) {
+        errors.add('tasks: $e');
+        return;
+      }),
+      _refreshCreditCardList().catchError((e) {
+        errors.add('credit cards: $e');
+        return;
+      }),
+      _refreshCreditCardTracker().catchError((e) {
+        errors.add('credit card tracker: $e');
+        return;
+      }),
+      _refreshGrocery().catchError((e) {
+        errors.add('grocery: $e');
+        return;
+      }),
     ]);
 
     if (errors.isNotEmpty) {
@@ -82,16 +103,20 @@ class SyncService {
         .toList());
     // Purge local occurrences within the synced window that no longer exist on the server.
     final serverOccIds = occs.map((o) => o.id).toSet();
-    final localOccs = await _db.getOccurrencesByDateRange(_fmt(start), _fmt(end));
-    final orphanOccs = localOccs
+    final localOccs =
+        await _db.getOccurrencesByDateRange(_fmt(start), _fmt(end));
+    final orphanIds = localOccs
         .where((o) => o.serverId != null && !serverOccIds.contains(o.serverId))
-        .toList();
-    for (final local in orphanOccs) {
-      dev.log('_refreshOccurrences: purging orphan local=${local.id} serverId=${local.serverId}', name: 'sync');
-    }
-    // Fix: one SQL DELETE IN (...) instead of N individual deletes.
-    await _db.deleteOccurrencesLocalBatch(orphanOccs.map((o) => o.id).toList());
-    // Also cache events referenced by occurrences
+        .map((o) {
+      dev.log(
+        '_refreshOccurrences: purging orphan local=${o.id} serverId=${o.serverId}',
+        name: 'sync',
+      );
+      return o.id;
+    }).toList();
+    await _db.deleteOccurrencesLocalBatch(orphanIds);
+
+    // Cache events referenced by occurrences.
     final events = occs
         .where((o) => o.event != null)
         .map((o) => o.event!)
@@ -142,19 +167,20 @@ class SyncService {
             ))
         .toList());
 
-    // Purge local tasks that were deleted on the server, then reuse the
-    // refreshed list to resolve local IDs for subtask upserts.
     final serverIds = apiTasks.map((t) => t.id).toSet();
     final localTasks = await _db.getTasks();
-    final orphanTasks = localTasks
+    final orphanTaskIds = localTasks
         .where((t) => t.serverId != null && !serverIds.contains(t.serverId))
-        .toList();
-    for (final local in orphanTasks) {
-      dev.log('_refreshTasks: purging orphan local=${local.id} serverId=${local.serverId}', name: 'sync');
-    }
-    await _db.deleteTasksLocalBatch(orphanTasks.map((t) => t.id).toList());
+        .map((t) {
+      dev.log(
+        '_refreshTasks: purging orphan local=${t.id} serverId=${t.serverId}',
+        name: 'sync',
+      );
+      return t.id;
+    }).toList();
+    await _db.deleteTasksLocalBatch(orphanTaskIds);
 
-    // Fix #8: collect all subtasks first, then upsert in a single transaction.
+    // Collect all subtasks and upsert in a single transaction.
     final serverToLocal = {for (final t in localTasks) t.serverId: t.id};
     final allSubtasks = <SubtasksCompanion>[];
     for (final t in apiTasks) {
@@ -172,11 +198,9 @@ class SyncService {
             syncStatus: Value(SyncStatus.synced.value),
           )));
     }
-    if (allSubtasks.isNotEmpty) {
-      await _db.upsertSubtasks(allSubtasks);
-    }
+    if (allSubtasks.isNotEmpty) await _db.upsertSubtasks(allSubtasks);
 
-    // Fetch all local subtasks in one query and group by task to avoid N+1.
+    // Purge orphan subtasks — fetch all in one query to avoid N+1.
     final allLocalSubtasks = await _db.getAllSubtasks();
     final subtasksByLocalTaskId = <int, List<Subtask>>{};
     for (final s in allLocalSubtasks) {
@@ -189,7 +213,10 @@ class SyncService {
       final serverSubtaskIds = t.subtasks.map((s) => s.id).toSet();
       for (final s in subtasksByLocalTaskId[localTaskId] ?? []) {
         if (s.serverId != null && !serverSubtaskIds.contains(s.serverId)) {
-          dev.log('_refreshTasks: purging orphan subtask local=${s.id} serverId=${s.serverId}', name: 'sync');
+          dev.log(
+            '_refreshTasks: purging orphan subtask local=${s.id} serverId=${s.serverId}',
+            name: 'sync',
+          );
           orphanSubtaskIds.add(s.id);
         }
       }
@@ -243,7 +270,7 @@ class SyncService {
         .toList());
   }
 
-  // ── Push pending local mutations ─────────────────────────────────────────────
+  // ── Push pending local mutations ──────────────────────────────────────────
 
   Future<SyncResult> pushPending() async {
     int pushed = 0;
@@ -264,185 +291,167 @@ class SyncService {
     return SyncResult(pushed: pushed, errors: errors);
   }
 
-  Future<int> _pushOccurrences(List<String> errors) async {
+  /// Iterates [pending], calls [process] on each item, and counts successes.
+  /// Handles [DioException] (with 404 routed to [on404]) and unexpected errors
+  /// uniformly so individual push methods only contain entity-specific logic.
+  Future<int> _pushLoop<T>({
+    required Future<List<T>> Function() getPending,
+    required String Function(T) label,
+    required Future<bool> Function(T) process,
+    required Future<void> Function(T)? on404,
+    required List<String> errors,
+  }) async {
     int count = 0;
-    final pending = await _db.getPendingOccurrences();
-    for (final occ in pending) {
-      if (occ.serverId == null) continue; // can't create occurrences client-side
+    final pending = await getPending();
+    for (final item in pending) {
       try {
-        // Fix #5 + #12: exhaustive enum switch surfaces the formerly-silent pendingCreate case.
-        switch (SyncStatus.fromInt(occ.syncStatus)) {
-          case SyncStatus.synced:
-          case SyncStatus.pendingCreate:
-            break; // occurrences cannot be created client-side
-          case SyncStatus.pendingUpdate:
-            await _api.patchOccurrence(occ.serverId!, {'status': occ.status, 'notes': occ.notes});
-            await _db.markOccurrenceSynced(occ.id, occ.serverId!);
-            count++;
-          case SyncStatus.pendingDelete:
-            await _api.deleteOccurrence(occ.serverId!);
-            await _db.deleteOccurrenceLocal(occ.id);
-            count++;
-        }
+        if (await process(item)) count++;
       } on DioException catch (e) {
-        final detail = _dioErrorDetail(e);
-        dev.log('_pushOccurrences: serverId=${occ.serverId} $detail', name: 'sync', level: 900);
-        errors.add('Occurrence ${occ.serverId}: $detail');
-      } catch (e) {
-        dev.log('_pushOccurrences: local=${occ.id} unexpected: $e', name: 'sync', level: 900);
-        errors.add('Occurrence ${occ.id}: unexpected error');
-      }
-    }
-    return count;
-  }
-
-  Future<int> _pushTasks(List<String> errors) async {
-    int count = 0;
-    final pending = await _db.getPendingTasks();
-    for (final task in pending) {
-      try {
-        switch (SyncStatus.fromInt(task.syncStatus)) {
-          case SyncStatus.synced:
-            break;
-          case SyncStatus.pendingCreate:
-            final body = _taskToJson(task);
-            final created = await _api.createTask(body);
-            await _db.markTaskSynced(task.id, created.id);
-            count++;
-          case SyncStatus.pendingUpdate:
-            if (task.serverId == null) break;
-            final body = _taskToJson(task);
-            await _api.patchTask(task.serverId!, body);
-            await _db.markTaskSynced(task.id, task.serverId!);
-            count++;
-          case SyncStatus.pendingDelete:
-            if (task.serverId == null) break;
-            await _api.deleteTask(task.serverId!);
-            await _db.deleteTaskLocal(task.id);
-            count++;
-        }
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          // Task was deleted on the server; remove the orphaned local record.
-          dev.log('_pushTasks: 404 for local=${task.id}, removing orphan', name: 'sync');
-          await _db.deleteTaskLocal(task.id);
+        if (e.response?.statusCode == 404 && on404 != null) {
+          dev.log('sync: ${label(item)} 404, removing orphan', name: 'sync');
+          await on404(item);
         } else {
           final detail = _dioErrorDetail(e);
-          dev.log('_pushTasks: local=${task.id} $detail', name: 'sync', level: 900);
-          errors.add('Task ${task.id}: $detail');
+          dev.log('sync: ${label(item)} $detail', name: 'sync', level: 900);
+          errors.add('${label(item)}: $detail');
         }
       } catch (e) {
-        dev.log('_pushTasks: local=${task.id} unexpected: $e', name: 'sync', level: 900);
-        errors.add('Task ${task.id}: unexpected error');
+        dev.log('sync: ${label(item)} unexpected: $e', name: 'sync', level: 900);
+        errors.add('${label(item)}: unexpected error');
       }
     }
     return count;
   }
 
-  Future<int> _pushSubtasks(List<String> errors) async {
-    int count = 0;
-    final pending = await _db.getPendingSubtasks();
-    for (final sub in pending) {
-      try {
-        switch (SyncStatus.fromInt(sub.syncStatus)) {
-          case SyncStatus.synced:
-            break;
-          case SyncStatus.pendingCreate:
-            // markTaskSynced() back-fills taskServerId, but the snapshot was
-            // taken before _pushTasks ran, so re-read from the DB when null.
-            final createTaskServerId = sub.taskServerId ??
-                (await _db.getTaskById(sub.taskLocalId))?.serverId;
-            if (createTaskServerId == null) break;
-            final createBody = _subtaskToJson(sub);
-            final created = await _api.createSubtask(createTaskServerId, createBody);
-            await _db.markSubtaskSynced(sub.id, created.id);
-            count++;
-          case SyncStatus.pendingUpdate:
-            // Similarly, re-read taskServerId if it is missing in the snapshot.
-            final updateTaskServerId = sub.taskServerId ??
-                (await _db.getTaskById(sub.taskLocalId))?.serverId;
-            if (sub.serverId == null || updateTaskServerId == null) break;
-            final updateBody = _subtaskToJson(sub);
-            await _api.patchSubtask(updateTaskServerId, sub.serverId!, updateBody);
-            await _db.markSubtaskSynced(sub.id, sub.serverId!);
-            count++;
-          case SyncStatus.pendingDelete:
-            final deleteTaskServerId = sub.taskServerId ??
-                (await _db.getTaskById(sub.taskLocalId))?.serverId;
-            if (sub.serverId == null || deleteTaskServerId == null) break;
-            await _api.deleteSubtask(deleteTaskServerId, sub.serverId!);
-            await _db.deleteSubtaskLocal(sub.id);
-            count++;
-        }
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          dev.log('_pushSubtasks: 404 for local=${sub.id}, removing orphan', name: 'sync');
-          await _db.deleteSubtaskLocal(sub.id);
-        } else {
-          final detail = _dioErrorDetail(e);
-          dev.log('_pushSubtasks: local=${sub.id} $detail', name: 'sync', level: 900);
-          errors.add('Subtask ${sub.id}: $detail');
-        }
-      } catch (e) {
-        dev.log('_pushSubtasks: local=${sub.id} unexpected: $e', name: 'sync', level: 900);
-        errors.add('Subtask ${sub.id}: unexpected error');
-      }
-    }
-    return count;
-  }
+  Future<int> _pushOccurrences(List<String> errors) => _pushLoop(
+        getPending: _db.getPendingOccurrences,
+        label: (o) => 'Occurrence ${o.serverId ?? o.id}',
+        on404: null,
+        errors: errors,
+        process: (occ) async {
+          if (occ.serverId == null) return false;
+          switch (SyncStatus.fromInt(occ.syncStatus)) {
+            case SyncStatus.synced:
+            case SyncStatus.pendingCreate:
+              return false; // occurrences cannot be created client-side
+            case SyncStatus.pendingUpdate:
+              await _api.patchOccurrence(
+                occ.serverId!,
+                {'status': occ.status, 'notes': occ.notes},
+              );
+              await _db.markOccurrenceSynced(occ.id, occ.serverId!);
+              return true;
+            case SyncStatus.pendingDelete:
+              await _api.deleteOccurrence(occ.serverId!);
+              await _db.deleteOccurrenceLocal(occ.id);
+              return true;
+          }
+        },
+      );
 
-  Future<int> _pushCreditCards(List<String> errors) async {
-    int count = 0;
-    final pending = await _db.getPendingCreditCards();
-    for (final card in pending) {
-      try {
-        switch (SyncStatus.fromInt(card.syncStatus)) {
-          case SyncStatus.synced:
-            break;
-          case SyncStatus.pendingCreate:
-            final body = _cardToJson(card);
-            final created = await _api.createCreditCard(body);
-            await _db.markCreditCardSynced(card.id, created.id);
-            count++;
-          case SyncStatus.pendingUpdate:
-            if (card.serverId == null) break;
-            final body = _cardToJson(card);
-            await _api.updateCreditCard(card.serverId!, body);
-            await _db.markCreditCardSynced(card.id, card.serverId!);
-            count++;
-          case SyncStatus.pendingDelete:
-            if (card.serverId == null) break;
-            await _api.deleteCreditCard(card.serverId!);
-            await _db.deleteCreditCardLocal(card.id);
-            count++;
-        }
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          dev.log('_pushCreditCards: 404 for local=${card.id}, removing orphan', name: 'sync');
-          await _db.deleteCreditCardLocal(card.id);
-        } else {
-          final detail = _dioErrorDetail(e);
-          dev.log('_pushCreditCards: local=${card.id} $detail', name: 'sync', level: 900);
-          errors.add('CreditCard ${card.id}: $detail');
-        }
-      } catch (e) {
-        dev.log('_pushCreditCards: local=${card.id} unexpected error: $e', name: 'sync', level: 900);
-        errors.add('CreditCard ${card.id}: $e');
-      }
-    }
-    return count;
-  }
+  Future<int> _pushTasks(List<String> errors) => _pushLoop(
+        getPending: _db.getPendingTasks,
+        label: (t) => 'Task ${t.id}',
+        on404: (t) => _db.deleteTaskLocal(t.id),
+        errors: errors,
+        process: (task) async {
+          switch (SyncStatus.fromInt(task.syncStatus)) {
+            case SyncStatus.synced:
+              return false;
+            case SyncStatus.pendingCreate:
+              final created = await _api.createTask(_taskToJson(task));
+              await _db.markTaskSynced(task.id, created.id);
+              return true;
+            case SyncStatus.pendingUpdate:
+              if (task.serverId == null) return false;
+              await _api.patchTask(task.serverId!, _taskToJson(task));
+              await _db.markTaskSynced(task.id, task.serverId!);
+              return true;
+            case SyncStatus.pendingDelete:
+              if (task.serverId == null) return false;
+              await _api.deleteTask(task.serverId!);
+              await _db.deleteTaskLocal(task.id);
+              return true;
+          }
+        },
+      );
 
-  // ── Grocery ──────────────────────────────────────────────────────────────────
+  Future<int> _pushSubtasks(List<String> errors) => _pushLoop(
+        getPending: _db.getPendingSubtasks,
+        label: (s) => 'Subtask ${s.id}',
+        on404: (s) => _db.deleteSubtaskLocal(s.id),
+        errors: errors,
+        process: (sub) async {
+          switch (SyncStatus.fromInt(sub.syncStatus)) {
+            case SyncStatus.synced:
+              return false;
+            case SyncStatus.pendingCreate:
+              // markTaskSynced() back-fills taskServerId, but the snapshot was
+              // taken before _pushTasks ran, so re-read from the DB when null.
+              final createTaskServerId = sub.taskServerId ??
+                  (await _db.getTaskById(sub.taskLocalId))?.serverId;
+              if (createTaskServerId == null) return false;
+              final created =
+                  await _api.createSubtask(createTaskServerId, _subtaskToJson(sub));
+              await _db.markSubtaskSynced(sub.id, created.id);
+              return true;
+            case SyncStatus.pendingUpdate:
+              final updateTaskServerId = sub.taskServerId ??
+                  (await _db.getTaskById(sub.taskLocalId))?.serverId;
+              if (sub.serverId == null || updateTaskServerId == null) return false;
+              await _api.patchSubtask(
+                updateTaskServerId,
+                sub.serverId!,
+                _subtaskToJson(sub),
+              );
+              await _db.markSubtaskSynced(sub.id, sub.serverId!);
+              return true;
+            case SyncStatus.pendingDelete:
+              final deleteTaskServerId = sub.taskServerId ??
+                  (await _db.getTaskById(sub.taskLocalId))?.serverId;
+              if (sub.serverId == null || deleteTaskServerId == null) return false;
+              await _api.deleteSubtask(deleteTaskServerId, sub.serverId!);
+              await _db.deleteSubtaskLocal(sub.id);
+              return true;
+          }
+        },
+      );
 
-  Future<void> _refreshGrocery() async {
-    await Future.wait([
-      _refreshGroceryStores(),
-      _refreshGroceryItems(),
-      _refreshGroceryOnHand(),
-      _refreshGroceryLists(),
-    ]);
-  }
+  Future<int> _pushCreditCards(List<String> errors) => _pushLoop(
+        getPending: _db.getPendingCreditCards,
+        label: (c) => 'CreditCard ${c.id}',
+        on404: (c) => _db.deleteCreditCardLocal(c.id),
+        errors: errors,
+        process: (card) async {
+          switch (SyncStatus.fromInt(card.syncStatus)) {
+            case SyncStatus.synced:
+              return false;
+            case SyncStatus.pendingCreate:
+              final created = await _api.createCreditCard(_cardToJson(card));
+              await _db.markCreditCardSynced(card.id, created.id);
+              return true;
+            case SyncStatus.pendingUpdate:
+              if (card.serverId == null) return false;
+              await _api.updateCreditCard(card.serverId!, _cardToJson(card));
+              await _db.markCreditCardSynced(card.id, card.serverId!);
+              return true;
+            case SyncStatus.pendingDelete:
+              if (card.serverId == null) return false;
+              await _api.deleteCreditCard(card.serverId!);
+              await _db.deleteCreditCardLocal(card.id);
+              return true;
+          }
+        },
+      );
+
+  // ── Grocery ───────────────────────────────────────────────────────────────
+
+  Future<void> _refreshGrocery() => Future.wait([
+        _refreshGroceryStores(),
+        _refreshGroceryItems(),
+        _refreshGroceryOnHand(),
+        _refreshGroceryLists(),
+      ]);
 
   Future<void> _refreshGroceryStores() async {
     final stores = await _api.fetchStores();
@@ -473,8 +482,8 @@ class SyncService {
 
   Future<void> _refreshGroceryOnHand() async {
     final onHand = await _api.fetchOnHand();
-    // Fetch pending rows before upserting so we can skip overwriting them
-    // with stale server data — protects any quantity edits queued offline.
+    // Skip overwriting pending rows with stale server data — protects any
+    // quantity edits queued offline.
     final pending = await _db.getPendingGroceryOnHand();
     final pendingItemIds = pending.map((o) => o.itemServerId).toSet();
     final toUpsert = onHand
@@ -487,12 +496,11 @@ class SyncService {
             ))
         .toList();
     if (toUpsert.isNotEmpty) await _db.upsertGroceryOnHand(toUpsert);
-    // Purge catalog-deleted items, but never remove rows that are pending push.
-    final keepIds = {
+    // Never remove rows that are pending push.
+    await _db.purgeGroceryOnHand({
       ...onHand.map((o) => o.itemId),
       ...pendingItemIds,
-    };
-    await _db.purgeGroceryOnHand(keepIds);
+    });
   }
 
   Future<void> _refreshGroceryLists() async {
@@ -509,24 +517,15 @@ class SyncService {
             ))
         .toList());
 
-    // Purge local lists deleted on the server.
     final serverListIds = apiLists.map((l) => l.id).toSet();
     final localLists = await _db.getGroceryLists();
-    final orphanLists = localLists
-        .where(
-          (l) => l.serverId != null && !serverListIds.contains(l.serverId),
-        )
+    final orphanListIds = localLists
+        .where((l) => l.serverId != null && !serverListIds.contains(l.serverId))
+        .map((l) => l.id)
         .toList();
-    await _db.deleteGroceryListsLocalBatch(
-      orphanLists.map((l) => l.id).toList(),
-    );
+    await _db.deleteGroceryListsLocalBatch(orphanListIds);
 
-    // Resolve local list ids for list item upserts.
-    final serverToLocalList = {
-      for (final l in localLists) l.serverId: l.id,
-    };
-
-    // Collect all list items from the embedded payload.
+    final serverToLocalList = {for (final l in localLists) l.serverId: l.id};
     final allItems = <GroceryListItemsCompanion>[];
     for (final l in apiLists) {
       final localListId = serverToLocalList[l.id];
@@ -546,230 +545,163 @@ class SyncService {
     }
     if (allItems.isNotEmpty) await _db.upsertGroceryListItems(allItems);
 
-    // Purge orphan list items for lists that still exist.
     final serverItemIds = {
       for (final l in apiLists)
         for (final i in l.items) i.id,
     };
     final localItems = await _db.getGroceryListItems();
     final orphanItemIds = localItems
-        .where(
-          (i) =>
-              i.serverId != null &&
-              serverListIds.contains(i.listServerId) &&
-              !serverItemIds.contains(i.serverId),
-        )
+        .where((i) =>
+            i.serverId != null &&
+            serverListIds.contains(i.listServerId) &&
+            !serverItemIds.contains(i.serverId))
         .map((i) => i.id)
         .toList();
     await _db.deleteGroceryListItemsLocalBatch(orphanItemIds);
   }
 
-  Future<int> _pushGroceryOnHand(List<String> errors) async {
-    int count = 0;
-    final pending = await _db.getPendingGroceryOnHand();
-    for (final oh in pending) {
-      try {
-        switch (SyncStatus.fromInt(oh.syncStatus)) {
-          case SyncStatus.synced:
-            break;
-          case SyncStatus.pendingCreate:
-          case SyncStatus.pendingUpdate:
-            // PUT is an idempotent upsert keyed on item_id, so create and
-            // update are handled identically — safe to replay on retry.
-            await _api.upsertOnHand(oh.itemServerId, {
-              'quantity': oh.quantity,
-              'unit': oh.unit,
-            });
-            await _db.markGroceryOnHandSynced(oh.id);
-            count++;
-          case SyncStatus.pendingDelete:
-            await _api.deleteOnHand(oh.itemServerId);
-            await _db.deleteGroceryOnHandLocal(oh.id);
-            count++;
-        }
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          // Item deleted on server; remove the orphaned local record.
-          dev.log('_pushGroceryOnHand: 404 for local=${oh.id}, removing orphan', name: 'sync');
-          await _db.deleteGroceryOnHandLocal(oh.id);
-        } else {
-          final detail = _dioErrorDetail(e);
-          dev.log('_pushGroceryOnHand: local=${oh.id} $detail', name: 'sync', level: 900);
-          errors.add('GroceryOnHand ${oh.id}: $detail');
-        }
-      } catch (e) {
-        dev.log('_pushGroceryOnHand: local=${oh.id} unexpected: $e', name: 'sync', level: 900);
-        errors.add('GroceryOnHand ${oh.id}: unexpected error');
-      }
-    }
-    return count;
-  }
+  Future<int> _pushGroceryOnHand(List<String> errors) => _pushLoop(
+        getPending: _db.getPendingGroceryOnHand,
+        label: (o) => 'GroceryOnHand ${o.id}',
+        on404: (o) => _db.deleteGroceryOnHandLocal(o.id),
+        errors: errors,
+        process: (oh) async {
+          switch (SyncStatus.fromInt(oh.syncStatus)) {
+            case SyncStatus.synced:
+              return false;
+            case SyncStatus.pendingCreate:
+            case SyncStatus.pendingUpdate:
+              // PUT is an idempotent upsert keyed on item_id, so create and
+              // update are handled identically — safe to replay on retry.
+              await _api.upsertOnHand(
+                oh.itemServerId,
+                {'quantity': oh.quantity, 'unit': oh.unit},
+              );
+              await _db.markGroceryOnHandSynced(oh.id);
+              return true;
+            case SyncStatus.pendingDelete:
+              await _api.deleteOnHand(oh.itemServerId);
+              await _db.deleteGroceryOnHandLocal(oh.id);
+              return true;
+          }
+        },
+      );
 
-  Future<int> _pushGroceryStores(List<String> errors) async {
-    int count = 0;
-    final pending = await _db.getPendingGroceryStores();
-    for (final store in pending) {
-      try {
-        switch (SyncStatus.fromInt(store.syncStatus)) {
-          case SyncStatus.synced:
-            break;
-          case SyncStatus.pendingCreate:
-            final created = await _api.createStore(_storeToJson(store));
-            await _db.markGroceryStoreSynced(store.id, created.id);
-            count++;
-          case SyncStatus.pendingUpdate:
-            if (store.serverId == null) break;
-            await _api.updateStore(store.serverId!, _storeToJson(store));
-            await _db.markGroceryStoreSynced(store.id, store.serverId!);
-            count++;
-          case SyncStatus.pendingDelete:
-            if (store.serverId == null) break;
-            await _api.deleteStore(store.serverId!);
-            await _db.deleteGroceryStoreLocal(store.id);
-            count++;
-        }
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          dev.log(
-            '_pushGroceryStores: 404 for local=${store.id}, removing orphan',
-            name: 'sync',
-          );
-          await _db.deleteGroceryStoreLocal(store.id);
-        } else {
-          final detail = _dioErrorDetail(e);
-          dev.log(
-            '_pushGroceryStores: local=${store.id} $detail',
-            name: 'sync',
-            level: 900,
-          );
-          errors.add('GroceryStore ${store.id}: $detail');
-        }
-      } catch (e) {
-        dev.log('_pushGroceryStores: local=${store.id} unexpected: $e', name: 'sync', level: 900);
-        errors.add('GroceryStore ${store.id}: unexpected error');
-      }
-    }
-    return count;
-  }
+  Future<int> _pushGroceryStores(List<String> errors) => _pushLoop(
+        getPending: _db.getPendingGroceryStores,
+        label: (s) => 'GroceryStore ${s.id}',
+        on404: (s) => _db.deleteGroceryStoreLocal(s.id),
+        errors: errors,
+        process: (store) async {
+          switch (SyncStatus.fromInt(store.syncStatus)) {
+            case SyncStatus.synced:
+              return false;
+            case SyncStatus.pendingCreate:
+              final created = await _api.createStore(_storeToJson(store));
+              await _db.markGroceryStoreSynced(store.id, created.id);
+              return true;
+            case SyncStatus.pendingUpdate:
+              if (store.serverId == null) return false;
+              await _api.updateStore(store.serverId!, _storeToJson(store));
+              await _db.markGroceryStoreSynced(store.id, store.serverId!);
+              return true;
+            case SyncStatus.pendingDelete:
+              if (store.serverId == null) return false;
+              await _api.deleteStore(store.serverId!);
+              await _db.deleteGroceryStoreLocal(store.id);
+              return true;
+          }
+        },
+      );
 
-  Future<int> _pushGroceryLists(List<String> errors) async {
-    int count = 0;
-    final pending = await _db.getPendingGroceryLists();
-    for (final list in pending) {
-      try {
-        switch (SyncStatus.fromInt(list.syncStatus)) {
-          case SyncStatus.synced:
-            break;
-          case SyncStatus.pendingCreate:
-            final body = _groceryListToJson(list);
-            final created = await _api.createGroceryList(body);
-            await _db.markGroceryListSynced(list.id, created.id);
-            count++;
-          case SyncStatus.pendingUpdate:
-            if (list.serverId == null) break;
-            final body = _groceryListToJson(list);
-            await _api.updateGroceryList(list.serverId!, body);
-            await _db.markGroceryListSynced(list.id, list.serverId!);
-            count++;
-          case SyncStatus.pendingDelete:
-            if (list.serverId == null) break;
-            await _api.deleteGroceryList(list.serverId!);
-            await _db.deleteGroceryListLocal(list.id);
-            count++;
-        }
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          dev.log(
-            '_pushGroceryLists: 404 for local=${list.id}, removing orphan',
-            name: 'sync',
-          );
-          await _db.deleteGroceryListLocal(list.id);
-        } else {
-          final detail = _dioErrorDetail(e);
-          dev.log(
-            '_pushGroceryLists: local=${list.id} $detail',
-            name: 'sync',
-            level: 900,
-          );
-          errors.add('GroceryList ${list.id}: $detail');
-        }
-      } catch (e) {
-        dev.log('_pushGroceryLists: local=${list.id} unexpected: $e', name: 'sync', level: 900);
-        errors.add('GroceryList ${list.id}: unexpected error');
-      }
-    }
-    return count;
-  }
+  Future<int> _pushGroceryLists(List<String> errors) => _pushLoop(
+        getPending: _db.getPendingGroceryLists,
+        label: (l) => 'GroceryList ${l.id}',
+        on404: (l) => _db.deleteGroceryListLocal(l.id),
+        errors: errors,
+        process: (list) async {
+          switch (SyncStatus.fromInt(list.syncStatus)) {
+            case SyncStatus.synced:
+              return false;
+            case SyncStatus.pendingCreate:
+              final created =
+                  await _api.createGroceryList(_groceryListToJson(list));
+              await _db.markGroceryListSynced(list.id, created.id);
+              return true;
+            case SyncStatus.pendingUpdate:
+              if (list.serverId == null) return false;
+              await _api.updateGroceryList(
+                  list.serverId!, _groceryListToJson(list));
+              await _db.markGroceryListSynced(list.id, list.serverId!);
+              return true;
+            case SyncStatus.pendingDelete:
+              if (list.serverId == null) return false;
+              await _api.deleteGroceryList(list.serverId!);
+              await _db.deleteGroceryListLocal(list.id);
+              return true;
+          }
+        },
+      );
 
-  Future<int> _pushGroceryListItems(List<String> errors) async {
-    int count = 0;
-    final pending = await _db.getPendingGroceryListItems();
-    for (final item in pending) {
-      try {
-        switch (SyncStatus.fromInt(item.syncStatus)) {
-          case SyncStatus.synced:
-            break;
-          case SyncStatus.pendingCreate:
-            // markGroceryListSynced() back-fills listServerId on child items,
-            // but the snapshot predates _pushGroceryLists, so re-read when null.
-            final createListServerId = item.listServerId ??
-                (await _db.getGroceryListById(item.listLocalId))?.serverId;
-            if (createListServerId == null) break;
-            final created = await _api.addGroceryListItem(
-              createListServerId,
-              {
-                'item_id': item.itemServerId,
-                'quantity': item.quantity,
-                'unit': item.unit,
-                if (item.price != null) 'price': item.price,
-                if (item.notes != null) 'notes': item.notes,
-              },
-            );
-            await _db.markGroceryListItemSynced(item.id, created.id);
-            count++;
-          case SyncStatus.pendingUpdate:
-            // Route is /lists/{listId}/items/{itemServerId} — the server keys
-            // on the catalog item id, not the list-item record's own server id.
-            final updateListServerId = item.listServerId ??
-                (await _db.getGroceryListById(item.listLocalId))?.serverId;
-            if (updateListServerId == null || item.serverId == null) break;
-            await _api.updateGroceryListItem(
-              updateListServerId,
-              item.itemServerId,
-              {
-                'status': item.status,
-                'quantity': item.quantity,
-                'unit': item.unit,
-                if (item.price != null) 'price': item.price,
-                if (item.notes != null) 'notes': item.notes,
-              },
-            );
-            await _db.markGroceryListItemSynced(item.id, item.serverId!);
-            count++;
-          case SyncStatus.pendingDelete:
-            final deleteListServerId = item.listServerId ??
-                (await _db.getGroceryListById(item.listLocalId))?.serverId;
-            if (deleteListServerId == null) break;
-            await _api.removeGroceryListItem(deleteListServerId, item.itemServerId);
-            await _db.deleteGroceryListItemLocal(item.id);
-            count++;
-        }
-      } on DioException catch (e) {
-        if (e.response?.statusCode == 404) {
-          dev.log('_pushGroceryListItems: 404 for local=${item.id}, removing orphan', name: 'sync');
-          await _db.deleteGroceryListItemLocal(item.id);
-        } else {
-          final detail = _dioErrorDetail(e);
-          dev.log('_pushGroceryListItems: local=${item.id} $detail', name: 'sync', level: 900);
-          errors.add('GroceryListItem ${item.id}: $detail');
-        }
-      } catch (e) {
-        dev.log('_pushGroceryListItems: local=${item.id} unexpected: $e', name: 'sync', level: 900);
-        errors.add('GroceryListItem ${item.id}: unexpected error');
-      }
-    }
-    return count;
-  }
+  Future<int> _pushGroceryListItems(List<String> errors) => _pushLoop(
+        getPending: _db.getPendingGroceryListItems,
+        label: (i) => 'GroceryListItem ${i.id}',
+        on404: (i) => _db.deleteGroceryListItemLocal(i.id),
+        errors: errors,
+        process: (item) async {
+          switch (SyncStatus.fromInt(item.syncStatus)) {
+            case SyncStatus.synced:
+              return false;
+            case SyncStatus.pendingCreate:
+              // markGroceryListSynced() back-fills listServerId on child items,
+              // but the snapshot predates _pushGroceryLists, so re-read when null.
+              final createListServerId = item.listServerId ??
+                  (await _db.getGroceryListById(item.listLocalId))?.serverId;
+              if (createListServerId == null) return false;
+              final created = await _api.addGroceryListItem(
+                createListServerId,
+                {
+                  'item_id': item.itemServerId,
+                  'quantity': item.quantity,
+                  'unit': item.unit,
+                  if (item.price != null) 'price': item.price,
+                  if (item.notes != null) 'notes': item.notes,
+                },
+              );
+              await _db.markGroceryListItemSynced(item.id, created.id);
+              return true;
+            case SyncStatus.pendingUpdate:
+              final updateListServerId = item.listServerId ??
+                  (await _db.getGroceryListById(item.listLocalId))?.serverId;
+              if (updateListServerId == null || item.serverId == null) {
+                return false;
+              }
+              await _api.updateGroceryListItem(
+                updateListServerId,
+                item.itemServerId,
+                {
+                  'status': item.status,
+                  'quantity': item.quantity,
+                  'unit': item.unit,
+                  if (item.price != null) 'price': item.price,
+                  if (item.notes != null) 'notes': item.notes,
+                },
+              );
+              await _db.markGroceryListItemSynced(item.id, item.serverId!);
+              return true;
+            case SyncStatus.pendingDelete:
+              final deleteListServerId = item.listServerId ??
+                  (await _db.getGroceryListById(item.listLocalId))?.serverId;
+              if (deleteListServerId == null) return false;
+              await _api.removeGroceryListItem(
+                  deleteListServerId, item.itemServerId);
+              await _db.deleteGroceryListItemLocal(item.id);
+              return true;
+          }
+        },
+      );
+
+  // ── JSON serialisers ──────────────────────────────────────────────────────
 
   Map<String, dynamic> _storeToJson(GroceryStore s) => {
         'name': s.name,
@@ -784,8 +716,6 @@ class SyncService {
         if (l.shoppingDate != null) 'shopping_date': l.shoppingDate,
       };
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
-
   Map<String, dynamic> _taskToJson(Task t) => {
         'title': t.title,
         'description': t.description,
@@ -794,7 +724,8 @@ class SyncService {
         if (t.assigneeServerId != null) 'assignee_id': t.assigneeServerId,
         if (t.categoryServerId != null) 'category_id': t.categoryServerId,
         if (t.dueDate != null) 'due_date': t.dueDate,
-        if (t.estimatedMinutes != null) 'estimated_minutes': t.estimatedMinutes,
+        if (t.estimatedMinutes != null)
+          'estimated_minutes': t.estimatedMinutes,
         'recurrence': t.recurrence,
       };
 
@@ -809,40 +740,47 @@ class SyncService {
         'name': c.name,
         if (c.issuer != null) 'issuer': c.issuer,
         if (c.lastFour != null) 'last_four': c.lastFour,
-        if (c.statementCloseDay != null) 'statement_close_day': c.statementCloseDay,
+        if (c.statementCloseDay != null)
+          'statement_close_day': c.statementCloseDay,
         if (c.gracePeriodDays != null) 'grace_period_days': c.gracePeriodDays,
         if (c.weekendShift != null) 'weekend_shift': c.weekendShift,
         if (c.cycleDays != null) 'cycle_days': c.cycleDays,
-        if (c.cycleReferenceDate != null) 'cycle_reference_date': c.cycleReferenceDate,
+        if (c.cycleReferenceDate != null)
+          'cycle_reference_date': c.cycleReferenceDate,
         if (c.dueDaySameMonth != null) 'due_day_same_month': c.dueDaySameMonth,
         if (c.dueDayNextMonth != null) 'due_day_next_month': c.dueDayNextMonth,
         if (c.annualFeeMonth != null) 'annual_fee_month': c.annualFeeMonth,
         'is_active': c.isActive,
       };
 
-  // Fix #11: use DateFormat instead of manual pad-left string building.
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
   static String _fmt(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
 
-  /// Extract a loggable detail string from a DioException.
+  /// Extracts a loggable detail string from a [DioException].
   /// Full server response bodies are written to the log only — never returned
   /// to callers that surface messages in the UI.
   static String _dioErrorDetail(DioException e) {
     final status = e.response?.statusCode;
-    // Log full server body for developer debugging without exposing it to the UI.
     dev.log(
       '_dioErrorDetail: status=$status body=${e.response?.data}',
       name: 'sync',
       level: 900,
     );
-    if (status == 400 || status == 422) return 'Validation error (HTTP $status) — check your data';
+    if (status == 400 || status == 422) {
+      return 'Validation error (HTTP $status) — check your data';
+    }
     if (status != null) return 'Server error (HTTP $status)';
-    if (e.type == DioExceptionType.badCertificate) return 'TLS certificate error — connection may be intercepted';
+    if (e.type == DioExceptionType.badCertificate) {
+      return 'TLS certificate error — connection may be intercepted';
+    }
     return e.message ?? 'Network error';
   }
 }
 
 class SyncResult {
+  const SyncResult({required this.pushed, required this.errors});
+
   final int pushed;
   final List<String> errors;
-  SyncResult({required this.pushed, required this.errors});
 }

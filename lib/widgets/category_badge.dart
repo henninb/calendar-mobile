@@ -14,7 +14,7 @@ class CategoryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = _parseColor(color);
+    final c = parseCategoryColor(color);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -34,15 +34,6 @@ class CategoryBadge extends StatelessWidget {
     );
   }
 
-  static Color _parseColor(String hex) {
-    try {
-      final clean = hex.replaceAll('#', '');
-      if (clean.length == 6) {
-        return Color(int.parse('FF$clean', radix: 16));
-      }
-    } catch (_) {}
-    return const Color(0xFF3B82F6);
-  }
 }
 
 Color parseCategoryColor(String hex) {
