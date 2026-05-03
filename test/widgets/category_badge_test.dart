@@ -63,5 +63,33 @@ void main() {
       ));
       expect(find.textContaining('Bad'), findsOneWidget);
     });
+
+    testWidgets('applies parsed color to text and decoration', (tester) async {
+      await tester.pumpWidget(_wrap(
+        const CategoryBadge(name: 'Work', color: '#22c55e'),
+      ));
+
+      final text = tester.widget<Text>(find.text('Work'));
+      final container = tester.widget<Container>(
+        find.ancestor(
+          of: find.text('Work'),
+          matching: find.byType(Container),
+        ).first,
+      );
+      final decoration = container.decoration! as BoxDecoration;
+
+      expect((text.style!).color, const Color(0xFF22C55E));
+      expect(decoration.color, const Color(0xFF22C55E).withAlpha(33));
+      expect((decoration.border! as Border).top.color, const Color(0xFF22C55E).withAlpha(84));
+    });
+
+    testWidgets('trims leading icon spacing when icon is absent', (tester) async {
+      await tester.pumpWidget(_wrap(
+        const CategoryBadge(name: 'Errands', color: '#ef4444'),
+      ));
+
+      expect(find.text(' Errands'), findsNothing);
+      expect(find.text('Errands'), findsOneWidget);
+    });
   });
 }
