@@ -9,9 +9,9 @@ void main() {
       }
     });
 
-    test('fromInt falls back to synced for unknown values', () {
-      expect(SyncStatus.fromInt(99), SyncStatus.synced);
-      expect(SyncStatus.fromInt(-1), SyncStatus.synced);
+    test('fromInt falls back to pendingUpdate for unknown values', () {
+      expect(SyncStatus.fromInt(99), SyncStatus.pendingUpdate);
+      expect(SyncStatus.fromInt(-1), SyncStatus.pendingUpdate);
     });
 
     test('value integers are stable', () {

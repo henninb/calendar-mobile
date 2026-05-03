@@ -18,6 +18,9 @@ class AppConstants {
 
   static const Duration syncDebounce  = Duration(seconds: 3);
   static const Duration connectCheck  = Duration(seconds: 5);
+
+  static const int occurrencePastMonths   = 1;
+  static const int occurrenceFutureMonths = 3;
 }
 
 abstract final class TaskStatus {
@@ -32,6 +35,13 @@ abstract final class OccurrenceStatus {
   static const String completed = 'completed';
   static const String skipped   = 'skipped';
   static const String overdue   = 'overdue';
+}
+
+abstract final class GroceryConstants {
+  static const List<String> units = [
+    'each', 'lb', 'oz', 'fl_oz', 'g', 'kg', 'liter', 'ml',
+    'bunch', 'bag', 'box', 'can', 'jar', 'pack',
+  ];
 }
 
 // Fix #12: enum gives exhaustive switch checking; explicit .value property

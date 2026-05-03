@@ -2,7 +2,6 @@ import 'dart:developer' as dev;
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../api/api_models.dart' show groceryUnits;
 import '../core/constants.dart';
 import '../database/app_database.dart';
 import '../providers/providers.dart';
@@ -734,7 +733,7 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
                       child: DropdownButton<String>(
                     value: _unit,
                     isExpanded: true,
-                    items: groceryUnits
+                    items: GroceryConstants.units
                         .map(
                           (u) => DropdownMenuItem(
                             value: u,

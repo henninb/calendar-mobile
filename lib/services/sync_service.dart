@@ -85,8 +85,16 @@ class SyncService {
 
   Future<void> _refreshOccurrences() async {
     final now = DateTime.now();
-    final start = DateTime(now.year, now.month - 1, 1);
-    final end = DateTime(now.year, now.month + 3, 0);
+    final start = DateTime(
+      now.year,
+      now.month - AppConstants.occurrencePastMonths,
+      1,
+    );
+    final end = DateTime(
+      now.year,
+      now.month + AppConstants.occurrenceFutureMonths,
+      0,
+    );
     final occs = await _api.fetchOccurrences(
       startDate: _fmt(start),
       endDate: _fmt(end),

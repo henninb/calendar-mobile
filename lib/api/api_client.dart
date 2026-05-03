@@ -62,38 +62,49 @@ class ApiClient {
         .toList();
   }
 
+  Future<T> _writeJson<T>(
+    Future<Response<Map<String, dynamic>>> Function() request,
+    String path, {
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final res = await request();
+    final body = res.data;
+    if (body == null) throw FormatException('Empty response body from $path');
+    return fromJson(body);
+  }
+
   Future<T> _postJson<T>(
     String path, {
     required Object? data,
     required T Function(Map<String, dynamic>) fromJson,
-  }) async {
-    final res = await _dio.post<Map<String, dynamic>>(path, data: data);
-    final body = res.data;
-    if (body == null) throw FormatException('Empty response body from POST $path');
-    return fromJson(body);
-  }
+  }) =>
+      _writeJson(
+        () => _dio.post<Map<String, dynamic>>(path, data: data),
+        path,
+        fromJson: fromJson,
+      );
 
   Future<T> _putJson<T>(
     String path, {
     required Object? data,
     required T Function(Map<String, dynamic>) fromJson,
-  }) async {
-    final res = await _dio.put<Map<String, dynamic>>(path, data: data);
-    final body = res.data;
-    if (body == null) throw FormatException('Empty response body from PUT $path');
-    return fromJson(body);
-  }
+  }) =>
+      _writeJson(
+        () => _dio.put<Map<String, dynamic>>(path, data: data),
+        path,
+        fromJson: fromJson,
+      );
 
   Future<T> _patchJson<T>(
     String path, {
     required Object? data,
     required T Function(Map<String, dynamic>) fromJson,
-  }) async {
-    final res = await _dio.patch<Map<String, dynamic>>(path, data: data);
-    final body = res.data;
-    if (body == null) throw FormatException('Empty response body from PATCH $path');
-    return fromJson(body);
-  }
+  }) =>
+      _writeJson(
+        () => _dio.patch<Map<String, dynamic>>(path, data: data),
+        path,
+        fromJson: fromJson,
+      );
 
   // ── Categories ────────────────────────────────────────────────────────────
 

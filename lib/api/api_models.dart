@@ -286,11 +286,6 @@ double? _decimalToDoubleNullable(Object? v) {
   return null;
 }
 
-const List<String> groceryUnits = [
-  'each', 'lb', 'oz', 'fl_oz', 'g', 'kg', 'liter', 'ml',
-  'bunch', 'bag', 'box', 'can', 'jar', 'pack',
-];
-
 @immutable
 class ApiStore {
   final int id;
