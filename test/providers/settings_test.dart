@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:calendar_mobile/core/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:calendar_mobile/providers/providers.dart';
 
@@ -70,12 +71,35 @@ void main() {
       const url = 'https://api.example.com';
       container.read(baseUrlProvider.notifier).set(url);
       expect(container.read(baseUrlProvider), url);
+      expect(
+        container
+            .read(sharedPreferencesProvider)
+            .getString(AppConstants.prefBaseUrl),
+        url,
+      );
     });
 
     test('successive valid sets update state', () {
       container.read(baseUrlProvider.notifier).set('https://first.example.com');
       container.read(baseUrlProvider.notifier).set('https://second.example.com');
       expect(container.read(baseUrlProvider), 'https://second.example.com');
+    });
+
+    test('loads persisted https URL from SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({
+        AppConstants.prefBaseUrl: 'https://persisted.example.com',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final persisted = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          secureStorageProvider.overrideWithValue(_FakeSecureStorage()),
+          apiKeyInitialValueProvider.overrideWithValue(''),
+        ],
+      );
+      addTearDown(persisted.dispose);
+
+      expect(persisted.read(baseUrlProvider), 'https://persisted.example.com');
     });
   });
 
@@ -110,6 +134,7 @@ void main() {
 
       await container.read(apiKeyProvider.notifier).set('new-key');
       expect(container.read(apiKeyProvider), 'new-key');
+      expect(await storage.read(key: AppConstants.prefApiKey), 'new-key');
     });
   });
 }

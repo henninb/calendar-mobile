@@ -293,6 +293,21 @@ void main() {
       expect(t.assignee!.name, 'Charlie');
     });
 
+    test('parses optional numeric fields from doubles', () {
+      final json = baseTask()
+        ..['assignee_id'] = 7.0
+        ..['category_id'] = 2.0
+        ..['estimated_minutes'] = 45.0
+        ..['occurrence_id'] = 9.0
+        ..['order'] = 3.0;
+      final t = ApiTask.fromJson(json);
+      expect(t.assigneeId, 7);
+      expect(t.categoryId, 2);
+      expect(t.estimatedMinutes, 45);
+      expect(t.occurrenceId, 9);
+      expect(t.order, 3);
+    });
+
     test('parses nested category', () {
       final json = baseTask()
         ..['category'] = {'id': 1, 'name': 'Work', 'color': '#3b82f6', 'icon': '💼'};
@@ -428,6 +443,16 @@ void main() {
       expect(o.quantity, closeTo(0.0, 0.001));
     });
 
+    test('invalid quantity string falls back to 0.0', () {
+      final o = ApiOnHand.fromJson({
+        'id': 30,
+        'item_id': 10,
+        'quantity': 'not-a-number',
+        'unit': 'each',
+      });
+      expect(o.quantity, closeTo(0.0, 0.001));
+    });
+
     test('unit defaults to each when missing', () {
       final o = ApiOnHand.fromJson({'id': 4, 'item_id': 10, 'quantity': 1});
       expect(o.unit, 'each');
@@ -491,6 +516,19 @@ void main() {
     test('price null when absent', () {
       final i = ApiGroceryListItem.fromJson({
         'id': 4, 'list_id': 20, 'item_id': 10, 'quantity': 1, 'unit': 'each', 'status': 'needed',
+      });
+      expect(i.price, isNull);
+    });
+
+    test('invalid price string parses as null', () {
+      final i = ApiGroceryListItem.fromJson({
+        'id': 40,
+        'list_id': 20,
+        'item_id': 10,
+        'quantity': 1,
+        'unit': 'each',
+        'status': 'needed',
+        'price': 'oops',
       });
       expect(i.price, isNull);
     });

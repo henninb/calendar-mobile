@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:calendar_mobile/core/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:calendar_mobile/providers/providers.dart';
 
@@ -48,12 +49,24 @@ void main() {
     test('toggle() flips false → true', () {
       container.read(forcedOfflineProvider.notifier).toggle();
       expect(container.read(forcedOfflineProvider), true);
+      expect(
+        container
+            .read(sharedPreferencesProvider)
+            .getBool(AppConstants.prefForcedOffline),
+        true,
+      );
     });
 
     test('toggle() twice restores to false', () {
       container.read(forcedOfflineProvider.notifier).toggle();
       container.read(forcedOfflineProvider.notifier).toggle();
       expect(container.read(forcedOfflineProvider), false);
+      expect(
+        container
+            .read(sharedPreferencesProvider)
+            .getBool(AppConstants.prefForcedOffline),
+        false,
+      );
     });
 
     test('loads persisted true from SharedPreferences', () async {
