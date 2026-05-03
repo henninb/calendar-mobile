@@ -202,6 +202,8 @@ class CreditCardTrackerCache extends Table {
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
+  AppDatabase.forTesting(DatabaseConnection executor) : super(executor);
+  AppDatabase.fromExecutor(QueryExecutor executor) : super(executor);
 
   @override
   int get schemaVersion => 7;

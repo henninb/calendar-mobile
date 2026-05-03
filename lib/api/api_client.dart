@@ -4,8 +4,8 @@ import 'package:dio/io.dart';
 import 'api_models.dart';
 
 class ApiClient {
-  ApiClient(String baseUrl, {String apiKey = ''})
-      : _dio = _buildDio(baseUrl, apiKey);
+  ApiClient(String baseUrl, {String apiKey = '', Dio? dio})
+      : _dio = dio ?? _buildDio(baseUrl, apiKey);
 
   final Dio _dio;
 

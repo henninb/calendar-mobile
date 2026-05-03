@@ -144,7 +144,7 @@ class ForcedOfflineNotifier extends Notifier<bool> {
 // This keeps isOnlineProvider as the single source of truth consumed by all
 // sync logic — no call sites need changing.
 
-final _connectivity = Connectivity();
+final connectivityInstanceProvider = Provider<Connectivity>((ref) => Connectivity());
 
 final isOnlineProvider =
     NotifierProvider<ConnectivityNotifier, bool>(ConnectivityNotifier.new);
@@ -174,8 +174,9 @@ class ConnectivityNotifier extends Notifier<bool> {
   }
 
   Future<void> _init() async {
+    final connectivity = ref.read(connectivityInstanceProvider);
     try {
-      final results = await _connectivity.checkConnectivity();
+      final results = await connectivity.checkConnectivity();
       if (!_active) return;
       _networkOnline = _isOnline(results);
       state = _networkOnline && !ref.read(forcedOfflineProvider);
@@ -185,7 +186,7 @@ class ConnectivityNotifier extends Notifier<bool> {
       // when the user triggers a manual sync.
     }
 
-    _sub = _connectivity.onConnectivityChanged.listen((results) {
+    _sub = connectivity.onConnectivityChanged.listen((results) {
       if (!_active) return;
       _networkOnline = _isOnline(results);
       final forced = ref.read(forcedOfflineProvider);
@@ -205,7 +206,7 @@ class ConnectivityNotifier extends Notifier<bool> {
 
 // Keep the stream around for the Settings screen's detail display.
 final connectivityProvider = StreamProvider<List<ConnectivityResult>>((ref) {
-  return _connectivity.onConnectivityChanged;
+  return ref.watch(connectivityInstanceProvider).onConnectivityChanged;
 });
 
 // ── Sync State ───────────────────────────────────────────────────────────────
