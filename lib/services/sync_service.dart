@@ -154,7 +154,21 @@ class SyncService {
   Future<void> _refreshTasks() async {
     final apiTasks = await _api.fetchTasks();
 
+    // Skip overwriting records that have unpushed mutations — mirrors the
+    // same protection in _refreshGroceryOnHand(). If pushPending() failed
+    // (e.g. a network hiccup), fullRefresh() must not silently clear the
+    // pending status and lose the local changes.
+    final pendingTaskServerIds = (await _db.getPendingTasks())
+        .where((t) => t.serverId != null)
+        .map((t) => t.serverId!)
+        .toSet();
+    final pendingSubtaskServerIds = (await _db.getPendingSubtasks())
+        .where((s) => s.serverId != null)
+        .map((s) => s.serverId!)
+        .toSet();
+
     await _db.upsertTasks(apiTasks
+        .where((t) => !pendingTaskServerIds.contains(t.id))
         .map((t) => TasksCompanion(
               serverId: Value(t.id),
               title: Value(t.title),
@@ -189,26 +203,33 @@ class SyncService {
     await _db.deleteTasksLocalBatch(orphanTaskIds);
 
     // Collect all subtasks and upsert in a single transaction.
+    // Skip subtasks whose parent task is pending, and skip any subtask that
+    // itself has an unpushed mutation.
     final serverToLocal = {for (final t in localTasks) t.serverId: t.id};
     final allSubtasks = <SubtasksCompanion>[];
     for (final t in apiTasks) {
+      if (pendingTaskServerIds.contains(t.id)) continue;
       final localTaskId = serverToLocal[t.id];
       if (localTaskId == null) continue;
-      allSubtasks.addAll(t.subtasks.map((s) => SubtasksCompanion(
-            serverId: Value(s.id),
-            taskLocalId: Value(localTaskId),
-            taskServerId: Value(t.id),
-            title: Value(s.title),
-            status: Value(s.status),
-            dueDate: Value(s.dueDate),
-            order: Value(s.order),
-            completedAt: Value(s.completedAt),
-            syncStatus: Value(SyncStatus.synced.value),
-          )));
+      allSubtasks.addAll(t.subtasks
+          .where((s) => !pendingSubtaskServerIds.contains(s.id))
+          .map((s) => SubtasksCompanion(
+                serverId: Value(s.id),
+                taskLocalId: Value(localTaskId),
+                taskServerId: Value(t.id),
+                title: Value(s.title),
+                status: Value(s.status),
+                dueDate: Value(s.dueDate),
+                order: Value(s.order),
+                completedAt: Value(s.completedAt),
+                syncStatus: Value(SyncStatus.synced.value),
+              )));
     }
     if (allSubtasks.isNotEmpty) await _db.upsertSubtasks(allSubtasks);
 
     // Purge orphan subtasks — fetch all in one query to avoid N+1.
+    // Skip tasks with pending mutations (their subtasks may not match server yet)
+    // and never delete a subtask that itself has an unpushed mutation.
     final allLocalSubtasks = await _db.getAllSubtasks();
     final subtasksByLocalTaskId = <int, List<Subtask>>{};
     for (final s in allLocalSubtasks) {
@@ -216,11 +237,14 @@ class SyncService {
     }
     final orphanSubtaskIds = <int>[];
     for (final t in apiTasks) {
+      if (pendingTaskServerIds.contains(t.id)) continue;
       final localTaskId = serverToLocal[t.id];
       if (localTaskId == null) continue;
       final serverSubtaskIds = t.subtasks.map((s) => s.id).toSet();
       for (final s in subtasksByLocalTaskId[localTaskId] ?? []) {
-        if (s.serverId != null && !serverSubtaskIds.contains(s.serverId)) {
+        if (s.serverId != null &&
+            !serverSubtaskIds.contains(s.serverId) &&
+            !pendingSubtaskServerIds.contains(s.serverId)) {
           dev.log(
             '_refreshTasks: purging orphan subtask local=${s.id} serverId=${s.serverId}',
             name: 'sync',

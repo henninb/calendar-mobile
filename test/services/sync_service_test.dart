@@ -143,6 +143,159 @@ void main() {
     });
   });
 
+  group('SyncService._refreshTasks pending-mutation protection', () {
+    void stubOtherRefreshApis() {
+      when(() => mockApi.fetchCategories()).thenAnswer((_) async => []);
+      when(() => mockApi.fetchPersons()).thenAnswer((_) async => []);
+      when(() => mockApi.fetchOccurrences(
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          )).thenAnswer((_) async => []);
+      when(() => mockApi.fetchCreditCards()).thenAnswer((_) async => []);
+      when(() => mockApi.fetchTrackerRows()).thenAnswer((_) async => []);
+      when(() => mockApi.fetchStores()).thenAnswer((_) async => []);
+      when(() => mockApi.fetchGroceryItems()).thenAnswer((_) async => []);
+      when(() => mockApi.fetchOnHand()).thenAnswer((_) async => []);
+      when(() => mockApi.fetchGroceryLists()).thenAnswer((_) async => []);
+    }
+
+    ApiTask serverTask(int id, String title, {List<ApiSubtask> subtasks = const []}) =>
+        ApiTask(
+          id: id,
+          title: title,
+          status: 'todo',
+          priority: 'medium',
+          recurrence: 'none',
+          order: 0,
+          subtasks: subtasks,
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        );
+
+    test('does not overwrite a pendingUpdate task on fullRefresh', () async {
+      await database.insertTask(const TasksCompanion(
+        serverId: Value(100),
+        title: Value('Local Modified Title'),
+        syncStatus: Value(2), // pendingUpdate
+        createdAt: Value('2026-01-01'),
+        updatedAt: Value('2026-01-01'),
+      ));
+
+      when(() => mockApi.fetchTasks())
+          .thenAnswer((_) async => [serverTask(100, 'Server Title')]);
+      stubOtherRefreshApis();
+
+      await syncService.fullRefresh();
+
+      final tasks = await database.getTasks();
+      expect(tasks.length, 1);
+      expect(tasks.first.syncStatus, 2, reason: 'pendingUpdate must survive fullRefresh');
+      expect(tasks.first.title, 'Local Modified Title',
+          reason: 'local changes must not be reverted by the server pull');
+    });
+
+    test('does not overwrite a pendingDelete task on fullRefresh', () async {
+      await database.insertTask(const TasksCompanion(
+        serverId: Value(100),
+        title: Value('Task To Delete'),
+        syncStatus: Value(3), // pendingDelete
+        createdAt: Value('2026-01-01'),
+        updatedAt: Value('2026-01-01'),
+      ));
+
+      when(() => mockApi.fetchTasks())
+          .thenAnswer((_) async => [serverTask(100, 'Task To Delete')]);
+      stubOtherRefreshApis();
+
+      await syncService.fullRefresh();
+
+      final tasks = await database.getTasks();
+      expect(tasks.length, 1);
+      expect(tasks.first.syncStatus, 3, reason: 'pendingDelete must survive fullRefresh');
+    });
+
+    test('does not overwrite a pending subtask on fullRefresh', () async {
+      final taskId = await database.insertTask(const TasksCompanion(
+        serverId: Value(100),
+        title: Value('Synced Task'),
+        syncStatus: Value(0),
+        createdAt: Value('2026-01-01'),
+        updatedAt: Value('2026-01-01'),
+      ));
+      await database.insertSubtask(SubtasksCompanion(
+        serverId: const Value(200),
+        taskLocalId: Value(taskId),
+        taskServerId: const Value(100),
+        title: const Value('Local Modified Subtask'),
+        status: const Value('open'),
+        syncStatus: const Value(2), // pendingUpdate
+      ));
+
+      when(() => mockApi.fetchTasks()).thenAnswer((_) async => [
+            serverTask(100, 'Synced Task', subtasks: [
+              const ApiSubtask(
+                  id: 200,
+                  taskId: 100,
+                  title: 'Server Subtask Title',
+                  status: 'open',
+                  order: 0),
+            ]),
+          ]);
+      stubOtherRefreshApis();
+
+      await syncService.fullRefresh();
+
+      final subtasks = await database.getSubtasksForTask(taskId);
+      expect(subtasks.length, 1);
+      expect(subtasks.first.syncStatus, 2,
+          reason: 'pending subtask syncStatus must survive fullRefresh');
+      expect(subtasks.first.title, 'Local Modified Subtask',
+          reason: 'local subtask changes must not be reverted');
+    });
+
+    test('does not touch subtasks of a pending task on fullRefresh', () async {
+      final taskId = await database.insertTask(const TasksCompanion(
+        serverId: Value(100),
+        title: Value('Local Modified Task'),
+        syncStatus: Value(2), // pendingUpdate
+        createdAt: Value('2026-01-01'),
+        updatedAt: Value('2026-01-01'),
+      ));
+      await database.insertSubtask(SubtasksCompanion(
+        serverId: const Value(200),
+        taskLocalId: Value(taskId),
+        taskServerId: const Value(100),
+        title: const Value('Local Subtask'),
+        status: const Value('open'),
+        syncStatus: const Value(0),
+      ));
+
+      when(() => mockApi.fetchTasks()).thenAnswer((_) async => [
+            serverTask(100, 'Server Task Title', subtasks: [
+              const ApiSubtask(
+                  id: 200,
+                  taskId: 100,
+                  title: 'Server Subtask Title',
+                  status: 'done',
+                  order: 0),
+            ]),
+          ]);
+      stubOtherRefreshApis();
+
+      await syncService.fullRefresh();
+
+      final tasks = await database.getTasks();
+      expect(tasks.first.title, 'Local Modified Task',
+          reason: 'pending task title must not be reverted');
+      expect(tasks.first.syncStatus, 2);
+
+      final subtasks = await database.getSubtasksForTask(taskId);
+      expect(subtasks.length, 1);
+      expect(subtasks.first.title, 'Local Subtask',
+          reason: 'subtasks of a pending task must not be overwritten');
+    });
+  });
+
   group('SyncService orphan purging', () {
     test('_refreshTasks purges orphans', () async {
       await database.upsertTasks([
