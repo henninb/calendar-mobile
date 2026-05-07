@@ -70,5 +70,27 @@ void main() {
       expect(SyncStatus.pendingUpdate.value, 2);
       expect(SyncStatus.pendingDelete.value, 3);
     });
+
+    group('next()', () {
+      test('transitions synced to pendingUpdate', () {
+        expect(SyncStatus.next(SyncStatus.synced.value),
+            SyncStatus.pendingUpdate.value);
+      });
+
+      test('preserves pendingCreate so the record is still POSTed', () {
+        expect(SyncStatus.next(SyncStatus.pendingCreate.value),
+            SyncStatus.pendingCreate.value);
+      });
+
+      test('preserves pendingUpdate', () {
+        expect(SyncStatus.next(SyncStatus.pendingUpdate.value),
+            SyncStatus.pendingUpdate.value);
+      });
+
+      test('preserves pendingDelete', () {
+        expect(SyncStatus.next(SyncStatus.pendingDelete.value),
+            SyncStatus.pendingDelete.value);
+      });
+    });
   });
 }

@@ -577,7 +577,7 @@ class _InlineSubtaskRow extends ConsumerWidget {
                   subtask.id,
                   SubtasksCompanion(
                     status: Value(newStatus),
-                    syncStatus: Value(SyncStatus.pendingUpdate.value),
+                    syncStatus: Value(SyncStatus.next(subtask.syncStatus)),
                   ),
                 );
                 syncNotifier.syncIfOnline();
@@ -729,7 +729,7 @@ class _QuickStatusRow extends ConsumerWidget {
             updatedAt: Value(now),
             // Set completedAt locally so the UI reflects it before sync.
             completedAt: s == TaskStatus.done ? Value(now) : const Value.absent(),
-            syncStatus: Value(SyncStatus.pendingUpdate.value),
+            syncStatus: Value(SyncStatus.next(task.syncStatus)),
           ),
         );
         syncNotifier.syncIfOnline();
@@ -1077,7 +1077,7 @@ class _SubtaskRow extends ConsumerWidget {
                   subtask.id,
                   SubtasksCompanion(
                     status: Value(newStatus),
-                    syncStatus: Value(SyncStatus.pendingUpdate.value),
+                    syncStatus: Value(SyncStatus.next(subtask.syncStatus)),
                   ),
                 );
                 syncNotifier.syncIfOnline();
@@ -1358,7 +1358,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             assigneeServerId: Value(_assigneeServerId),
             categoryServerId: Value(_categoryServerId),
             updatedAt: Value(now),
-            syncStatus: Value(SyncStatus.pendingUpdate.value),
+            syncStatus: Value(SyncStatus.next(widget.existing!.syncStatus)),
           ),
         );
       }

@@ -70,4 +70,11 @@ enum SyncStatus {
     }
     return result;
   }
+
+  /// Returns the status a record should carry after a local mutation.
+  /// Synced records become [pendingUpdate]; any already-pending status is
+  /// preserved so a [pendingCreate] is never downgraded to [pendingUpdate]
+  /// (which would cause the push to be skipped due to a missing serverId).
+  static int next(int current) =>
+      current == SyncStatus.synced.value ? SyncStatus.pendingUpdate.value : current;
 }

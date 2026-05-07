@@ -395,12 +395,22 @@ class SyncService {
               await _db.markTaskSynced(task.id, created.id);
               return true;
             case SyncStatus.pendingUpdate:
-              if (task.serverId == null) return false;
+              if (task.serverId == null) {
+                // Status was downgraded from pendingCreate to pendingUpdate
+                // before the initial push completed — recover by creating it.
+                final created = await _api.createTask(_taskToJson(task));
+                await _db.markTaskSynced(task.id, created.id);
+                return true;
+              }
               await _api.patchTask(task.serverId!, _taskToJson(task));
               await _db.markTaskSynced(task.id, task.serverId!);
               return true;
             case SyncStatus.pendingDelete:
-              if (task.serverId == null) return false;
+              if (task.serverId == null) {
+                // Never reached the server — nothing to delete remotely.
+                await _db.deleteTaskLocal(task.id);
+                return true;
+              }
               await _api.deleteTask(task.serverId!);
               await _db.deleteTaskLocal(task.id);
               return true;
@@ -430,7 +440,14 @@ class SyncService {
             case SyncStatus.pendingUpdate:
               final updateTaskServerId = sub.taskServerId ??
                   (await _db.getTaskById(sub.taskLocalId))?.serverId;
-              if (sub.serverId == null || updateTaskServerId == null) return false;
+              if (updateTaskServerId == null) return false;
+              if (sub.serverId == null) {
+                // Downgraded from pendingCreate before push — recover by creating.
+                final created =
+                    await _api.createSubtask(updateTaskServerId, _subtaskToJson(sub));
+                await _db.markSubtaskSynced(sub.id, created.id);
+                return true;
+              }
               await _api.patchSubtask(
                 updateTaskServerId,
                 sub.serverId!,
@@ -441,7 +458,11 @@ class SyncService {
             case SyncStatus.pendingDelete:
               final deleteTaskServerId = sub.taskServerId ??
                   (await _db.getTaskById(sub.taskLocalId))?.serverId;
-              if (sub.serverId == null || deleteTaskServerId == null) return false;
+              if (sub.serverId == null || deleteTaskServerId == null) {
+                // Never reached the server — nothing to delete remotely.
+                await _db.deleteSubtaskLocal(sub.id);
+                return true;
+              }
               await _api.deleteSubtask(deleteTaskServerId, sub.serverId!);
               await _db.deleteSubtaskLocal(sub.id);
               return true;
