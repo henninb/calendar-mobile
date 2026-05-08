@@ -15,8 +15,12 @@ const _wgActionDown = 'com.wireguard.android.action.SET_TUNNEL_DOWN';
 const _wgChannel    = MethodChannel('wireguard_permission');
 
 /// Returns whether a VPN transport is currently active on this device.
-Future<bool> isWireGuardActive() async {
-  if (!Platform.isAndroid) return false;
+///
+/// [isAndroid] overrides the platform check in tests.
+Future<bool> isWireGuardActive({
+  bool Function()? isAndroid,
+}) async {
+  if (!(isAndroid?.call() ?? Platform.isAndroid)) return false;
   try {
     return await _wgChannel
             .invokeMethod<bool>('isVpnActive')
@@ -32,25 +36,38 @@ Future<bool> isWireGuardActive() async {
 /// [goOffline] true → bring tunnel DOWN; false → bring tunnel UP.
 /// Returns true if the broadcast was dispatched, false on any failure.
 /// Shows SnackBar feedback. No-ops silently on non-Android platforms.
+///
+/// Optional overrides (for testing only):
+/// * [isAndroid] — replaces the `Platform.isAndroid` check.
+/// * [vpnActiveCheck] — replaces the `isWireGuardActive()` pre-flight and
+///   post-broadcast check.
+/// * [verifyDelay] — replaces the 2-second post-broadcast VPN-verify delay.
+/// * [broadcastFn] — replaces the `AndroidIntent.sendBroadcast()` call.
 Future<bool> toggleWireGuardTunnel({
   required bool goOffline,
   required BuildContext context,
+  bool Function()? isAndroid,
+  Future<bool> Function()? vpnActiveCheck,
+  Duration verifyDelay = AppConstants.wgVerifyDelay,
+  Future<void> Function()? broadcastFn,
+  Future<bool> Function()? permissionRequester,
 }) async {
-  if (!Platform.isAndroid) return true;
+  if (!(isAndroid?.call() ?? Platform.isAndroid)) return true;
 
   // Pre-flight: skip the broadcast if the tunnel is already in the desired state.
-  final alreadyActive = await isWireGuardActive();
+  final checkVpn = vpnActiveCheck ?? () => isWireGuardActive();
+  final alreadyActive = await checkVpn();
   if (goOffline && !alreadyActive) return true;   // want DOWN, already DOWN
   if (!goOffline && alreadyActive) return true;   // want UP, already UP
 
   bool granted;
   try {
-    // Let TimeoutException propagate so it shows a distinct message from
-    // a genuine permission denial.
-    granted = await _wgChannel
-            .invokeMethod<bool>('request')
-            .timeout(AppConstants.wgRequestTimeout) ??
-        false;
+    granted = permissionRequester != null
+        ? await permissionRequester()
+        : (await _wgChannel
+                .invokeMethod<bool>('request')
+                .timeout(AppConstants.wgRequestTimeout)) ??
+            false;
   } on TimeoutException {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -89,20 +106,24 @@ Future<bool> toggleWireGuardTunnel({
   }
 
   try {
-    final intent = AndroidIntent(
-      action: goOffline ? _wgActionDown : _wgActionUp,
-      package: _wgPackage,
-      componentName: _wgReceiver,
-      arguments: <String, dynamic>{'tunnel': wgTunnelName},
-    );
-    await intent.sendBroadcast();
+    if (broadcastFn != null) {
+      await broadcastFn();
+    } else {
+      final intent = AndroidIntent(
+        action: goOffline ? _wgActionDown : _wgActionUp,
+        package: _wgPackage,
+        componentName: _wgReceiver,
+        arguments: <String, dynamic>{'tunnel': wgTunnelName},
+      );
+      await intent.sendBroadcast();
+    }
 
     // For the UP case, verify the VPN actually came up — WireGuard may be
     // stopped and unable to process the broadcast (e.g. no VPN permission
     // accepted yet). Give it 2 seconds before declaring failure.
     if (!goOffline) {
-      await Future.delayed(AppConstants.wgVerifyDelay);
-      final nowActive = await isWireGuardActive();
+      if (verifyDelay > Duration.zero) await Future.delayed(verifyDelay);
+      final nowActive = await checkVpn();
       if (!nowActive) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
