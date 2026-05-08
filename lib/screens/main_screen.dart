@@ -1,7 +1,9 @@
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/extensions/date_extensions.dart';
 import '../core/theme.dart';
+import '../widgets/sheet_handle.dart';
 import '../providers/providers.dart';
 import '../services/wireguard_service.dart';
 import '../widgets/sync_banner.dart';
@@ -305,12 +307,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
     ('FREQ=YEARLY', 'Yearly'),
   ];
 
-  static String _todayStr() {
-    final now = DateTime.now();
-    return '${now.year.toString().padLeft(4, '0')}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
-  }
+  static String _todayStr() => DateTime.now().toIso8601DateString();
 
   @override
   void dispose() {
@@ -334,18 +331,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.textLight,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
+              const SheetHandle(),
               Text('New Event', style: AppText.heading),
               const SizedBox(height: 16),
               TextFormField(
@@ -386,10 +372,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                           lastDate: DateTime(2100),
                         );
                         if (picked != null) {
-                          setState(() => _dtstart =
-                              '${picked.year.toString().padLeft(4, '0')}-'
-                              '${picked.month.toString().padLeft(2, '0')}-'
-                              '${picked.day.toString().padLeft(2, '0')}');
+                          setState(() => _dtstart = picked.toIso8601DateString());
                         }
                       },
                       child: InputDecorator(
@@ -443,10 +426,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                       lastDate: DateTime(2100),
                     );
                     if (picked != null) {
-                      setState(() => _dtendRule =
-                          '${picked.year.toString().padLeft(4, '0')}-'
-                          '${picked.month.toString().padLeft(2, '0')}-'
-                          '${picked.day.toString().padLeft(2, '0')}');
+                      setState(() => _dtendRule = picked.toIso8601DateString());
                     }
                   },
                   child: InputDecorator(
@@ -505,6 +485,8 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
     setState(() => _saving = true);
 
     final syncNotifier = ref.read(syncStateProvider.notifier);
+    final desc   = _descCtrl.text.trim();
+    final amount = _amountCtrl.text.trim();
     final payload = <String, dynamic>{
       'title': _titleCtrl.text.trim(),
       'category_id': _categoryServerId,
@@ -512,8 +494,8 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
       'duration_days': _durationDays,
       if (_rrule.isNotEmpty) 'rrule': _rrule,
       if (_dtendRule.isNotEmpty) 'dtend_rule': _dtendRule,
-      if (_descCtrl.text.trim().isNotEmpty) 'description': _descCtrl.text.trim(),
-      if (_amountCtrl.text.trim().isNotEmpty) 'amount': _amountCtrl.text.trim(),
+      if (desc.isNotEmpty) 'description': desc,
+      if (amount.isNotEmpty) 'amount': amount,
     };
 
     try {

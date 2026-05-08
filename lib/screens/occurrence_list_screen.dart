@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../core/constants.dart';
+import '../core/extensions/date_extensions.dart';
 import '../core/theme.dart';
 import '../database/app_database.dart';
 import '../providers/providers.dart';
@@ -71,9 +72,7 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
         }
         // Days-ahead filter: show past (overdue) + upcoming within the window.
         final endDate = today.add(Duration(days: _daysAhead));
-        final endDateStr = '${endDate.year.toString().padLeft(4, '0')}-'
-            '${endDate.month.toString().padLeft(2, '0')}-'
-            '${endDate.day.toString().padLeft(2, '0')}';
+        final endDateStr = endDate.toIso8601DateString();
         filtered = filtered.where((o) => o.occurrenceDate.compareTo(endDateStr) <= 0).toList();
 
         // Sort: overdue first, then by date

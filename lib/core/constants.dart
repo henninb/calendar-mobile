@@ -16,8 +16,12 @@ class AppConstants {
   static const String prefForcedOffline = 'forced_offline';
   static const int    defaultSyncDays = 365;
 
-  static const Duration syncDebounce  = Duration(seconds: 3);
-  static const Duration connectCheck  = Duration(seconds: 5);
+  static const Duration syncDebounce    = Duration(seconds: 3);
+  static const Duration connectCheck    = Duration(seconds: 5);
+  static const Duration periodicSync    = Duration(minutes: 5);
+  static const Duration wgCheckTimeout  = Duration(seconds: 3);
+  static const Duration wgRequestTimeout = Duration(seconds: 15);
+  static const Duration wgVerifyDelay   = Duration(seconds: 2);
 
   static const int occurrencePastMonths   = 1;
   static const int occurrenceFutureMonths = 3;

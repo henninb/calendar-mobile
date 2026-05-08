@@ -29,7 +29,7 @@ class TaskStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (bg, fg, label) = switch (status) {
       TaskStatus.todo       => (AppColors.upcomingBg,          AppColors.upcomingFg,          'TODO'),
-      TaskStatus.inProgress => (const Color(0xFFFEF3C7),       const Color(0xFF92400E),        'IN PROGRESS'),
+      TaskStatus.inProgress => (AppColors.warningBg,             AppColors.offlineFg,            'IN PROGRESS'),
       TaskStatus.done       => (AppColors.completedBg,         AppColors.completedFg,          'DONE'),
       TaskStatus.cancelled  => (AppColors.skippedBg,           AppColors.skippedFg,            'CANCELLED'),
       _                     => (AppColors.skippedBg,           AppColors.skippedFg,            status.toUpperCase()),

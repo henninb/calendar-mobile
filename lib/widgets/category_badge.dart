@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 
 class CategoryBadge extends StatelessWidget {
@@ -42,6 +43,8 @@ Color parseCategoryColor(String hex) {
     if (clean.length == 6) {
       return Color(int.parse('FF$clean', radix: 16));
     }
-  } catch (_) {}
+  } catch (e) {
+    dev.log('parseCategoryColor: invalid hex "$hex": $e', name: 'ui', level: 900);
+  }
   return const Color(0xFF3B82F6);
 }

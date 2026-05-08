@@ -1,9 +1,9 @@
 import 'dart:developer' as dev;
 import 'package:dio/dio.dart';
-import 'package:intl/intl.dart';
 import '../api/api_client.dart';
 import '../api/api_models.dart';
 import '../core/constants.dart';
+import '../core/extensions/date_extensions.dart';
 import '../database/app_database.dart';
 import 'package:drift/drift.dart' show Value;
 
@@ -96,8 +96,8 @@ class SyncService {
       0,
     );
     final occs = await _api.fetchOccurrences(
-      startDate: _fmt(start),
-      endDate: _fmt(end),
+      startDate: start.toIso8601DateString(),
+      endDate: end.toIso8601DateString(),
     );
     await _db.upsertOccurrences(occs
         .map((o) => OccurrencesCompanion(
@@ -112,7 +112,7 @@ class SyncService {
     // Purge local occurrences within the synced window that no longer exist on the server.
     final serverOccIds = occs.map((o) => o.id).toSet();
     final localOccs =
-        await _db.getOccurrencesByDateRange(_fmt(start), _fmt(end));
+        await _db.getOccurrencesByDateRange(start.toIso8601DateString(), end.toIso8601DateString());
     final orphanIds = localOccs
         .where((o) => o.serverId != null && !serverOccIds.contains(o.serverId))
         .map((o) {
@@ -545,7 +545,7 @@ class SyncService {
               itemServerId: Value(o.itemId),
               quantity: Value(o.quantity),
               unit: Value(o.unit),
-              syncStatus: const Value(0),
+              syncStatus: Value(SyncStatus.synced.value),
             ))
         .toList();
     if (toUpsert.isNotEmpty) await _db.upsertGroceryOnHand(toUpsert);
@@ -807,8 +807,6 @@ class SyncService {
       };
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-
-  static String _fmt(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
 
   /// Extracts a loggable detail string from a [DioException].
   /// Full server response bodies are written to the log only — never returned

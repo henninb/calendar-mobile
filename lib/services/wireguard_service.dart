@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../core/constants.dart';
 
 const wgTunnelName = 'k8';
 const _wgPackage   = 'com.wireguard.android';
@@ -19,7 +20,7 @@ Future<bool> isWireGuardActive() async {
   try {
     return await _wgChannel
             .invokeMethod<bool>('isVpnActive')
-            .timeout(const Duration(seconds: 3)) ??
+            .timeout(AppConstants.wgCheckTimeout) ??
         false;
   } catch (_) {
     return false;
@@ -48,7 +49,7 @@ Future<bool> toggleWireGuardTunnel({
     // a genuine permission denial.
     granted = await _wgChannel
             .invokeMethod<bool>('request')
-            .timeout(const Duration(seconds: 15)) ??
+            .timeout(AppConstants.wgRequestTimeout) ??
         false;
   } on TimeoutException {
     if (context.mounted) {
@@ -100,7 +101,7 @@ Future<bool> toggleWireGuardTunnel({
     // stopped and unable to process the broadcast (e.g. no VPN permission
     // accepted yet). Give it 2 seconds before declaring failure.
     if (!goOffline) {
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(AppConstants.wgVerifyDelay);
       final nowActive = await isWireGuardActive();
       if (!nowActive) {
         if (context.mounted) {

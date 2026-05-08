@@ -3,6 +3,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants.dart';
+import '../core/theme.dart';
 import '../database/app_database.dart';
 import '../providers/providers.dart';
 
@@ -136,6 +137,10 @@ class _ListsOverview extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (_) => const _CreateListSheet(),
     );
   }
@@ -156,16 +161,16 @@ class _GroceryListCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
-  static const _statusColor = {
-    'draft': Colors.blueGrey,
-    'active': Colors.orange,
-    'completed': Colors.green,
+  static const _statusColor = <String, Color>{
+    'draft': AppColors.skippedFg,
+    'active': AppColors.warningFg,
+    'completed': AppColors.completedFg,
   };
 
   @override
   Widget build(BuildContext context) {
     final (total, done) = counts ?? (0, 0);
-    final color = _statusColor[list.status] ?? Colors.blueGrey;
+    final color = _statusColor[list.status] ?? AppColors.skippedFg;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -218,7 +223,7 @@ class _GroceryListCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: done / total,
                         backgroundColor:
-                            Colors.grey.withValues(alpha: 0.2),
+                            AppColors.textMuted.withValues(alpha: 0.2),
                         minHeight: 4,
                       ),
                     ),
@@ -237,7 +242,7 @@ class _GroceryListCard extends StatelessWidget {
                     const Icon(
                       Icons.calendar_today_outlined,
                       size: 12,
-                      color: Colors.grey,
+                      color: AppColors.textMuted,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -314,7 +319,7 @@ class _ListDetailView extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .labelMedium
-                      ?.copyWith(color: Colors.grey),
+                      ?.copyWith(color: AppColors.textMuted),
                 ),
               ),
             ),
@@ -379,6 +384,10 @@ class _ListDetailView extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (_) => _AddItemSheet(list: list, items: available),
     );
   }
@@ -881,12 +890,12 @@ class _OnHandTabState extends ConsumerState<_OnHandTab> {
                               style: TextStyle(
                                 color: oh.quantity > 0
                                     ? null
-                                    : Colors.red,
+                                    : AppColors.overdueFg,
                               ),
                             )
                           : const Text(
                               '—',
-                              style: TextStyle(color: Colors.grey),
+                              style: TextStyle(color: AppColors.textMuted),
                             ),
                       dense: true,
                     );
@@ -943,6 +952,10 @@ class _StoresTab extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (_) => const _CreateStoreSheet(),
     );
   }

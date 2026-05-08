@@ -7,6 +7,7 @@ import '../core/constants.dart';
 import '../core/extensions/date_extensions.dart';
 import '../database/app_database.dart';
 import '../providers/providers.dart';
+import '../widgets/sheet_handle.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/category_badge.dart';
 
@@ -417,7 +418,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     final doneCount = subtasks.where((s) => s.status == 'done').length;
 
     return Card(
-      color: highlight ? const Color(0xFFFEE2E2) : null,
+      color: highlight ? AppColors.overdueBg : null,
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: () => _showDetail(context),
@@ -652,20 +653,20 @@ class _DaysBadge extends StatelessWidget {
 
     if (daysDelta < 0) {
       label = '${daysDelta.abs()}d overdue';
-      bg = const Color(0xFFFEE2E2);
-      fg = const Color(0xFFDC2626);
+      bg = AppColors.overdueBg;
+      fg = AppColors.ccOverdue;
     } else if (daysDelta == 0) {
       label = 'today';
-      bg = const Color(0xFFFEF3C7);
-      fg = const Color(0xFFD97706);
+      bg = AppColors.warningBg;
+      fg = AppColors.warningFg;
     } else if (daysDelta <= 3) {
       label = '${daysDelta}d';
-      bg = const Color(0xFFFEF3C7);
-      fg = const Color(0xFFD97706);
+      bg = AppColors.warningBg;
+      fg = AppColors.warningFg;
     } else {
       label = '${daysDelta}d';
-      bg = const Color(0xFFF1F5F9);
-      fg = const Color(0xFF64748B);
+      bg = AppColors.skippedBg;
+      fg = AppColors.skippedFg;
     }
 
     return Container(
@@ -693,16 +694,16 @@ class _RecurrenceBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: AppColors.pendingBanner,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
+        border: Border.all(color: AppColors.pendingBorder),
       ),
       child: Text(
         '↻ $recurrence',
         style: const TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF2563EB),
+          color: AppColors.primaryDark,
         ),
       ),
     );
@@ -795,7 +796,7 @@ class _QuickStatusRow extends ConsumerWidget {
           _Chip(label: 'Done', color: AppColors.btnGreen, onTap: () => setStatus(TaskStatus.done)),
         if (task.status != TaskStatus.cancelled && task.status != TaskStatus.done)
           _Chip(label: 'Cancel', color: AppColors.btnGrayBg, textColor: AppColors.btnGrayFg, onTap: () => setStatus(TaskStatus.cancelled)),
-        _Chip(label: 'Edit', color: const Color(0xFF3B82F6), onTap: editTask),
+        _Chip(label: 'Edit', color: AppColors.primary, onTap: editTask),
         _Chip(label: 'Del', color: AppColors.btnRed, onTap: deleteTask),
       ],
     );
@@ -873,16 +874,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
           ),
           child: Column(
             children: [
-              // Handle
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.textLight,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+              const SheetHandle(margin: EdgeInsets.symmetric(vertical: 12)),
               // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1177,7 +1169,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
     _status      = e?.status ?? TaskStatus.todo;
     _priority    = e?.priority ?? 'medium';
     _recurrence  = e?.recurrence ?? 'none';
-    _dueDate     = e?.dueDate ?? DateTime.now().toIso8601String().substring(0, 10);
+    _dueDate     = e?.dueDate ?? DateTime.now().toIso8601DateString();
     _assigneeServerId = e?.assigneeServerId;
     _categoryServerId = e?.categoryServerId;
   }
@@ -1254,7 +1246,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
                   lastDate: DateTime(2100),
                 );
                 if (picked != null) {
-                  setState(() => _dueDate = picked.toIso8601String().substring(0, 10));
+                  setState(() => _dueDate = picked.toIso8601DateString());
                 }
               },
               child: InputDecorator(
@@ -1329,12 +1321,14 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
     // Riverpod 3.x ('_dependents.isEmpty' is not true).
     final syncNotifier = ref.read(syncStateProvider.notifier);
     final now = DateTime.now().toIso8601String();
+    final title = _title.text.trim();
+    final desc = _description.text.trim();
 
     try {
       if (widget.existing == null) {
         await db.insertTask(TasksCompanion(
-          title: Value(_title.text.trim()),
-          description: Value(_description.text.trim().isEmpty ? null : _description.text.trim()),
+          title: Value(title),
+          description: Value(desc.isEmpty ? null : desc),
           status: Value(_status),
           priority: Value(_priority),
           recurrence: Value(_recurrence),
@@ -1349,8 +1343,8 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
         await db.updateTask(
           widget.existing!.id,
           TasksCompanion(
-            title: Value(_title.text.trim()),
-            description: Value(_description.text.trim().isEmpty ? null : _description.text.trim()),
+            title: Value(title),
+            description: Value(desc.isEmpty ? null : desc),
             status: Value(_status),
             priority: Value(_priority),
             recurrence: Value(_recurrence),

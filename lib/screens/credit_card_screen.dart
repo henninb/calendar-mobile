@@ -2,8 +2,9 @@ import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
-import '../core/theme.dart';
 import '../core/constants.dart';
+import '../core/theme.dart';
+import '../widgets/sheet_handle.dart';
 import '../database/app_database.dart';
 import '../providers/providers.dart';
 
@@ -66,7 +67,7 @@ class _TrackerCard extends StatelessWidget {
 
   Color get _dueBgColor {
     if (row.nextDueDays <= 3) return AppColors.overdueBg;
-    if (row.nextDueDays <= 7) return const Color(0xFFFEF3C7);
+    if (row.nextDueDays <= 7) return AppColors.warningBg;
     return AppColors.surface;
   }
 
@@ -191,7 +192,7 @@ class _DaysChip extends StatelessWidget {
     final (bg, fg) = days <= 3
         ? (AppColors.overdueBg, AppColors.ccOverdue)
         : days <= 7
-            ? (const Color(0xFFFEF3C7), AppColors.ccSoon)
+            ? (AppColors.warningBg, AppColors.ccSoon)
             : (AppColors.upcomingBg, AppColors.upcomingFg);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -256,12 +257,7 @@ class _CardFormState extends ConsumerState<_CardForm> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle
-            Container(
-              width: 36, height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(color: AppColors.textLight, borderRadius: BorderRadius.circular(2)),
-            ),
+            const SheetHandle(),
             Text(
               widget.existing == null ? 'Add Credit Card' : 'Edit Credit Card',
               style: AppText.heading,

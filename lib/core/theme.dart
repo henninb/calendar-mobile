@@ -48,11 +48,16 @@ class AppColors {
   static const Color ccOverdue = Color(0xFFDC2626);
   static const Color ccSoon    = Color(0xFFD97706);
 
+  // Warning / amber — in-progress tasks, due-soon dates
+  static const Color warningBg = Color(0xFFFEF3C7);
+  static const Color warningFg = Color(0xFFD97706);
+
   // Offline / sync
-  static const Color offlineBanner = Color(0xFFFEF3C7);
+  static const Color offlineBanner = warningBg;
   static const Color offlineFg     = Color(0xFF92400E);
   static const Color pendingBanner = Color(0xFFEFF6FF);
   static const Color pendingFg     = Color(0xFF1E40AF);
+  static const Color pendingBorder = Color(0xFFBFDBFE);
 }
 
 // ── Text styles ──────────────────────────────────────────────────────────────

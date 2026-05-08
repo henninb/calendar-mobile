@@ -252,7 +252,7 @@ class SyncNotifier extends Notifier<SyncState> {
   @override
   SyncState build() {
     _periodicTimer = Timer.periodic(
-      const Duration(minutes: 5),
+      AppConstants.periodicSync,
       // Skip the refresh when offline so we don't transition to
       // SyncPhase.error every 5 minutes and show a spurious error banner.
       (_) { if (ref.read(isOnlineProvider) && ref.read(baseUrlProvider).isNotEmpty) silentRefresh(); },

@@ -154,7 +154,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               value: forcedOffline,
               onChanged: (val) async {
                 ref.read(forcedOfflineProvider.notifier).toggle();
-                final ok = await _toggleWireGuardTunnel(goOffline: val, context: context);
+                final ok = await toggleWireGuardTunnel(goOffline: val, context: context);
                 if (!ok && context.mounted) {
                   // WireGuard failed — revert the offline state so the switch
                   // doesn't stay out of sync with the actual tunnel state.
@@ -287,11 +287,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
     }
   }
-
-  Future<bool> _toggleWireGuardTunnel({
-    required bool goOffline,
-    required BuildContext context,
-  }) => toggleWireGuardTunnel(goOffline: goOffline, context: context);
 
   Future<void> _saveKey() async {
     await ref.read(apiKeyProvider.notifier).set(_keyCtrl.text.trim());
