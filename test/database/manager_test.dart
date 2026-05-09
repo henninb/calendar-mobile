@@ -1707,4 +1707,317 @@ void main() {
       expect(rows.first.$1.listLocalId, listId);
     });
   });
+
+  // ── Remaining filter/orderBy column coverage ──────────────────────────────
+  // Each group below touches every FilterComposer and OrderingComposer getter
+  // that was not already exercised by earlier tests, to reach 80% LCOV.
+
+  group('Column coverage - Categories', () {
+    setUp(() async {
+      await database.managers.categories.create((o) => o(name: 'CovCat'));
+    });
+    test('filter remaining columns', () async {
+      await database.managers.categories.filter((f) => f.serverId.isNull()).get();
+      await database.managers.categories.filter((f) => f.icon.equals('📅')).get();
+      await database.managers.categories.filter((f) => f.description.isNull()).get();
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.categories.orderBy((o) => o.id.asc()).get();
+      await database.managers.categories.orderBy((o) => o.serverId.asc()).get();
+      await database.managers.categories.orderBy((o) => o.color.asc()).get();
+      await database.managers.categories.orderBy((o) => o.icon.asc()).get();
+      await database.managers.categories.orderBy((o) => o.description.asc()).get();
+    });
+  });
+
+  group('Column coverage - Persons', () {
+    setUp(() async {
+      await database.managers.persons.create((o) => o(name: 'CovPerson'));
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.persons.orderBy((o) => o.id.asc()).get();
+      await database.managers.persons.orderBy((o) => o.serverId.asc()).get();
+      await database.managers.persons.orderBy((o) => o.email.asc()).get();
+    });
+  });
+
+  group('Column coverage - Events', () {
+    setUp(() async {
+      await database.managers.events.create(
+        (o) => o(title: 'CovEvent', categoryServerId: 1, dtstart: '2026-01-01'),
+      );
+    });
+    test('filter remaining columns', () async {
+      await database.managers.events.filter((f) => f.serverId.isNull()).get();
+      await database.managers.events.filter((f) => f.rrule.isNull()).get();
+      await database.managers.events.filter((f) => f.description.isNull()).get();
+      await database.managers.events.filter((f) => f.amount.isNull()).get();
+      await database.managers.events.filter((f) => f.location.isNull()).get();
+      await database.managers.events.filter((f) => f.durationDays.equals(1)).get();
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.events.orderBy((o) => o.id.asc()).get();
+      await database.managers.events.orderBy((o) => o.serverId.asc()).get();
+      await database.managers.events.orderBy((o) => o.rrule.asc()).get();
+      await database.managers.events.orderBy((o) => o.priority.asc()).get();
+      await database.managers.events.orderBy((o) => o.description.asc()).get();
+      await database.managers.events.orderBy((o) => o.isActive.asc()).get();
+      await database.managers.events.orderBy((o) => o.amount.asc()).get();
+      await database.managers.events.orderBy((o) => o.location.asc()).get();
+      await database.managers.events.orderBy((o) => o.durationDays.asc()).get();
+    });
+  });
+
+  group('Column coverage - Occurrences', () {
+    setUp(() async {
+      await database.managers.occurrences.create(
+        (o) => o(eventServerId: 99, occurrenceDate: '2026-01-01'),
+      );
+    });
+    test('filter remaining columns', () async {
+      await database.managers.occurrences.filter((f) => f.id.equals(1)).get();
+      await database.managers.occurrences.filter((f) => f.serverId.isNull()).get();
+      await database.managers.occurrences.filter((f) => f.notes.isNull()).get();
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.occurrences.orderBy((o) => o.id.asc()).get();
+      await database.managers.occurrences.orderBy((o) => o.serverId.asc()).get();
+      await database.managers.occurrences.orderBy((o) => o.eventServerId.asc()).get();
+      await database.managers.occurrences.orderBy((o) => o.occurrenceDate.asc()).get();
+      await database.managers.occurrences.orderBy((o) => o.status.asc()).get();
+      await database.managers.occurrences.orderBy((o) => o.notes.asc()).get();
+      await database.managers.occurrences.orderBy((o) => o.syncStatus.asc()).get();
+    });
+  });
+
+  group('Column coverage - Tasks', () {
+    setUp(() async {
+      await database.managers.tasks.create(
+        (o) => o(
+          title: 'CovTask',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        ),
+      );
+    });
+    test('filter remaining columns', () async {
+      await database.managers.tasks.filter((f) => f.serverId.isNull()).get();
+      await database.managers.tasks.filter((f) => f.description.isNull()).get();
+      await database.managers.tasks.filter((f) => f.estimatedMinutes.isNull()).get();
+      await database.managers.tasks.filter((f) => f.occurrenceServerId.isNull()).get();
+      await database.managers.tasks.filter((f) => f.completedAt.isNull()).get();
+      await database.managers.tasks.filter((f) => f.createdAt.equals('2026-01-01')).get();
+      await database.managers.tasks.filter((f) => f.updatedAt.equals('2026-01-01')).get();
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.tasks.orderBy((o) => o.id.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.serverId.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.description.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.status.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.priority.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.assigneeServerId.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.categoryServerId.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.dueDate.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.estimatedMinutes.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.recurrence.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.occurrenceServerId.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.syncStatus.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.completedAt.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.updatedAt.asc()).get();
+    });
+  });
+
+  group('Column coverage - Subtasks', () {
+    late int taskId;
+    setUp(() async {
+      taskId = await database.managers.tasks.create(
+        (o) => o(title: 'Parent', createdAt: '2026-01-01', updatedAt: '2026-01-01'),
+      );
+      await database.managers.subtasks.create(
+        (o) => o(taskLocalId: taskId, title: 'CovSub'),
+      );
+    });
+    test('filter remaining columns', () async {
+      await database.managers.subtasks.filter((f) => f.id.equals(1)).get();
+      await database.managers.subtasks.filter((f) => f.serverId.isNull()).get();
+      await database.managers.subtasks.filter((f) => f.taskServerId.isNull()).get();
+      await database.managers.subtasks.filter((f) => f.completedAt.isNull()).get();
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.subtasks.orderBy((o) => o.id.asc()).get();
+      await database.managers.subtasks.orderBy((o) => o.serverId.asc()).get();
+      await database.managers.subtasks.orderBy((o) => o.taskLocalId.asc()).get();
+      await database.managers.subtasks.orderBy((o) => o.taskServerId.asc()).get();
+      await database.managers.subtasks.orderBy((o) => o.status.asc()).get();
+      await database.managers.subtasks.orderBy((o) => o.dueDate.asc()).get();
+      await database.managers.subtasks.orderBy((o) => o.completedAt.asc()).get();
+      await database.managers.subtasks.orderBy((o) => o.syncStatus.asc()).get();
+    });
+  });
+
+  group('Column coverage - CreditCards', () {
+    setUp(() async {
+      await database.managers.creditCards.create((o) => o(name: 'CovCard'));
+    });
+    test('filter remaining columns', () async {
+      await database.managers.creditCards.filter((f) => f.id.equals(1)).get();
+      await database.managers.creditCards.filter((f) => f.serverId.isNull()).get();
+      await database.managers.creditCards.filter((f) => f.statementCloseDay.isNull()).get();
+      await database.managers.creditCards.filter((f) => f.gracePeriodDays.isNull()).get();
+      await database.managers.creditCards.filter((f) => f.weekendShift.isNull()).get();
+      await database.managers.creditCards.filter((f) => f.cycleDays.isNull()).get();
+      await database.managers.creditCards.filter((f) => f.cycleReferenceDate.isNull()).get();
+      await database.managers.creditCards.filter((f) => f.dueDaySameMonth.isNull()).get();
+      await database.managers.creditCards.filter((f) => f.dueDayNextMonth.isNull()).get();
+      await database.managers.creditCards.filter((f) => f.annualFeeMonth.isNull()).get();
+      await database.managers.creditCards.filter((f) => f.isActive.isTrue()).get();
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.creditCards.orderBy((o) => o.id.asc()).get();
+      await database.managers.creditCards.orderBy((o) => o.serverId.asc()).get();
+      await database.managers.creditCards.orderBy((o) => o.issuer.asc()).get();
+      await database.managers.creditCards.orderBy((o) => o.lastFour.asc()).get();
+      await database.managers.creditCards.orderBy((o) => o.statementCloseDay.asc()).get();
+      await database.managers.creditCards.orderBy((o) => o.gracePeriodDays.asc()).get();
+      await database.managers.creditCards.orderBy((o) => o.weekendShift.asc()).get();
+      await database.managers.creditCards.orderBy((o) => o.cycleDays.asc()).get();
+      await database.managers.creditCards.orderBy((o) => o.cycleReferenceDate.asc()).get();
+      await database.managers.creditCards.orderBy((o) => o.dueDaySameMonth.asc()).get();
+      await database.managers.creditCards.orderBy((o) => o.dueDayNextMonth.asc()).get();
+      await database.managers.creditCards.orderBy((o) => o.annualFeeMonth.asc()).get();
+      await database.managers.creditCards.orderBy((o) => o.isActive.asc()).get();
+    });
+  });
+
+  group('Column coverage - CreditCardTrackerCache', () {
+    setUp(() async {
+      await database.managers.creditCardTrackerCache.create(
+        (o) => o(
+          cardServerId: 42,
+          name: 'CovCard',
+          grace: '2026-05-15',
+          prevClose: '2026-04-15',
+          prevDue: '2026-05-05',
+          nextClose: '2026-05-15',
+          nextCloseDays: 7,
+          nextDue: '2026-06-05',
+          nextDueDays: 28,
+        ),
+      );
+    });
+    test('filter remaining columns', () async {
+      await database.managers.creditCardTrackerCache.filter((f) => f.id.equals(1)).get();
+      await database.managers.creditCardTrackerCache.filter((f) => f.issuer.isNull()).get();
+      await database.managers.creditCardTrackerCache.filter((f) => f.lastFour.isNull()).get();
+      await database.managers.creditCardTrackerCache.filter((f) => f.annualFeeDate.isNull()).get();
+      await database.managers.creditCardTrackerCache.filter((f) => f.annualFeeDays.isNull()).get();
+      await database.managers.creditCardTrackerCache.filter((f) => f.prevDueOverdue.isFalse()).get();
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.id.asc()).get();
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.issuer.asc()).get();
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.lastFour.asc()).get();
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.grace.asc()).get();
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.prevClose.asc()).get();
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.prevDue.asc()).get();
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.nextClose.asc()).get();
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.nextCloseDays.asc()).get();
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.nextDue.asc()).get();
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.nextDueDays.asc()).get();
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.annualFeeDate.asc()).get();
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.annualFeeDays.asc()).get();
+      await database.managers.creditCardTrackerCache.orderBy((o) => o.prevDueOverdue.asc()).get();
+    });
+  });
+
+  group('Column coverage - GroceryStores', () {
+    setUp(() async {
+      await database.managers.groceryStores.create((o) => o(name: 'CovStore'));
+    });
+    test('filter remaining columns', () async {
+      await database.managers.groceryStores.filter((f) => f.id.equals(1)).get();
+      await database.managers.groceryStores.filter((f) => f.isActive.isTrue()).get();
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.groceryStores.orderBy((o) => o.id.asc()).get();
+      await database.managers.groceryStores.orderBy((o) => o.serverId.asc()).get();
+      await database.managers.groceryStores.orderBy((o) => o.location.asc()).get();
+      await database.managers.groceryStores.orderBy((o) => o.isActive.asc()).get();
+    });
+  });
+
+  group('Column coverage - GroceryItems', () {
+    setUp(() async {
+      await database.managers.groceryItems.create((o) => o(name: 'CovItem'));
+    });
+    test('filter remaining columns', () async {
+      await database.managers.groceryItems.filter((f) => f.id.equals(1)).get();
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.groceryItems.orderBy((o) => o.id.asc()).get();
+      await database.managers.groceryItems.orderBy((o) => o.serverId.asc()).get();
+      await database.managers.groceryItems.orderBy((o) => o.defaultUnit.asc()).get();
+      await database.managers.groceryItems.orderBy((o) => o.defaultStoreServerId.asc()).get();
+    });
+  });
+
+  group('Column coverage - GroceryOnHand', () {
+    setUp(() async {
+      await database.managers.groceryOnHand.create((o) => o(itemServerId: 77));
+    });
+    test('filter remaining columns', () async {
+      await database.managers.groceryOnHand.filter((f) => f.id.equals(1)).get();
+      await database.managers.groceryOnHand.filter((f) => f.quantity.equals(0)).get();
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.groceryOnHand.orderBy((o) => o.id.asc()).get();
+      await database.managers.groceryOnHand.orderBy((o) => o.quantity.asc()).get();
+      await database.managers.groceryOnHand.orderBy((o) => o.unit.asc()).get();
+    });
+  });
+
+  group('Column coverage - GroceryLists', () {
+    setUp(() async {
+      await database.managers.groceryLists.create((o) => o(name: 'CovList'));
+    });
+    test('filter remaining columns', () async {
+      await database.managers.groceryLists.filter((f) => f.id.equals(1)).get();
+      await database.managers.groceryLists.filter((f) => f.serverId.isNull()).get();
+      await database.managers.groceryLists.filter((f) => f.storeServerId.isNull()).get();
+      await database.managers.groceryLists.filter((f) => f.shoppingDate.isNull()).get();
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.groceryLists.orderBy((o) => o.id.asc()).get();
+      await database.managers.groceryLists.orderBy((o) => o.serverId.asc()).get();
+      await database.managers.groceryLists.orderBy((o) => o.storeServerId.asc()).get();
+      await database.managers.groceryLists.orderBy((o) => o.status.asc()).get();
+      await database.managers.groceryLists.orderBy((o) => o.shoppingDate.asc()).get();
+      await database.managers.groceryLists.orderBy((o) => o.syncStatus.asc()).get();
+    });
+  });
+
+  group('Column coverage - GroceryListItems', () {
+    late int listId;
+    setUp(() async {
+      listId = await database.managers.groceryLists.create((o) => o(name: 'Parent'));
+      await database.managers.groceryListItems.create(
+        (o) => o(listLocalId: listId, itemServerId: 3),
+      );
+    });
+    test('filter remaining columns', () async {
+      await database.managers.groceryListItems.filter((f) => f.id.equals(1)).get();
+      await database.managers.groceryListItems.filter((f) => f.listServerId.isNull()).get();
+      await database.managers.groceryListItems.filter((f) => f.quantity.equals(0)).get();
+      await database.managers.groceryListItems.filter((f) => f.price.isNull()).get();
+    });
+    test('orderBy remaining columns', () async {
+      await database.managers.groceryListItems.orderBy((o) => o.id.asc()).get();
+      await database.managers.groceryListItems.orderBy((o) => o.serverId.asc()).get();
+      await database.managers.groceryListItems.orderBy((o) => o.listServerId.asc()).get();
+      await database.managers.groceryListItems.orderBy((o) => o.quantity.asc()).get();
+      await database.managers.groceryListItems.orderBy((o) => o.price.asc()).get();
+      await database.managers.groceryListItems.orderBy((o) => o.notes.asc()).get();
+      await database.managers.groceryListItems.orderBy((o) => o.syncStatus.asc()).get();
+    });
+  });
 }
