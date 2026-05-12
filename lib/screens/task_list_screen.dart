@@ -449,7 +449,10 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                   if (cat != null)
                     CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
                   if (task.dueDate != null)
-                    _DaysBadge(dueDate: task.dueDate!, todayStr: todayStr, isActive: isActive),
+                    GestureDetector(
+                      onTap: () => _showQuickDateSheet(context),
+                      child: _DaysBadge(dueDate: task.dueDate!, todayStr: todayStr, isActive: isActive),
+                    ),
                   if (showRecurrence)
                     _RecurrenceBadge(task.recurrence),
                   if (task.syncStatus != SyncStatus.synced.value)
@@ -552,6 +555,114 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (_) => _TaskForm(existing: widget.task),
+    );
+  }
+
+  Future<void> _updateDueDate(String? date) async {
+    final task = widget.task;
+    final syncNotifier = ref.read(syncStateProvider.notifier);
+    final db = ref.read(dbProvider);
+    try {
+      await db.updateTask(
+        task.id,
+        TasksCompanion(
+          dueDate: Value(date),
+          updatedAt: Value(DateTime.now().toIso8601String()),
+          syncStatus: Value(SyncStatus.next(task.syncStatus)),
+        ),
+      );
+      syncNotifier.syncIfOnline();
+    } catch (e, st) {
+      dev.log('updateDueDate: $e', name: 'tasks', level: 900, stackTrace: st);
+    }
+  }
+
+  void _showQuickDateSheet(BuildContext context) {
+    final task = widget.task;
+    final now = DateTime.now();
+    final today = now.toIso8601DateString();
+    final tomorrow = now.add(const Duration(days: 1)).toIso8601DateString();
+    final nextWeek = now.add(const Duration(days: 7)).toIso8601DateString();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SheetHandle(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Change Due Date', style: AppText.body.copyWith(fontWeight: FontWeight.w700)),
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.today_outlined, size: 20),
+                title: Text('Today', style: AppText.body),
+                subtitle: Text(today, style: AppText.small),
+                dense: true,
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _updateDueDate(today);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_view_day_outlined, size: 20),
+                title: Text('Tomorrow', style: AppText.body),
+                subtitle: Text(tomorrow, style: AppText.small),
+                dense: true,
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _updateDueDate(tomorrow);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.date_range_outlined, size: 20),
+                title: Text('Next Week', style: AppText.body),
+                subtitle: Text(nextWeek, style: AppText.small),
+                dense: true,
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _updateDueDate(nextWeek);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.event_busy_outlined, size: 20),
+                title: Text('No Date', style: AppText.body),
+                dense: true,
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _updateDueDate(null);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_month_outlined, size: 20),
+                title: Text('Pick a date…', style: AppText.body),
+                dense: true,
+                onTap: () async {
+                  Navigator.pop(context);
+                  if (!mounted) return;
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.tryParse(task.dueDate ?? '') ?? DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null && mounted) await _updateDueDate(picked.toIso8601DateString());
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
