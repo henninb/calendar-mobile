@@ -137,7 +137,7 @@ class _ListsOverview extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.of(context).surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -161,16 +161,16 @@ class _GroceryListCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
-  static const _statusColor = <String, Color>{
-    'draft': AppColors.skippedFg,
-    'active': AppColors.warningFg,
-    'completed': AppColors.completedFg,
-  };
-
   @override
   Widget build(BuildContext context) {
     final (total, done) = counts ?? (0, 0);
-    final color = _statusColor[list.status] ?? AppColors.skippedFg;
+    final colors = AppColors.of(context);
+    final color = switch (list.status) {
+      'draft'     => colors.skippedFg,
+      'active'    => colors.warningFg,
+      'completed' => colors.completedFg,
+      _           => colors.skippedFg,
+    };
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -223,7 +223,7 @@ class _GroceryListCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: done / total,
                         backgroundColor:
-                            AppColors.textMuted.withValues(alpha: 0.2),
+                            colors.textMuted.withValues(alpha: 0.2),
                         minHeight: 4,
                       ),
                     ),
@@ -239,10 +239,10 @@ class _GroceryListCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.calendar_today_outlined,
                       size: 12,
-                      color: AppColors.textMuted,
+                      color: colors.textMuted,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -319,7 +319,7 @@ class _ListDetailView extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .labelMedium
-                      ?.copyWith(color: AppColors.textMuted),
+                      ?.copyWith(color: AppColors.of(context).textMuted),
                 ),
               ),
             ),
@@ -384,7 +384,7 @@ class _ListDetailView extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.of(context).surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -890,12 +890,12 @@ class _OnHandTabState extends ConsumerState<_OnHandTab> {
                               style: TextStyle(
                                 color: oh.quantity > 0
                                     ? null
-                                    : AppColors.overdueFg,
+                                    : AppColors.of(context).overdueFg,
                               ),
                             )
-                          : const Text(
+                          : Text(
                               '—',
-                              style: TextStyle(color: AppColors.textMuted),
+                              style: TextStyle(color: AppColors.of(context).textMuted),
                             ),
                       dense: true,
                     );
@@ -952,7 +952,7 @@ class _StoresTab extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.of(context).surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),

@@ -4,7 +4,7 @@ import 'package:calendar_mobile/widgets/status_badge.dart';
 import 'package:calendar_mobile/core/constants.dart';
 import 'package:calendar_mobile/core/theme.dart';
 
-Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
+Widget _wrap(Widget child) => MaterialApp(theme: buildAppTheme(), home: Scaffold(body: child));
 
 void main() {
   group('StatusBadge', () {
@@ -45,8 +45,8 @@ void main() {
       final decoration = container.decoration! as BoxDecoration;
       final text = tester.widget<Text>(find.text('DONE'));
 
-      expect(decoration.color, AppColors.completedBg);
-      expect((text.style!).color, AppColors.completedFg);
+      expect(decoration.color, AppColors.light.completedBg);
+      expect((text.style!).color, AppColors.light.completedFg);
     });
   });
 

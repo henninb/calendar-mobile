@@ -191,7 +191,7 @@ class _Toolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: AppColors.tableHeader,
+      color: AppColors.of(context).tableHeader,
       child: Column(
         children: [
           Row(
@@ -337,7 +337,7 @@ class _OccurrenceRow extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.of(context).surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -384,13 +384,14 @@ class _QuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textMuted = AppColors.of(context).textMuted;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (status != OccurrenceStatus.completed)
           _IconBtn(icon: Icons.check_circle_outline, color: AppColors.btnGreen, onTap: () => onAction(OccurrenceStatus.completed)),
         if (status != OccurrenceStatus.skipped)
-          _IconBtn(icon: Icons.skip_next_rounded, color: AppColors.textMuted, onTap: () => onAction(OccurrenceStatus.skipped)),
+          _IconBtn(icon: Icons.skip_next_rounded, color: textMuted, onTap: () => onAction(OccurrenceStatus.skipped)),
         if (status == OccurrenceStatus.completed || status == OccurrenceStatus.skipped)
           _IconBtn(icon: Icons.replay_rounded, color: AppColors.btnBlue, onTap: () => onAction(OccurrenceStatus.upcoming)),
       ],
@@ -437,6 +438,7 @@ class _DetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cat = event != null ? catMap[event!.categoryServerId] : null;
+    final colors = AppColors.of(context);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -456,7 +458,7 @@ class _DetailSheet extends StatelessWidget {
               height: 4,
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppColors.textLight,
+                color: colors.textLight,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -491,8 +493,8 @@ class _DetailSheet extends StatelessWidget {
               if (occurrence.status != OccurrenceStatus.skipped)
                 _ActionBtn(
                   label: 'Skip',
-                  color: AppColors.btnGrayBg,
-                  textColor: AppColors.btnGrayFg,
+                  color: colors.btnGrayBg,
+                  textColor: colors.btnGrayFg,
                   onTap: () { onStatusChange(OccurrenceStatus.skipped); Navigator.pop(context); },
                 ),
               if (occurrence.status == OccurrenceStatus.completed || occurrence.status == OccurrenceStatus.skipped)

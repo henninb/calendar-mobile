@@ -37,15 +37,18 @@ void main() async {
   );
 }
 
-class CalendarMobileApp extends StatelessWidget {
+class CalendarMobileApp extends ConsumerWidget {
   const CalendarMobileApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp(
       title: 'Calendar',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      darkTheme: buildDarkAppTheme(),
+      themeMode: themeMode,
       home: const MainScreen(),
     );
   }

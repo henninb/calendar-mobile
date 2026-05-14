@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as dev;
 import 'package:flutter/foundation.dart' show immutable;
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -472,3 +473,31 @@ final groceryListItemsForListProvider =
   (ref, listLocalId) =>
       ref.watch(dbProvider).watchGroceryListItemsForList(listLocalId),
 );
+
+// ── Theme Mode ────────────────────────────────────────────────────────────────
+
+final themeModeProvider =
+    NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
+
+class ThemeModeNotifier extends Notifier<ThemeMode> {
+  static const _key = 'themeMode';
+
+  @override
+  ThemeMode build() {
+    final saved = ref.read(sharedPreferencesProvider).getString(_key);
+    return switch (saved) {
+      'light' => ThemeMode.light,
+      'dark'  => ThemeMode.dark,
+      _       => ThemeMode.system,
+    };
+  }
+
+  void set(ThemeMode mode) {
+    state = mode;
+    ref.read(sharedPreferencesProvider).setString(_key, switch (mode) {
+      ThemeMode.light  => 'light',
+      ThemeMode.dark   => 'dark',
+      ThemeMode.system => 'system',
+    });
+  }
+}

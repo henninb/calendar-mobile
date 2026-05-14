@@ -17,7 +17,7 @@ class SheetHandle extends StatelessWidget {
         height: 4,
         margin: margin,
         decoration: BoxDecoration(
-          color: AppColors.textLight,
+          color: AppColors.of(context).textLight,
           borderRadius: BorderRadius.circular(2),
         ),
       ),

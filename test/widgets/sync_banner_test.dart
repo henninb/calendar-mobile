@@ -45,8 +45,9 @@ Widget _wrap({
       ),
       syncStateProvider.overrideWith(() => _TestSyncNotifier(syncState)),
     ],
-    child: const MaterialApp(
-      home: Scaffold(
+    child: MaterialApp(
+      theme: buildAppTheme(),
+      home: const Scaffold(
         body: SyncBanner(),
       ),
     ),
@@ -70,7 +71,7 @@ void main() {
       expect(find.byIcon(Icons.cloud_off_rounded), findsOneWidget);
 
       final container = tester.widget<Container>(find.byType(Container).first);
-      expect(container.color, AppColors.skippedBg);
+      expect(container.color, AppColors.light.skippedBg);
     });
 
     testWidgets('shows connectivity offline banner when network is down', (
@@ -91,7 +92,7 @@ void main() {
       expect(find.byIcon(Icons.wifi_off_rounded), findsOneWidget);
 
       final container = tester.widget<Container>(find.byType(Container).first);
-      expect(container.color, AppColors.offlineBanner);
+      expect(container.color, AppColors.light.offlineBanner);
     });
 
     testWidgets('shows refreshing banner while pulling', (tester) async {

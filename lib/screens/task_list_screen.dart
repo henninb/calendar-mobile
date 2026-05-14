@@ -126,23 +126,43 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                               for (final section in sections)
                                 if (!section.hideWhenEmpty || section.tasks.isNotEmpty) ...[
                                   _SectionHeader(
+                                    sectionKey: section.key,
                                     label: section.label,
                                     count: section.tasks.length,
                                     isExpanded: !_isCollapsed(section.key, section.tasks.isEmpty),
                                     onTap: () => _toggleSection(section.key, section.tasks.isEmpty),
                                   ),
                                   if (!_isCollapsed(section.key, section.tasks.isEmpty))
-                                    for (final task in section.tasks)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 8),
-                                        child: _TaskCard(
-                                          key: ValueKey(task.id),
-                                          task: task,
-                                          catMap: catMap,
-                                          todayStr: todayStr,
-                                          tomorrowStr: tomorrowStr,
+                                    Builder(builder: (ctx) {
+                                      final colors = AppColors.of(ctx);
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          color: colors.dividerLight,
+                                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                                          border: Border(
+                                            left:   BorderSide(color: colors.divider),
+                                            right:  BorderSide(color: colors.divider),
+                                            bottom: BorderSide(color: colors.divider),
+                                          ),
                                         ),
-                                      ),
+                                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                                        child: Column(
+                                          children: [
+                                            for (final task in section.tasks)
+                                              Padding(
+                                                padding: const EdgeInsets.only(bottom: 6),
+                                                child: _TaskCard(
+                                                  key: ValueKey(task.id),
+                                                  task: task,
+                                                  catMap: catMap,
+                                                  todayStr: todayStr,
+                                                  tomorrowStr: tomorrowStr,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      );
+                                    }),
                                   const SizedBox(height: 8),
                                 ],
                             ],
@@ -220,7 +240,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.of(context).surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -237,8 +257,9 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
-      color: AppColors.tableHeader,
+      color: colors.tableHeader,
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
       child: TextField(
         controller: controller,
@@ -246,32 +267,32 @@ class _SearchBar extends StatelessWidget {
         style: AppText.body,
         decoration: InputDecoration(
           hintText: 'Search tasks…',
-          hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-          prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+          hintStyle: TextStyle(color: colors.textMuted, fontSize: 13),
+          prefixIcon: Icon(Icons.search, size: 18, color: colors.textMuted),
           suffixIcon: controller.text.isNotEmpty
               ? GestureDetector(
                   onTap: () {
                     controller.clear();
                     onChanged('');
                   },
-                  child: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
+                  child: Icon(Icons.close, size: 16, color: colors.textMuted),
                 )
               : null,
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           filled: true,
-          fillColor: AppColors.surface,
+          fillColor: colors.surface,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppColors.divider),
+            borderSide: BorderSide(color: colors.divider),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppColors.divider),
+            borderSide: BorderSide(color: colors.divider),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
           ),
         ),
       ),
@@ -304,9 +325,10 @@ class _StatusFilter extends StatelessWidget {
     required String label,
     required bool active,
     required VoidCallback onTap,
+    required AppColors colors,
     Color? activeColor,
   }) {
-    final bg = active ? (activeColor ?? AppColors.primary) : AppColors.surface;
+    final bg = active ? (activeColor ?? AppColors.primary) : colors.surface;
     return Padding(
       padding: const EdgeInsets.only(right: 6),
       child: GestureDetector(
@@ -317,7 +339,7 @@ class _StatusFilter extends StatelessWidget {
             color: bg,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: active ? bg : AppColors.divider,
+              color: active ? bg : colors.divider,
             ),
           ),
           child: Text(
@@ -325,7 +347,7 @@ class _StatusFilter extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: active ? Colors.white : AppColors.textSecondary,
+              color: active ? Colors.white : colors.textSecondary,
             ),
           ),
         ),
@@ -335,8 +357,9 @@ class _StatusFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
-      color: AppColors.tableHeader,
+      color: colors.tableHeader,
       child: SizedBox(
         height: 40,
         child: ListView(
@@ -346,6 +369,7 @@ class _StatusFilter extends StatelessWidget {
             label: _statusLabels[s] ?? s,
             active: selected == s,
             onTap: () => onChanged(s),
+            colors: colors,
           )).toList(),
         ),
       ),
@@ -402,6 +426,14 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     }
   }
 
+  Color _priorityStripe(String priority) {
+    switch (priority) {
+      case 'high':   return const Color(0xFFEF4444);
+      case 'medium': return const Color(0xFFF59E0B);
+      default:       return const Color(0xFF94A3B8);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final task = widget.task;
@@ -410,135 +442,191 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     final isActive = task.status != TaskStatus.done && task.status != TaskStatus.cancelled;
     final isDueToday = task.dueDate == todayStr;
     final isOverdue = task.dueDate != null && task.dueDate!.compareTo(todayStr) < 0;
-    final highlight = isActive && (isDueToday || isOverdue);
+    final isDimmed = !isActive;
     final showRecurrence = task.recurrence != 'none';
 
     final subtasksAsync = ref.watch(subtasksForTaskProvider(task.id));
     final subtasks = subtasksAsync.value ?? [];
     final doneCount = subtasks.where((s) => s.status == 'done').length;
+    final progress = subtasks.isEmpty ? 0.0 : doneCount / subtasks.length;
 
-    return Card(
-      color: highlight ? AppColors.overdueBg : null,
-      child: InkWell(
+    final colors = AppColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final stripeColor = _priorityStripe(task.priority);
+    final cardBg = isActive && isOverdue
+        ? (isDark ? const Color(0x1ADC2626) : const Color(0xFFFEF2F2))
+        : isActive && isDueToday
+            ? (isDark ? const Color(0x1AF97316) : const Color(0xFFFFFBEB))
+            : colors.surface;
+
+    final card = Container(
+      decoration: BoxDecoration(
+        color: cardBg,
         borderRadius: BorderRadius.circular(10),
-        onTap: () => _showDetail(context),
-        onLongPress: () => _showEdit(context),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        border: Border.all(color: colors.divider, width: 0.5),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      task.title,
-                      style: AppText.body.copyWith(fontWeight: FontWeight.w600),
+              // Left priority stripe
+              Container(width: 4, color: stripeColor),
+              Expanded(
+                child: InkWell(
+                  onTap: () => _showDetail(context),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title row + status pill + icon actions
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                task.title,
+                                style: AppText.body.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  decoration: isDimmed ? TextDecoration.lineThrough : null,
+                                  color: isDimmed ? colors.textMuted : colors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            _WebStatusPill(task.status),
+                            const SizedBox(width: 4),
+                            _IconActions(
+                              task: task,
+                              onShowEdit: () => _showEdit(context),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        // Meta row: priority, category, date, recurrence
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            PriorityBadge(task.priority),
+                            if (cat != null)
+                              CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
+                            if (task.dueDate != null)
+                              GestureDetector(
+                                onTap: () => _showQuickDateSheet(context),
+                                child: _DaysBadge(dueDate: task.dueDate!, todayStr: todayStr, isActive: isActive),
+                              ),
+                            if (showRecurrence)
+                              _RecurrenceBadge(task.recurrence),
+                            if (task.syncStatus != SyncStatus.synced.value)
+                              Icon(Icons.cloud_upload_outlined, size: 12, color: colors.textMuted),
+                          ],
+                        ),
+                        // Subtask progress bar + expand toggle
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () => setState(() => _expanded = !_expanded),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: LinearProgressIndicator(
+                                    value: progress,
+                                    minHeight: 4,
+                                    backgroundColor: colors.divider,
+                                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF22C55E)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '$doneCount/${subtasks.length}',
+                                style: AppText.small.copyWith(
+                                  color: colors.textMuted,
+                                  fontFeatures: [const FontFeature.tabularFigures()],
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _expanded ? '▾ hide' : '▸ subtasks',
+                                style: AppText.small.copyWith(color: colors.textMuted),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_expanded) ...[
+                          const SizedBox(height: 6),
+                          const Divider(height: 1),
+                          const SizedBox(height: 4),
+                          if (task.description != null && task.description!.isNotEmpty) ...[
+                            Text(
+                              task.description!,
+                              style: AppText.small,
+                              maxLines: 4,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                          ],
+                          ...subtasks.map((s) => _InlineSubtaskRow(subtask: s)),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _newSubtaskCtrl,
+                                  style: AppText.small,
+                                  maxLength: 255,
+                                  decoration: InputDecoration(
+                                    hintText: 'Add subtask…',
+                                    hintStyle: TextStyle(fontSize: 12, color: colors.textMuted),
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    border: OutlineInputBorder(),
+                                    counterText: '',
+                                  ),
+                                  onSubmitted: (_) => _addSubtask(),
+                                  textInputAction: TextInputAction.done,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              GestureDetector(
+                                onTap: _addSubtask,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(5),
+                                  ),
+                                  child: const Text('Add', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  TaskStatusBadge(task.status),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  PriorityBadge(task.priority),
-                  if (cat != null)
-                    CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
-                  if (task.dueDate != null)
-                    GestureDetector(
-                      onTap: () => _showQuickDateSheet(context),
-                      child: _DaysBadge(dueDate: task.dueDate!, todayStr: todayStr, isActive: isActive),
-                    ),
-                  if (showRecurrence)
-                    _RecurrenceBadge(task.recurrence),
-                  if (task.syncStatus != SyncStatus.synced.value)
-                    const Icon(Icons.cloud_upload_outlined, size: 12, color: AppColors.textMuted),
-                ],
-              ),
-              if (task.description != null && task.description!.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(task.description!, style: AppText.small, maxLines: 2, overflow: TextOverflow.ellipsis),
-              ],
-              // Quick status actions
-              const SizedBox(height: 8),
-              _QuickStatusRow(task: task),
-              // Subtask expand toggle (always visible)
-              const SizedBox(height: 6),
-              GestureDetector(
-                onTap: () => setState(() => _expanded = !_expanded),
-                child: Row(
-                  children: [
-                    Icon(
-                      _expanded ? Icons.expand_less : Icons.expand_more,
-                      size: 16,
-                      color: AppColors.textMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      subtasks.isEmpty
-                          ? 'Subtasks'
-                          : '${subtasks.length} subtask${subtasks.length == 1 ? '' : 's'}  ·  $doneCount/${subtasks.length} done',
-                      style: AppText.small.copyWith(color: AppColors.textMuted),
-                    ),
-                  ],
                 ),
               ),
-              if (_expanded) ...[
-                const SizedBox(height: 6),
-                const Divider(height: 1),
-                const SizedBox(height: 4),
-                ...subtasks.map((s) => _InlineSubtaskRow(subtask: s)),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _newSubtaskCtrl,
-                        style: AppText.small,
-                        maxLength: 255,
-                        decoration: const InputDecoration(
-                          hintText: 'Add subtask…',
-                          hintStyle: TextStyle(fontSize: 12, color: AppColors.textMuted),
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                          border: OutlineInputBorder(),
-                          counterText: '',
-                        ),
-                        onSubmitted: (_) => _addSubtask(),
-                        textInputAction: TextInputAction.done,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    GestureDetector(
-                      onTap: _addSubtask,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: const Text('Add', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ],
           ),
         ),
       ),
     );
+
+    return isDimmed ? Opacity(opacity: 0.55, child: card) : card;
   }
 
   void _showDetail(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.of(context).surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -550,7 +638,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.of(context).surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -586,7 +674,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.of(context).surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -700,7 +788,7 @@ class _InlineSubtaskRow extends ConsumerWidget {
             child: Icon(
               done ? Icons.check_circle : Icons.radio_button_unchecked,
               size: 18,
-              color: done ? AppColors.completedFg : AppColors.textMuted,
+              color: done ? AppColors.of(context).completedFg : AppColors.of(context).textMuted,
             ),
           ),
           const SizedBox(width: 8),
@@ -709,7 +797,7 @@ class _InlineSubtaskRow extends ConsumerWidget {
               subtask.title,
               style: AppText.small.copyWith(
                 decoration: done ? TextDecoration.lineThrough : null,
-                color: done ? AppColors.textMuted : AppColors.textPrimary,
+                color: done ? AppColors.of(context).textMuted : AppColors.of(context).textPrimary,
               ),
             ),
           ),
@@ -750,12 +838,14 @@ class _DaysBadge extends StatelessWidget {
     final Color bg;
     final Color fg;
 
+    final colors = AppColors.of(context);
+
     if (!isActive) {
       // Completed/cancelled — show plain date, no urgency styling.
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.calendar_today_outlined, size: 11, color: AppColors.textMuted),
+          Icon(Icons.calendar_today_outlined, size: 11, color: colors.textMuted),
           const SizedBox(width: 3),
           Text(dueDate, style: AppText.label),
         ],
@@ -764,20 +854,20 @@ class _DaysBadge extends StatelessWidget {
 
     if (daysDelta < 0) {
       label = '${daysDelta.abs()}d overdue';
-      bg = AppColors.overdueBg;
+      bg = colors.overdueBg;
       fg = AppColors.ccOverdue;
     } else if (daysDelta == 0) {
       label = 'today';
-      bg = AppColors.warningBg;
-      fg = AppColors.warningFg;
+      bg = colors.warningBg;
+      fg = colors.warningFg;
     } else if (daysDelta <= 3) {
       label = '${daysDelta}d';
-      bg = AppColors.warningBg;
-      fg = AppColors.warningFg;
+      bg = colors.warningBg;
+      fg = colors.warningFg;
     } else {
       label = '${daysDelta}d';
-      bg = AppColors.skippedBg;
-      fg = AppColors.skippedFg;
+      bg = colors.skippedBg;
+      fg = colors.skippedFg;
     }
 
     return Container(
@@ -802,12 +892,13 @@ class _RecurrenceBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.pendingBanner,
+        color: colors.pendingBanner,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: AppColors.pendingBorder),
+        border: Border.all(color: colors.pendingBorder),
       ),
       child: Text(
         '↻ $recurrence',
@@ -821,14 +912,107 @@ class _RecurrenceBadge extends StatelessWidget {
   }
 }
 
-class _QuickStatusRow extends ConsumerWidget {
-  const _QuickStatusRow({required this.task});
+/// Status pill matching the web design (○ ◑ ✓ ✕ icons with colored background).
+class _WebStatusPill extends StatelessWidget {
+  const _WebStatusPill(this.status);
+  final String status;
 
+  static const _icons = {
+    TaskStatus.todo:       '○',
+    TaskStatus.inProgress: '◑',
+    TaskStatus.done:       '✓',
+    TaskStatus.cancelled:  '✕',
+  };
+
+  static const _bgsLight = {
+    TaskStatus.todo:       Color(0xFFEFF6FF),
+    TaskStatus.inProgress: Color(0xFFFFFBEB),
+    TaskStatus.done:       Color(0xFFF0FDF4),
+    TaskStatus.cancelled:  Color(0xFFF8FAFC),
+  };
+  static const _fgsLight = {
+    TaskStatus.todo:       Color(0xFF1D4ED8),
+    TaskStatus.inProgress: Color(0xFFB45309),
+    TaskStatus.done:       Color(0xFF15803D),
+    TaskStatus.cancelled:  Color(0xFF64748B),
+  };
+  static const _bordersLight = {
+    TaskStatus.todo:       Color(0xFFBFDBFE),
+    TaskStatus.inProgress: Color(0xFFFDE68A),
+    TaskStatus.done:       Color(0xFFBBF7D0),
+    TaskStatus.cancelled:  Color(0xFFE2E8F0),
+  };
+
+  static const _bgsDark = {
+    TaskStatus.todo:       Color(0x331D4ED8),
+    TaskStatus.inProgress: Color(0x1AFBBF24),
+    TaskStatus.done:       Color(0x3315803D),
+    TaskStatus.cancelled:  Color(0xFF334155),
+  };
+  static const _fgsDark = {
+    TaskStatus.todo:       Color(0xFF93C5FD),
+    TaskStatus.inProgress: Color(0xFFFDE68A),
+    TaskStatus.done:       Color(0xFF86EFAC),
+    TaskStatus.cancelled:  Color(0xFF94A3B8),
+  };
+  static const _bordersDark = {
+    TaskStatus.todo:       Color(0x661D4ED8),
+    TaskStatus.inProgress: Color(0x1AFBBF24),
+    TaskStatus.done:       Color(0x3315803D),
+    TaskStatus.cancelled:  Color(0xFF334155),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgs     = isDark ? _bgsDark     : _bgsLight;
+    final fgs     = isDark ? _fgsDark     : _fgsLight;
+    final borders = isDark ? _bordersDark : _bordersLight;
+    final colors  = AppColors.of(context);
+
+    final bg     = bgs[status]     ?? colors.surface;
+    final fg     = fgs[status]     ?? colors.textMuted;
+    final border = borders[status] ?? colors.divider;
+    final icon   = _icons[status]  ?? '○';
+    final label  = {
+      TaskStatus.todo:       'To Do',
+      TaskStatus.inProgress: 'In Progress',
+      TaskStatus.done:       'Done',
+      TaskStatus.cancelled:  'Cancelled',
+    }[status] ?? status;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(icon, style: TextStyle(fontSize: 10, color: fg)),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: fg),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact icon action buttons: done circle, start play, overflow menu.
+class _IconActions extends ConsumerWidget {
+  const _IconActions({required this.task, required this.onShowEdit});
   final Task task;
+  final VoidCallback onShowEdit;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final db = ref.read(dbProvider);
+    final isActive = task.status != TaskStatus.done && task.status != TaskStatus.cancelled;
 
     Future<void> setStatus(String s) async {
       final syncNotifier = ref.read(syncStateProvider.notifier);
@@ -839,7 +1023,6 @@ class _QuickStatusRow extends ConsumerWidget {
           TasksCompanion(
             status: Value(s),
             updatedAt: Value(now),
-            // Set completedAt locally so the UI reflects it before sync.
             completedAt: s == TaskStatus.done ? Value(now) : const Value.absent(),
             syncStatus: Value(SyncStatus.next(task.syncStatus)),
           ),
@@ -847,27 +1030,11 @@ class _QuickStatusRow extends ConsumerWidget {
         syncNotifier.syncIfOnline();
       } catch (e, st) {
         dev.log('setStatus: $e', name: 'tasks', level: 900, stackTrace: st);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to update task. Please try again.')),
-          );
-        }
       }
     }
 
-    void editTask() {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: AppColors.surface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        builder: (_) => _TaskForm(existing: task),
-      );
-    }
-
     Future<void> deleteTask() async {
+      final syncNotifier = ref.read(syncStateProvider.notifier);
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
@@ -884,59 +1051,126 @@ class _QuickStatusRow extends ConsumerWidget {
         ),
       );
       if (confirmed != true || !context.mounted) return;
-      final syncNotifier = ref.read(syncStateProvider.notifier);
       try {
         await db.markTaskDeleted(task.id);
         syncNotifier.syncIfOnline();
       } catch (e, st) {
         dev.log('deleteTask: $e', name: 'tasks', level: 900, stackTrace: st);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to delete task. Please try again.')),
-          );
-        }
       }
     }
 
-    return Wrap(
-      spacing: 6,
+    final colors = AppColors.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        if (task.status == TaskStatus.todo)
-          _Chip(label: 'Start', color: const Color(0xFF7C3AED), onTap: () => setStatus(TaskStatus.inProgress)),
-        if (task.status != TaskStatus.done && task.status != TaskStatus.cancelled)
-          _Chip(label: 'Done', color: AppColors.btnGreen, onTap: () => setStatus(TaskStatus.done)),
-        if (task.status != TaskStatus.cancelled && task.status != TaskStatus.done)
-          _Chip(label: 'Cancel', color: AppColors.btnGrayBg, textColor: AppColors.btnGrayFg, onTap: () => setStatus(TaskStatus.cancelled)),
-        _Chip(label: 'Edit', color: AppColors.primary, onTap: editTask),
-        _Chip(label: 'Del', color: AppColors.btnRed, onTap: deleteTask),
+        // Mark done circle
+        if (isActive)
+          GestureDetector(
+            onTap: () => setStatus(TaskStatus.done),
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: colors.divider, width: 1.5),
+              ),
+              child: Center(
+                child: Text('✓', style: TextStyle(fontSize: 11, color: colors.textMuted)),
+              ),
+            ),
+          )
+        else
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colors.completedBg,
+              border: Border.fromBorderSide(BorderSide(color: colors.completedFg, width: 1.5)),
+            ),
+            child: Center(
+              child: Text(
+                '✓',
+                style: TextStyle(fontSize: 11, color: colors.completedFg, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        const SizedBox(width: 4),
+        // Start button (todo only)
+        if (task.status == TaskStatus.todo) ...[
+          GestureDetector(
+            onTap: () => setStatus(TaskStatus.inProgress),
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: colors.divider, width: 1.5),
+              ),
+              child: Center(
+                child: Text('▶', style: TextStyle(fontSize: 9, color: colors.textMuted)),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
+        // Overflow menu (···)
+        GestureDetector(
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              backgroundColor: colors.surface,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              builder: (_) => SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.edit_outlined, size: 18),
+                      title: const Text('Edit'),
+                      dense: true,
+                      onTap: () { Navigator.pop(context); onShowEdit(); },
+                    ),
+                    if (isActive)
+                      ListTile(
+                        leading: const Icon(Icons.cancel_outlined, size: 18),
+                        title: const Text('Cancel task'),
+                        dense: true,
+                        onTap: () { Navigator.pop(context); setStatus(TaskStatus.cancelled); },
+                      ),
+                    if (!isActive)
+                      ListTile(
+                        leading: const Icon(Icons.refresh_outlined, size: 18),
+                        title: const Text('Reopen'),
+                        dense: true,
+                        onTap: () { Navigator.pop(context); setStatus(TaskStatus.todo); },
+                      ),
+                    ListTile(
+                      leading: const Icon(Icons.delete_outline, size: 18, color: AppColors.btnRed),
+                      title: const Text('Delete', style: TextStyle(color: AppColors.btnRed)),
+                      dense: true,
+                      onTap: () { Navigator.pop(context); deleteTask(); },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+          child: Container(
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Center(
+              child: Text('···', style: TextStyle(fontSize: 14, color: colors.textMuted, letterSpacing: -1)),
+            ),
+          ),
+        ),
       ],
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({required this.label, required this.color, required this.onTap, this.textColor});
-
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-  final Color? textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(5),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textColor ?? Colors.white),
-        ),
-      ),
     );
   }
 }
@@ -979,9 +1213,9 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
       expand: false,
       builder: (context, controller) {
         return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          decoration: BoxDecoration(
+            color: AppColors.of(context).surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           ),
           child: Column(
             children: [
@@ -1190,7 +1424,9 @@ class _SubtaskRow extends ConsumerWidget {
             },
             child: Icon(
               subtask.status == TaskStatus.done ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: subtask.status == TaskStatus.done ? AppColors.completedFg : AppColors.textMuted,
+              color: subtask.status == TaskStatus.done
+                  ? AppColors.of(context).completedFg
+                  : AppColors.of(context).textMuted,
               size: 20,
             ),
           ),
@@ -1200,12 +1436,14 @@ class _SubtaskRow extends ConsumerWidget {
               subtask.title,
               style: AppText.body.copyWith(
                 decoration: subtask.status == TaskStatus.done ? TextDecoration.lineThrough : null,
-                color: subtask.status == TaskStatus.done ? AppColors.textMuted : AppColors.textPrimary,
+                color: subtask.status == TaskStatus.done
+                    ? AppColors.of(context).textMuted
+                    : AppColors.of(context).textPrimary,
               ),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close, size: 16, color: AppColors.textMuted),
+            icon: Icon(Icons.close, size: 16, color: AppColors.of(context).textMuted),
             onPressed: () async {
               final syncNotifier = ref.read(syncStateProvider.notifier);
               try {
@@ -1366,7 +1604,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(_dueDate!, style: AppText.body),
-                    const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textMuted),
+                    Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.of(context).textMuted),
                   ],
                 ),
               ),
@@ -1508,16 +1746,129 @@ class _TaskSection {
   final bool hideWhenEmpty;
 }
 
+// ── Section accent styles ─────────────────────────────────────────────────────
+
+class _SectionAccent {
+  const _SectionAccent({
+    required this.stripe,
+    required this.bg,
+    required this.labelColor,
+    required this.badgeBg,
+    required this.badgeFg,
+    required this.icon,
+  });
+  final Color stripe;
+  final Color bg;
+  final Color labelColor;
+  final Color badgeBg;
+  final Color badgeFg;
+  final String icon;
+}
+
+const _kSectionAccents = <String, _SectionAccent>{
+  'overdue': _SectionAccent(
+    stripe: Color(0xFFEF4444), bg: Color(0xFFFEF2F2),
+    labelColor: Color(0xFFB91C1C), badgeBg: Color(0xFFFEE2E2), badgeFg: Color(0xFFB91C1C),
+    icon: '🔥',
+  ),
+  'today': _SectionAccent(
+    stripe: Color(0xFFF97316), bg: Color(0xFFFFF7ED),
+    labelColor: Color(0xFFC2410C), badgeBg: Color(0xFFFED7AA), badgeFg: Color(0xFFC2410C),
+    icon: '🔥',
+  ),
+  'tomorrow': _SectionAccent(
+    stripe: Color(0xFFF59E0B), bg: Color(0xFFFFFBEB),
+    labelColor: Color(0xFFB45309), badgeBg: Color(0xFFFDE68A), badgeFg: Color(0xFFB45309),
+    icon: '📅',
+  ),
+  'this_week': _SectionAccent(
+    stripe: Color(0xFF3B82F6), bg: Color(0xFFEFF6FF),
+    labelColor: Color(0xFF1D4ED8), badgeBg: Color(0xFFDBEAFE), badgeFg: Color(0xFF1D4ED8),
+    icon: '📆',
+  ),
+  'next_week': _SectionAccent(
+    stripe: Color(0xFF8B5CF6), bg: Color(0xFFF5F3FF),
+    labelColor: Color(0xFF6D28D9), badgeBg: Color(0xFFEDE9FE), badgeFg: Color(0xFF6D28D9),
+    icon: '🗓',
+  ),
+  'later': _SectionAccent(
+    stripe: Color(0xFF94A3B8), bg: Color(0xFFF8FAFC),
+    labelColor: Color(0xFF475569), badgeBg: Color(0xFFE2E8F0), badgeFg: Color(0xFF475569),
+    icon: '⏳',
+  ),
+  'done': _SectionAccent(
+    stripe: Color(0xFF22C55E), bg: Color(0xFFF0FDF4),
+    labelColor: Color(0xFF15803D), badgeBg: Color(0xFFDCFCE7), badgeFg: Color(0xFF15803D),
+    icon: '✅',
+  ),
+  'no_date': _SectionAccent(
+    stripe: Color(0xFF94A3B8), bg: Color(0xFFF8FAFC),
+    labelColor: Color(0xFF64748B), badgeBg: Color(0xFFE2E8F0), badgeFg: Color(0xFF64748B),
+    icon: '📌',
+  ),
+};
+
+const _kSectionAccentsDark = <String, _SectionAccent>{
+  'overdue': _SectionAccent(
+    stripe: Color(0xFFEF4444), bg: Color(0x1ADC2626),
+    labelColor: Color(0xFFFCA5A5), badgeBg: Color(0x26DC2626), badgeFg: Color(0xFFFCA5A5),
+    icon: '🔥',
+  ),
+  'today': _SectionAccent(
+    stripe: Color(0xFFF97316), bg: Color(0x1AF97316),
+    labelColor: Color(0xFFFDBA74), badgeBg: Color(0x26F97316), badgeFg: Color(0xFFFDBA74),
+    icon: '🔥',
+  ),
+  'tomorrow': _SectionAccent(
+    stripe: Color(0xFFF59E0B), bg: Color(0x1AF59E0B),
+    labelColor: Color(0xFFFDE68A), badgeBg: Color(0x26F59E0B), badgeFg: Color(0xFFFDE68A),
+    icon: '📅',
+  ),
+  'this_week': _SectionAccent(
+    stripe: Color(0xFF3B82F6), bg: Color(0x1A3B82F6),
+    labelColor: Color(0xFF93C5FD), badgeBg: Color(0x263B82F6), badgeFg: Color(0xFF93C5FD),
+    icon: '📆',
+  ),
+  'next_week': _SectionAccent(
+    stripe: Color(0xFF8B5CF6), bg: Color(0x1A8B5CF6),
+    labelColor: Color(0xFFC4B5FD), badgeBg: Color(0x268B5CF6), badgeFg: Color(0xFFC4B5FD),
+    icon: '🗓',
+  ),
+  'later': _SectionAccent(
+    stripe: Color(0xFF94A3B8), bg: Color(0xFF1E293B),
+    labelColor: Color(0xFF94A3B8), badgeBg: Color(0xFF334155), badgeFg: Color(0xFF94A3B8),
+    icon: '⏳',
+  ),
+  'done': _SectionAccent(
+    stripe: Color(0xFF22C55E), bg: Color(0x1A22C55E),
+    labelColor: Color(0xFF86EFAC), badgeBg: Color(0x2622C55E), badgeFg: Color(0xFF86EFAC),
+    icon: '✅',
+  ),
+  'no_date': _SectionAccent(
+    stripe: Color(0xFF94A3B8), bg: Color(0xFF1E293B),
+    labelColor: Color(0xFF64748B), badgeBg: Color(0xFF334155), badgeFg: Color(0xFF64748B),
+    icon: '📌',
+  ),
+};
+
+_SectionAccent _accentFor(BuildContext context, String key) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final map = isDark ? _kSectionAccentsDark : _kSectionAccents;
+  return map[key] ?? map['later']!;
+}
+
 // ── Section header widget ─────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({
+    required this.sectionKey,
     required this.label,
     required this.count,
     required this.isExpanded,
     required this.onTap,
   });
 
+  final String sectionKey;
   final String label;
   final int count;
   final bool isExpanded;
@@ -1525,38 +1876,60 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accentFor(context, sectionKey);
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.tableHeader,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: AppColors.divider),
+          color: accent.bg,
+          borderRadius: isExpanded
+              ? const BorderRadius.vertical(top: Radius.circular(10))
+              : BorderRadius.circular(10),
+          border: Border.all(color: AppColors.of(context).divider),
+          // left priority stripe
         ),
         child: Row(
           children: [
-            Icon(
-              isExpanded ? Icons.expand_less : Icons.expand_more,
-              size: 16,
-              color: AppColors.textSecondary,
+            Container(
+              width: 4,
+              height: 16,
+              decoration: BoxDecoration(
+                color: accent.stripe,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
+            const SizedBox(width: 8),
+            Text(accent.icon, style: const TextStyle(fontSize: 14)),
             const SizedBox(width: 6),
-            Text(label, style: AppText.body.copyWith(fontWeight: FontWeight.w600)),
+            Text(
+              label,
+              style: AppText.body.copyWith(
+                fontWeight: FontWeight.w700,
+                color: accent.labelColor,
+              ),
+            ),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.divider,
+                color: accent.badgeBg,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 '$count',
-                style: AppText.small.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: accent.badgeFg,
                 ),
               ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              isExpanded ? Icons.expand_less : Icons.expand_more,
+              size: 16,
+              color: accent.labelColor,
             ),
           ],
         ),

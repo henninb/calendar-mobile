@@ -10,22 +10,23 @@ class SyncBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isOnline = ref.watch(isOnlineProvider);
     final syncState = ref.watch(syncStateProvider);
+    final colors = AppColors.of(context);
 
     if (!isOnline) {
       final isForcedOffline = ref.watch(forcedOfflineProvider);
       if (isForcedOffline) {
         return _Banner(
-          color: AppColors.skippedBg,
-          iconColor: AppColors.skippedFg,
-          textColor: AppColors.skippedFg,
+          color: colors.skippedBg,
+          iconColor: colors.skippedFg,
+          textColor: colors.skippedFg,
           icon: Icons.cloud_off_rounded,
           text: 'Offline mode enabled — sync paused',
         );
       }
       return _Banner(
-        color: AppColors.offlineBanner,
-        iconColor: AppColors.offlineFg,
-        textColor: AppColors.offlineFg,
+        color: colors.offlineBanner,
+        iconColor: colors.offlineFg,
+        textColor: colors.offlineFg,
         icon: Icons.wifi_off_rounded,
         text: 'Offline — changes will sync when connection is restored',
       );
@@ -33,9 +34,9 @@ class SyncBanner extends ConsumerWidget {
 
     if (syncState.phase == SyncPhase.pulling || syncState.phase == SyncPhase.pushing) {
       return _Banner(
-        color: AppColors.pendingBanner,
-        iconColor: AppColors.pendingFg,
-        textColor: AppColors.pendingFg,
+        color: colors.pendingBanner,
+        iconColor: colors.pendingFg,
+        textColor: colors.pendingFg,
         icon: Icons.sync_rounded,
         text: syncState.phase == SyncPhase.pushing ? 'Pushing changes…' : 'Refreshing data…',
         spinning: true,
@@ -44,9 +45,9 @@ class SyncBanner extends ConsumerWidget {
 
     if (syncState.phase == SyncPhase.error) {
       return _Banner(
-        color: AppColors.overdueBg,
-        iconColor: AppColors.overdueFg,
-        textColor: AppColors.overdueFg,
+        color: colors.overdueBg,
+        iconColor: colors.overdueFg,
+        textColor: colors.overdueFg,
         icon: Icons.error_outline_rounded,
         text: syncState.errorMessage ?? 'Sync error',
         onDismiss: () => ref.read(syncStateProvider.notifier).clearError(),

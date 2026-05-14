@@ -14,6 +14,7 @@ class CreditCardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trackerAsync = ref.watch(trackerCacheProvider);
+    final bg = AppColors.of(context).background;
 
     return trackerAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -21,7 +22,7 @@ class CreditCardScreen extends ConsumerWidget {
       data: (rows) {
         if (rows.isEmpty) {
           return Scaffold(
-            backgroundColor: AppColors.background,
+            backgroundColor: bg,
             body: const Center(child: Text('No credit cards cached.\nPull to refresh when online.', textAlign: TextAlign.center, style: AppText.small)),
             floatingActionButton: FloatingActionButton(
               onPressed: () => _showCardForm(context, ref, null),
@@ -31,7 +32,7 @@ class CreditCardScreen extends ConsumerWidget {
         }
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: bg,
           body: ListView.separated(
             padding: const EdgeInsets.all(12),
             itemCount: rows.length,
@@ -51,7 +52,7 @@ class CreditCardScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.of(context).surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -65,14 +66,16 @@ class _TrackerCard extends StatelessWidget {
 
   final CreditCardTrackerCacheData row;
 
-  Color get _dueBgColor {
-    if (row.nextDueDays <= 3) return AppColors.overdueBg;
-    if (row.nextDueDays <= 7) return AppColors.warningBg;
-    return AppColors.surface;
-  }
-
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
+    final dueBgColor = row.nextDueDays <= 3
+        ? colors.overdueBg
+        : row.nextDueDays <= 7
+            ? colors.warningBg
+            : colors.surface;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -99,9 +102,9 @@ class _TrackerCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppColors.tableHeader,
+                      color: colors.tableHeader,
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: AppColors.divider),
+                      border: Border.all(color: colors.divider),
                     ),
                     child: Text('••••${row.lastFour}', style: AppText.mono),
                   ),
@@ -124,10 +127,10 @@ class _TrackerCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: _dueBgColor,
+                color: dueBgColor,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: row.nextDueDays <= 3 ? AppColors.overdueFg : AppColors.divider,
+                  color: row.nextDueDays <= 3 ? colors.overdueFg : colors.divider,
                   width: row.nextDueDays <= 3 ? 1 : 0.5,
                 ),
               ),
@@ -141,7 +144,11 @@ class _TrackerCard extends StatelessWidget {
                         row.nextDue,
                         style: AppText.body.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: row.nextDueDays <= 3 ? AppColors.ccOverdue : row.nextDueDays <= 7 ? AppColors.ccSoon : AppColors.textPrimary,
+                          color: row.nextDueDays <= 3
+                              ? AppColors.ccOverdue
+                              : row.nextDueDays <= 7
+                                  ? AppColors.ccSoon
+                                  : colors.textPrimary,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -189,11 +196,12 @@ class _DaysChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final (bg, fg) = days <= 3
-        ? (AppColors.overdueBg, AppColors.ccOverdue)
+        ? (colors.overdueBg, AppColors.ccOverdue)
         : days <= 7
-            ? (AppColors.warningBg, AppColors.ccSoon)
-            : (AppColors.upcomingBg, AppColors.upcomingFg);
+            ? (colors.warningBg, AppColors.ccSoon)
+            : (colors.upcomingBg, colors.upcomingFg);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),

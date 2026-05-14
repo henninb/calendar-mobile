@@ -20,35 +20,25 @@ class SyncService {
     dev.log('fullRefresh: start', name: 'sync');
     final errors = <String>[];
 
+    // catchError on Future<void> requires the handler to return a matching
+    // type, which is awkward with Dart's void. Use a local async helper with
+    // try/catch to sidestep that constraint entirely.
+    Future<void> guarded(String name, Future<void> Function() fn) async {
+      try {
+        await fn();
+      } catch (e) {
+        errors.add('$name: $e');
+      }
+    }
+
     await Future.wait([
-      _refreshCategories().catchError((e) {
-        errors.add('categories: $e');
-        return;
-      }),
-      _refreshPersons().catchError((e) {
-        errors.add('persons: $e');
-        return;
-      }),
-      _refreshOccurrences().catchError((e) {
-        errors.add('occurrences: $e');
-        return;
-      }),
-      _refreshTasks().catchError((e) {
-        errors.add('tasks: $e');
-        return;
-      }),
-      _refreshCreditCardList().catchError((e) {
-        errors.add('credit cards: $e');
-        return;
-      }),
-      _refreshCreditCardTracker().catchError((e) {
-        errors.add('credit card tracker: $e');
-        return;
-      }),
-      _refreshGrocery().catchError((e) {
-        errors.add('grocery: $e');
-        return;
-      }),
+      guarded('categories',        _refreshCategories),
+      guarded('persons',           _refreshPersons),
+      guarded('occurrences',       _refreshOccurrences),
+      guarded('tasks',             _refreshTasks),
+      guarded('credit cards',      _refreshCreditCardList),
+      guarded('credit card tracker', _refreshCreditCardTracker),
+      guarded('grocery',           _refreshGrocery),
     ]);
 
     if (errors.isNotEmpty) {

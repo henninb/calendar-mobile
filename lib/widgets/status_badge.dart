@@ -9,12 +9,13 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final (bg, fg, label) = switch (status) {
-      OccurrenceStatus.upcoming  => (AppColors.upcomingBg,  AppColors.upcomingFg,  'UPCOMING'),
-      OccurrenceStatus.overdue   => (AppColors.overdueBg,   AppColors.overdueFg,   'OVERDUE'),
-      OccurrenceStatus.completed => (AppColors.completedBg, AppColors.completedFg, 'DONE'),
-      OccurrenceStatus.skipped   => (AppColors.skippedBg,   AppColors.skippedFg,   'SKIPPED'),
-      _                          => (AppColors.skippedBg,   AppColors.skippedFg,   status.toUpperCase()),
+      OccurrenceStatus.upcoming  => (colors.upcomingBg,  colors.upcomingFg,  'UPCOMING'),
+      OccurrenceStatus.overdue   => (colors.overdueBg,   colors.overdueFg,   'OVERDUE'),
+      OccurrenceStatus.completed => (colors.completedBg, colors.completedFg, 'DONE'),
+      OccurrenceStatus.skipped   => (colors.skippedBg,   colors.skippedFg,   'SKIPPED'),
+      _                          => (colors.skippedBg,   colors.skippedFg,   status.toUpperCase()),
     };
     return _BadgeChip(bg: bg, fg: fg, label: label);
   }
@@ -27,12 +28,13 @@ class TaskStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final (bg, fg, label) = switch (status) {
-      TaskStatus.todo       => (AppColors.upcomingBg,          AppColors.upcomingFg,          'TODO'),
-      TaskStatus.inProgress => (AppColors.warningBg,             AppColors.offlineFg,            'IN PROGRESS'),
-      TaskStatus.done       => (AppColors.completedBg,         AppColors.completedFg,          'DONE'),
-      TaskStatus.cancelled  => (AppColors.skippedBg,           AppColors.skippedFg,            'CANCELLED'),
-      _                     => (AppColors.skippedBg,           AppColors.skippedFg,            status.toUpperCase()),
+      TaskStatus.todo       => (colors.upcomingBg,  colors.upcomingFg,  'TODO'),
+      TaskStatus.inProgress => (colors.warningBg,   colors.offlineFg,   'IN PROGRESS'),
+      TaskStatus.done       => (colors.completedBg, colors.completedFg, 'DONE'),
+      TaskStatus.cancelled  => (colors.skippedBg,   colors.skippedFg,   'CANCELLED'),
+      _                     => (colors.skippedBg,   colors.skippedFg,   status.toUpperCase()),
     };
     return _BadgeChip(bg: bg, fg: fg, label: label);
   }
@@ -45,11 +47,12 @@ class PriorityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textMuted = AppColors.of(context).textMuted;
     final (color, label) = switch (priority) {
       'high'   => (AppColors.priorityHigh,   'HIGH'),
       'medium' => (AppColors.priorityMedium, 'MED'),
       'low'    => (AppColors.priorityLow,    'LOW'),
-      _        => (AppColors.textMuted,       priority.toUpperCase()),
+      _        => (textMuted,                priority.toUpperCase()),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

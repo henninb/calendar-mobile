@@ -43,10 +43,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final isOnline      = ref.watch(isOnlineProvider);
     final forcedOffline = ref.watch(forcedOfflineProvider);
     final connectivity  = ref.watch(connectivityProvider);
+    final themeMode     = ref.watch(themeModeProvider);
+    final colors        = AppColors.of(context);
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // ── Appearance ────────────────────────────────────────────────────────
+        _Section(
+          title: 'Appearance',
+          children: [
+            const Text('Theme', style: AppText.subheading),
+            const SizedBox(height: 10),
+            SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  label: Text('System'),
+                  icon: Icon(Icons.brightness_auto_outlined, size: 16),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  label: Text('Light'),
+                  icon: Icon(Icons.light_mode_outlined, size: 16),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  label: Text('Dark'),
+                  icon: Icon(Icons.dark_mode_outlined, size: 16),
+                ),
+              ],
+              selected: {themeMode},
+              onSelectionChanged: (Set<ThemeMode> s) {
+                if (s.isNotEmpty) {
+                  ref.read(themeModeProvider.notifier).set(s.first);
+                }
+              },
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
         // ── Connection ─────────────────────────────────────────────────────────
         _Section(
           title: 'Backend Connection',
@@ -81,9 +119,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               autocorrect: false,
             ),
             if (_saved)
-              const Padding(
-                padding: EdgeInsets.only(top: 6),
-                child: Text('Saved!', style: TextStyle(color: AppColors.completedFg, fontSize: 12)),
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'Saved!',
+                  style: TextStyle(color: colors.completedFg, fontSize: 12),
+                ),
               ),
             const SizedBox(height: 12),
             Row(
@@ -96,7 +137,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     color: isOnline
                         ? AppColors.btnGreen
                         : forcedOffline
-                            ? AppColors.ccSoon   // amber — paused by choice, not broken
+                            ? AppColors.ccSoon
                             : AppColors.btnRed,
                   ),
                 ),
@@ -109,16 +150,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           : 'Offline',
                   style: AppText.small.copyWith(
                     color: isOnline
-                        ? AppColors.completedFg
+                        ? colors.completedFg
                         : forcedOffline
                             ? AppColors.ccSoon
-                            : AppColors.overdueFg,
+                            : colors.overdueFg,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Only show raw connectivity details when the network is
-                // genuinely down — not when we manually paused sync.
                 if (!isOnline && !forcedOffline)
                   Text(
                     connectivity.value?.map((r) => r.name).join(', ') ?? 'checking…',
@@ -126,10 +165,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
               ],
             ),
-            // Only offer the WireGuard shortcut when there is an actual
-            // network problem — never when the user manually forced offline,
-            // since the network is up and opening WireGuard could confuse
-            // them into toggling the tunnel unnecessarily.
             if (!isOnline && !forcedOffline) ...[
               const SizedBox(height: 10),
               SizedBox(
@@ -139,8 +174,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: const Icon(Icons.vpn_lock_rounded, size: 16),
                   label: const Text('Open WireGuard'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.overdueFg,
-                    side: BorderSide(color: AppColors.overdueFg.withValues(alpha: 0.6)),
+                    foregroundColor: colors.overdueFg,
+                    side: BorderSide(color: colors.overdueFg.withValues(alpha: 0.6)),
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
@@ -156,8 +191,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ref.read(forcedOfflineProvider.notifier).toggle();
                 final ok = await toggleWireGuardTunnel(goOffline: val, context: context);
                 if (!ok && context.mounted) {
-                  // WireGuard failed — revert the offline state so the switch
-                  // doesn't stay out of sync with the actual tunnel state.
                   ref.read(forcedOfflineProvider.notifier).toggle();
                 }
               },
@@ -169,12 +202,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, size: 13, color: AppColors.textSecondary),
+                  Icon(Icons.info_outline, size: 13, color: colors.textSecondary),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       'Requires WireGuard → Settings → "Allow remote control apps" to be enabled.',
-                      style: AppText.small.copyWith(color: AppColors.textSecondary),
+                      style: AppText.small.copyWith(color: colors.textSecondary),
                     ),
                   ),
                 ],
@@ -200,12 +233,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       _phaseLabel(syncState.phase),
                       style: AppText.small.copyWith(
                         color: syncState.phase == SyncPhase.error
-                            ? AppColors.overdueFg
-                            : AppColors.textSecondary,
+                            ? colors.overdueFg
+                            : colors.textSecondary,
                       ),
                     ),
                     if (syncState.errorMessage != null)
-                      Text(syncState.errorMessage!, style: AppText.small.copyWith(color: AppColors.overdueFg)),
+                      Text(
+                        syncState.errorMessage!,
+                        style: AppText.small.copyWith(color: colors.overdueFg),
+                      ),
                   ],
                 ),
                 ElevatedButton.icon(

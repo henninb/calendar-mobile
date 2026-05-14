@@ -160,7 +160,7 @@ class ApiClient {
 
   // ── Tasks ─────────────────────────────────────────────────────────────────
 
-  Future<List<ApiTask>> fetchTasks({int limit = 500}) =>
+  Future<List<ApiTask>> fetchTasks({int limit = 1000}) =>
       _getList(
         '/tasks',
         queryParameters: {'limit': limit},

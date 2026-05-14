@@ -140,7 +140,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           markersMaxCount: 3,
           outsideDaysVisible: false,
           defaultTextStyle: AppText.body,
-          weekendTextStyle: AppText.body.copyWith(color: AppColors.textSecondary),
+          weekendTextStyle: AppText.body.copyWith(
+            color: AppColors.of(context).textSecondary,
+          ),
         ),
         headerStyle: HeaderStyle(
           formatButtonVisible: true,
@@ -148,16 +150,30 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           titleTextStyle: AppText.heading.copyWith(fontSize: 14),
           formatButtonTextStyle: const TextStyle(fontSize: 12),
           formatButtonDecoration: BoxDecoration(
-            color: AppColors.tableHeader,
+            color: AppColors.of(context).tableHeader,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: AppColors.divider),
+            border: Border.all(color: AppColors.of(context).divider),
           ),
-          leftChevronIcon: const Icon(Icons.chevron_left, color: AppColors.textSecondary),
-          rightChevronIcon: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+          leftChevronIcon: Icon(
+            Icons.chevron_left,
+            color: AppColors.of(context).textSecondary,
+          ),
+          rightChevronIcon: Icon(
+            Icons.chevron_right,
+            color: AppColors.of(context).textSecondary,
+          ),
         ),
-        daysOfWeekStyle: const DaysOfWeekStyle(
-          weekdayStyle: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-          weekendStyle: TextStyle(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w600),
+        daysOfWeekStyle: DaysOfWeekStyle(
+          weekdayStyle: TextStyle(
+            fontSize: 12,
+            color: AppColors.of(context).textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+          weekendStyle: TextStyle(
+            fontSize: 12,
+            color: AppColors.of(context).textMuted,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -255,7 +271,12 @@ class _ActionRow extends StatelessWidget {
         if (status != OccurrenceStatus.completed)
           _Btn(label: 'Done', color: AppColors.btnGreen, onTap: () => onStatusChange(OccurrenceStatus.completed)),
         if (status != OccurrenceStatus.skipped)
-          _Btn(label: 'Skip', color: AppColors.btnGrayBg, textColor: AppColors.btnGrayFg, onTap: () => onStatusChange(OccurrenceStatus.skipped)),
+          _Btn(
+            label: 'Skip',
+            color: AppColors.of(context).btnGrayBg,
+            textColor: AppColors.of(context).btnGrayFg,
+            onTap: () => onStatusChange(OccurrenceStatus.skipped),
+          ),
         if (status == OccurrenceStatus.completed || status == OccurrenceStatus.skipped)
           _Btn(label: 'Reopen', color: AppColors.btnBlue, onTap: () => onStatusChange(OccurrenceStatus.upcoming)),
         _Btn(

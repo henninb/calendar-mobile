@@ -259,7 +259,7 @@ class _NewEventButton extends StatelessWidget {
       onPressed: () => showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.of(context).surface,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
@@ -381,7 +381,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(_dtstart, style: AppText.body),
-                            const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textMuted),
+                            Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.of(context).textMuted),
                           ],
                         ),
                       ),
@@ -437,10 +437,12 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                         Text(
                           _dtendRule.isEmpty ? 'No end date' : _dtendRule,
                           style: AppText.body.copyWith(
-                            color: _dtendRule.isEmpty ? AppColors.textMuted : AppColors.textPrimary,
+                            color: _dtendRule.isEmpty
+                                ? AppColors.of(context).textMuted
+                                : AppColors.of(context).textPrimary,
                           ),
                         ),
-                        const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.textMuted),
+                        Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.of(context).textMuted),
                       ],
                     ),
                   ),
