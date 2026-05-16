@@ -96,7 +96,7 @@ void main() {
         },
       ];
 
-      dioAdapter.onGet('/tasks', (server) => server.reply(200, payload), queryParameters: {'limit': 500});
+      dioAdapter.onGet('/tasks', (server) => server.reply(200, payload), queryParameters: {'limit': 1000});
 
       final result = await client.fetchTasks();
       expect(result.length, 1);

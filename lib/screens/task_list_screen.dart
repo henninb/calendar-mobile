@@ -310,15 +310,12 @@ class _StatusFilter extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   static const _statusOptions = [
-    'active', 'all', TaskStatus.todo, TaskStatus.inProgress, TaskStatus.done, TaskStatus.cancelled,
+    'active', TaskStatus.todo, TaskStatus.inProgress,
   ];
   static const _statusLabels = {
     'active': 'Active',
-    'all': 'All',
     TaskStatus.todo: 'Todo',
     TaskStatus.inProgress: 'In Progress',
-    TaskStatus.done: 'Done',
-    TaskStatus.cancelled: 'Cancelled',
   };
 
   Widget _chip({
@@ -443,7 +440,6 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     final isDueToday = task.dueDate == todayStr;
     final isOverdue = task.dueDate != null && task.dueDate!.compareTo(todayStr) < 0;
     final isDimmed = !isActive;
-    final showRecurrence = task.recurrence != 'none';
 
     final subtasksAsync = ref.watch(subtasksForTaskProvider(task.id));
     final subtasks = subtasksAsync.value ?? [];
@@ -520,8 +516,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                                 onTap: () => _showQuickDateSheet(context),
                                 child: _DaysBadge(dueDate: task.dueDate!, todayStr: todayStr, isActive: isActive),
                               ),
-                            if (showRecurrence)
-                              _RecurrenceBadge(task.recurrence),
+                            _RecurrenceBadge(task.recurrence),
                             if (task.syncStatus != SyncStatus.synced.value)
                               Icon(Icons.cloud_upload_outlined, size: 12, color: colors.textMuted),
                           ],
@@ -884,7 +879,7 @@ class _DaysBadge extends StatelessWidget {
   }
 }
 
-/// Shows a recurrence badge: "↻ weekly" in blue.
+/// Shows a recurrence badge: "↻ weekly" in blue, or "onetime" in grey.
 class _RecurrenceBadge extends StatelessWidget {
   const _RecurrenceBadge(this.recurrence);
 
@@ -893,19 +888,20 @@ class _RecurrenceBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final isRecurring = recurrence != 'none';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: colors.pendingBanner,
+        color: isRecurring ? colors.pendingBanner : colors.textMuted.withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: colors.pendingBorder),
+        border: Border.all(color: isRecurring ? colors.pendingBorder : colors.textMuted.withOpacity(0.3)),
       ),
       child: Text(
-        '↻ $recurrence',
-        style: const TextStyle(
+        isRecurring ? '↻ $recurrence' : 'onetime',
+        style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
-          color: AppColors.primaryDark,
+          color: isRecurring ? AppColors.primaryDark : colors.textMuted,
         ),
       ),
     );
