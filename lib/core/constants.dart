@@ -1,7 +1,6 @@
 import 'dart:developer' as dev;
 
-class AppConstants {
-  AppConstants._();
+abstract final class AppConstants {
 
   // Supply at build time: flutter build apk --dart-define=DEFAULT_BASE_URL=https://...
   // Intentionally empty when not provided so no personal domain is baked into source.

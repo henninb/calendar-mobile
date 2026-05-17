@@ -241,8 +241,7 @@ class AppColors extends ThemeExtension<AppColors> {
 /// (driven by the active [ThemeData]) supplies the appropriate light/dark color.
 /// Use `AppColors.of(context).textMuted` etc. when a specific semantic color is
 /// required beyond the default.
-class AppText {
-  AppText._();
+abstract final class AppText {
 
   static const TextStyle heading = TextStyle(
     fontSize: 16,
