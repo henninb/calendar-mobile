@@ -223,27 +223,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           title: 'Sync',
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Sync status', style: AppText.subheading),
-                    Text(
-                      _phaseLabel(syncState.phase),
-                      style: AppText.small.copyWith(
-                        color: syncState.phase == SyncPhase.error
-                            ? colors.overdueFg
-                            : colors.textSecondary,
-                      ),
-                    ),
-                    if (syncState.errorMessage != null)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Sync status', style: AppText.subheading),
                       Text(
-                        syncState.errorMessage!,
-                        style: AppText.small.copyWith(color: colors.overdueFg),
+                        _phaseLabel(syncState.phase),
+                        style: AppText.small.copyWith(
+                          color: syncState.phase == SyncPhase.error
+                              ? colors.overdueFg
+                              : colors.textSecondary,
+                        ),
                       ),
-                  ],
+                      if (syncState.errorMessage != null)
+                        Text(
+                          syncState.errorMessage!,
+                          style: AppText.small.copyWith(color: colors.overdueFg),
+                        ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: isOnline && syncState.phase == SyncPhase.idle
                       ? () => ref.read(syncStateProvider.notifier).sync()

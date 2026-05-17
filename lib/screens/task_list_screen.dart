@@ -69,7 +69,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   }
 
   bool _isCollapsed(String key) =>
-      _collapsedSections[key] ?? (key != _kKeyOverdue && key != _kKeyToday);
+      _collapsedSections[key] ?? (key == _kKeyDone);
 
   void _toggleSection(String key) {
     setState(() {
@@ -483,13 +483,14 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
             ? (isDark ? const Color(0x1AF97316) : const Color(0xFFFFFBEB))
             : colors.surface;
 
-    final card = Container(
+    final card = ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topRight: Radius.circular(12),
+        bottomRight: Radius.circular(12),
+      ),
+      child: Container(
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(12),
-          bottomRight: Radius.circular(12),
-        ),
         border: Border(
           left:   BorderSide(color: stripeColor, width: 4),
           top:    BorderSide(color: colors.divider, width: 0.5),
@@ -497,12 +498,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
           bottom: BorderSide(color: colors.divider, width: 0.5),
         ),
       ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(12),
-          bottomRight: Radius.circular(12),
-        ),
-        child: IntrinsicHeight(
+      child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -1890,13 +1886,14 @@ class _SectionHeader extends StatelessWidget {
     final divider = AppColors.of(context).divider;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: ClipRRect(
+        borderRadius: isExpanded
+            ? const BorderRadius.vertical(top: Radius.circular(12))
+            : BorderRadius.circular(12),
+        child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: accent.bg,
-          borderRadius: isExpanded
-              ? const BorderRadius.vertical(top: Radius.circular(12))
-              : BorderRadius.circular(12),
           border: Border(
             left:   BorderSide(color: accent.stripe, width: 4),
             top:    BorderSide(color: divider),
@@ -1951,6 +1948,7 @@ class _SectionHeader extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

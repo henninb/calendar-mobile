@@ -56,10 +56,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.calendar_month, size: 18, color: Colors.white70),
             const SizedBox(width: 8),
-            Text(_titles[_tabIndex]),
+            Flexible(child: Text(_titles[_tabIndex], overflow: TextOverflow.ellipsis)),
           ],
         ),
         actions: [

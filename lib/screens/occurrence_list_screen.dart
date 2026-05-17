@@ -213,23 +213,6 @@ class _Toolbar extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: DropdownButtonFormField<int?>(
-                  initialValue: filterCategoryId,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  ),
-                  style: AppText.small,
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('All')),
-                    ...categories.map((c) => DropdownMenuItem(value: c.serverId, child: Text(c.name))),
-                  ],
-                  onChanged: onCategoryChanged,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
                 child: DropdownButtonFormField<int>(
                   initialValue: daysAhead,
                   decoration: const InputDecoration(
@@ -245,6 +228,21 @@ class _Toolbar extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<int?>(
+            initialValue: filterCategoryId,
+            decoration: const InputDecoration(
+              labelText: 'Category',
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            ),
+            style: AppText.small,
+            items: [
+              const DropdownMenuItem(value: null, child: Text('All categories')),
+              ...categories.map((c) => DropdownMenuItem(value: c.serverId, child: Text(c.name))),
+            ],
+            onChanged: onCategoryChanged,
           ),
         ],
       ),
