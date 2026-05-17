@@ -933,4 +933,519 @@ void main() {
       expect(await db.getGroceryListItems(), isEmpty);
     });
   });
+
+  // ── fullRefresh — _refreshPersons ─────────────────────────────────────────
+
+  group('fullRefresh — _refreshPersons', () {
+    test('upserts persons returned by server', () async {
+      _stubEmptyRefresh(api);
+      when(() => api.fetchPersons()).thenAnswer((_) async => [
+            const ApiPerson(id: 1, name: 'Alice', email: 'alice@example.com'),
+          ]);
+
+      await syncService.fullRefresh();
+
+      final persons = await db.getAllPersons();
+      expect(persons, hasLength(1));
+      expect(persons.first.serverId, 1);
+      expect(persons.first.name, 'Alice');
+      expect(persons.first.email, 'alice@example.com');
+    });
+  });
+
+  // ── fullRefresh — _refreshCreditCardTracker ───────────────────────────────
+
+  group('fullRefresh — _refreshCreditCardTracker', () {
+    test('replaces tracker cache with server data', () async {
+      _stubEmptyRefresh(api);
+      when(() => api.fetchTrackerRows()).thenAnswer((_) async => [
+            const ApiTrackerRow(
+              id: 1,
+              name: 'Visa',
+              issuer: 'BigBank',
+              lastFour: '1234',
+              grace: '2026-05-15',
+              prevClose: '2026-04-15',
+              prevDue: '2026-05-05',
+              nextClose: '2026-05-15',
+              nextCloseDays: 7,
+              nextDue: '2026-06-05',
+              nextDueDays: 28,
+              annualFeeDate: '2026-12-01',
+              annualFeeDays: 207,
+              prevDueOverdue: false,
+            ),
+          ]);
+
+      await syncService.fullRefresh();
+
+      final cache = await db.getTrackerCache();
+      expect(cache, hasLength(1));
+      expect(cache.first.name, 'Visa');
+      expect(cache.first.issuer, 'BigBank');
+    });
+  });
+
+  // ── fullRefresh — _refreshGroceryStores ──────────────────────────────────
+
+  group('fullRefresh — _refreshGroceryStores', () {
+    test('upserts stores returned by server', () async {
+      _stubEmptyRefresh(api);
+      when(() => api.fetchStores()).thenAnswer((_) async => [
+            const ApiStore(id: 1, name: 'Whole Foods', location: 'Downtown', isActive: true),
+          ]);
+
+      await syncService.fullRefresh();
+
+      final stores = await (db.select(db.groceryStores)).get();
+      expect(stores, hasLength(1));
+      expect(stores.first.name, 'Whole Foods');
+      expect(stores.first.location, 'Downtown');
+    });
+  });
+
+  // ── fullRefresh — _refreshGroceryItems ───────────────────────────────────
+
+  group('fullRefresh — _refreshGroceryItems', () {
+    test('upserts grocery items returned by server', () async {
+      _stubEmptyRefresh(api);
+      when(() => api.fetchGroceryItems()).thenAnswer((_) async => [
+            const ApiGroceryItem(
+              id: 1, name: 'Milk', defaultUnit: 'gallon', defaultStoreId: 10,
+            ),
+          ]);
+
+      await syncService.fullRefresh();
+
+      final items = await db.getGroceryItems();
+      expect(items, hasLength(1));
+      expect(items.first.name, 'Milk');
+      expect(items.first.defaultUnit, 'gallon');
+    });
+  });
+
+  // ── fullRefresh — _refreshTasks (subtask paths) ───────────────────────────
+
+  group('fullRefresh — subtask upsertion and purging', () {
+    test('upserts subtasks embedded in task response', () async {
+      _stubEmptyRefresh(api);
+      when(() => api.fetchTasks()).thenAnswer((_) async => [
+            ApiTask(
+              id: 10, title: 'Parent Task',
+              status: 'todo', priority: 'medium',
+              recurrence: 'none', order: 0,
+              createdAt: '2026-01-01', updatedAt: '2026-01-01',
+              subtasks: [
+                const ApiSubtask(
+                  id: 100, taskId: 10, title: 'Sub1', status: 'todo', order: 0,
+                ),
+              ],
+            ),
+          ]);
+
+      await syncService.fullRefresh();
+
+      final tasks = await db.getTasks();
+      expect(tasks, hasLength(1));
+      final subtasks = await db.getSubtasksForTask(tasks.first.id);
+      expect(subtasks, hasLength(1));
+      expect(subtasks.first.serverId, 100);
+      expect(subtasks.first.title, 'Sub1');
+    });
+
+    test('purges orphan subtasks no longer returned by server', () async {
+      _stubEmptyRefresh(api);
+
+      // Seed a synced task with a subtask locally.
+      final taskId = await db.insertTask(const TasksCompanion(
+        serverId: Value(10),
+        title: Value('Task'),
+        syncStatus: Value(0),
+        createdAt: Value('2026-01-01'),
+        updatedAt: Value('2026-01-01'),
+      ));
+      await db.insertSubtask(SubtasksCompanion(
+        serverId: const Value(200),
+        taskLocalId: Value(taskId),
+        taskServerId: const Value(10),
+        title: const Value('Orphan Sub'),
+        status: const Value('todo'),
+        syncStatus: const Value(0),
+      ));
+
+      // Server returns task without that subtask.
+      when(() => api.fetchTasks()).thenAnswer((_) async => [
+            ApiTask(
+              id: 10, title: 'Task',
+              status: 'todo', priority: 'medium',
+              recurrence: 'none', order: 0,
+              createdAt: '2026-01-01', updatedAt: '2026-01-01',
+              subtasks: [],
+            ),
+          ]);
+
+      await syncService.fullRefresh();
+
+      final subtasks = await db.getAllSubtasks();
+      expect(subtasks, isEmpty);
+    });
+  });
+
+  // ── pushPending — subtasks with null taskServerId ─────────────────────────
+
+  group('pushPending — subtask taskServerId resolved from DB', () {
+    test('pendingCreate resolves taskServerId from DB when null', () async {
+      final taskId = await db.insertTask(const TasksCompanion(
+        serverId: Value(10),
+        title: Value('Parent'),
+        syncStatus: Value(0),
+        createdAt: Value('2026-01-01'),
+        updatedAt: Value('2026-01-01'),
+      ));
+
+      await db.insertSubtask(SubtasksCompanion(
+        taskLocalId: Value(taskId),
+        // taskServerId intentionally null — should be resolved from DB
+        title: const Value('Sub via DB'),
+        status: const Value('todo'),
+        syncStatus: const Value(1), // pendingCreate
+      ));
+
+      when(() => api.createSubtask(any(), any())).thenAnswer(
+        (_) async => const ApiSubtask(id: 800, taskId: 10, title: 'Sub via DB', status: 'todo', order: 0),
+      );
+
+      final result = await syncService.pushPending();
+
+      expect(result.pushed, 1);
+      verify(() => api.createSubtask(10, any())).called(1);
+    });
+
+    test('pendingUpdate resolves taskServerId from DB when null', () async {
+      final taskId = await db.insertTask(const TasksCompanion(
+        serverId: Value(10),
+        title: Value('Parent'),
+        syncStatus: Value(0),
+        createdAt: Value('2026-01-01'),
+        updatedAt: Value('2026-01-01'),
+      ));
+
+      await db.insertSubtask(SubtasksCompanion(
+        serverId: const Value(701),
+        taskLocalId: Value(taskId),
+        // taskServerId intentionally null
+        title: const Value('Updated Sub'),
+        status: const Value('done'),
+        syncStatus: const Value(2), // pendingUpdate
+      ));
+
+      when(() => api.patchSubtask(any(), any(), any())).thenAnswer((_) async {});
+
+      final result = await syncService.pushPending();
+
+      expect(result.pushed, 1);
+      verify(() => api.patchSubtask(10, 701, any())).called(1);
+    });
+
+    test('pendingDelete resolves taskServerId from DB when null', () async {
+      final taskId = await db.insertTask(const TasksCompanion(
+        serverId: Value(10),
+        title: Value('Parent'),
+        syncStatus: Value(0),
+        createdAt: Value('2026-01-01'),
+        updatedAt: Value('2026-01-01'),
+      ));
+
+      final subId = await db.insertSubtask(SubtasksCompanion(
+        serverId: const Value(702),
+        taskLocalId: Value(taskId),
+        // taskServerId intentionally null
+        title: const Value('Delete Sub'),
+        status: const Value('todo'),
+        syncStatus: const Value(3), // pendingDelete
+      ));
+
+      when(() => api.deleteSubtask(any(), any())).thenAnswer((_) async {});
+
+      final result = await syncService.pushPending();
+
+      expect(result.pushed, 1);
+      verify(() => api.deleteSubtask(10, 702)).called(1);
+      expect(
+        await (db.select(db.subtasks)..where((s) => s.id.equals(subId))).getSingleOrNull(),
+        isNull,
+      );
+    });
+  });
+
+  // ── pushPending — 404 on404 handlers ─────────────────────────────────────
+
+  group('pushPending — 404 on404 handlers', () {
+    test('subtask 404 triggers on404 and removes locally', () async {
+      final taskId = await db.insertTask(const TasksCompanion(
+        serverId: Value(10),
+        title: Value('Task'),
+        syncStatus: Value(0),
+        createdAt: Value('2026-01-01'),
+        updatedAt: Value('2026-01-01'),
+      ));
+
+      final subId = await db.insertSubtask(SubtasksCompanion(
+        serverId: const Value(200),
+        taskLocalId: Value(taskId),
+        taskServerId: const Value(10),
+        title: const Value('Orphan Sub'),
+        status: const Value('done'),
+        syncStatus: const Value(2), // pendingUpdate
+      ));
+
+      when(() => api.patchSubtask(any(), any(), any())).thenThrow(DioException(
+        requestOptions: RequestOptions(path: '/subtasks/200'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/subtasks/200'),
+          statusCode: 404,
+        ),
+      ));
+
+      final result = await syncService.pushPending();
+
+      expect(result.errors, isEmpty);
+      expect(
+        await (db.select(db.subtasks)..where((s) => s.id.equals(subId))).getSingleOrNull(),
+        isNull,
+      );
+    });
+
+    test('credit card 404 triggers on404 and removes locally', () async {
+      final localId = await db.insertCreditCard(const CreditCardsCompanion(
+        serverId: Value(50),
+        name: Value('Orphan Card'),
+        syncStatus: Value(2), // pendingUpdate
+      ));
+
+      when(() => api.updateCreditCard(any(), any())).thenThrow(DioException(
+        requestOptions: RequestOptions(path: '/cards/50'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/cards/50'),
+          statusCode: 404,
+        ),
+      ));
+
+      final result = await syncService.pushPending();
+
+      expect(result.errors, isEmpty);
+      expect(
+        await (db.select(db.creditCards)..where((c) => c.id.equals(localId))).getSingleOrNull(),
+        isNull,
+      );
+    });
+
+    test('grocery on-hand 404 triggers on404 and removes locally', () async {
+      await db.upsertGroceryOnHand([
+        const GroceryOnHandCompanion(
+          itemServerId: Value(99),
+          quantity: Value(1.0),
+          syncStatus: Value(2), // pendingUpdate
+        ),
+      ]);
+      final row = await (db.select(db.groceryOnHand)).getSingle();
+
+      when(() => api.upsertOnHand(any(), any())).thenThrow(DioException(
+        requestOptions: RequestOptions(path: '/on-hand/99'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/on-hand/99'),
+          statusCode: 404,
+        ),
+      ));
+
+      final result = await syncService.pushPending();
+
+      expect(result.errors, isEmpty);
+      expect(
+        await (db.select(db.groceryOnHand)..where((o) => o.id.equals(row.id))).getSingleOrNull(),
+        isNull,
+      );
+    });
+
+    test('grocery store 404 triggers on404 and removes locally', () async {
+      final localId = await db.insertGroceryStore(
+        const GroceryStoresCompanion(
+          serverId: Value(55),
+          name: Value('Orphan Store'),
+          syncStatus: Value(2),
+        ),
+      );
+
+      when(() => api.updateStore(any(), any())).thenThrow(DioException(
+        requestOptions: RequestOptions(path: '/stores/55'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/stores/55'),
+          statusCode: 404,
+        ),
+      ));
+
+      final result = await syncService.pushPending();
+
+      expect(result.errors, isEmpty);
+      expect(
+        await (db.select(db.groceryStores)..where((s) => s.id.equals(localId))).getSingleOrNull(),
+        isNull,
+      );
+    });
+
+    test('grocery list 404 triggers on404 and removes locally', () async {
+      final localId = await db.insertGroceryList(
+        const GroceryListsCompanion(
+          serverId: Value(60),
+          name: Value('Orphan List'),
+          syncStatus: Value(2),
+        ),
+      );
+
+      when(() => api.updateGroceryList(any(), any())).thenThrow(DioException(
+        requestOptions: RequestOptions(path: '/lists/60'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/lists/60'),
+          statusCode: 404,
+        ),
+      ));
+
+      final result = await syncService.pushPending();
+
+      expect(result.errors, isEmpty);
+      expect(await db.getGroceryListById(localId), isNull);
+    });
+
+    test('grocery list item 404 triggers on404 and removes locally', () async {
+      final listId = await db.insertGroceryList(
+        const GroceryListsCompanion(
+          serverId: Value(60),
+          name: Value('List'),
+          syncStatus: Value(0),
+        ),
+      );
+
+      await db.upsertGroceryListItems([
+        GroceryListItemsCompanion(
+          listLocalId: Value(listId),
+          serverId: const Value(501),
+          listServerId: const Value(60),
+          itemServerId: const Value(11),
+          syncStatus: const Value(2), // pendingUpdate
+        ),
+      ]);
+      final item = await (db.select(db.groceryListItems)).getSingle();
+
+      when(() => api.updateGroceryListItem(any(), any(), any())).thenThrow(DioException(
+        requestOptions: RequestOptions(path: '/list-items/501'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/list-items/501'),
+          statusCode: 404,
+        ),
+      ));
+
+      final result = await syncService.pushPending();
+
+      expect(result.errors, isEmpty);
+      expect(
+        await (db.select(db.groceryListItems)..where((i) => i.id.equals(item.id))).getSingleOrNull(),
+        isNull,
+      );
+    });
+  });
+
+  // ── JSON serialisers — optional field coverage ────────────────────────────
+
+  group('pushPending — JSON serialiser optional fields', () {
+    test('_taskToJson includes estimated_minutes when set', () async {
+      await db.insertTask(const TasksCompanion(
+        title: Value('Timed Task'),
+        estimatedMinutes: Value(30),
+        syncStatus: Value(1), // pendingCreate
+        createdAt: Value('2026-01-01'),
+        updatedAt: Value('2026-01-01'),
+      ));
+
+      Map<String, dynamic>? capturedJson;
+      when(() => api.createTask(any())).thenAnswer((inv) {
+        capturedJson = inv.positionalArguments[0] as Map<String, dynamic>;
+        return Future.value(ApiTask(
+          id: 901, title: 'Timed Task',
+          status: 'todo', priority: 'medium',
+          recurrence: 'none', order: 0, subtasks: [],
+          createdAt: '2026-01-01', updatedAt: '2026-01-01',
+        ));
+      });
+
+      final result = await syncService.pushPending();
+
+      expect(result.pushed, 1);
+      expect(capturedJson!['estimated_minutes'], 30);
+    });
+
+    test('_cardToJson includes cycle_days and cycle_reference_date when set', () async {
+      await db.insertCreditCard(const CreditCardsCompanion(
+        name: Value('Cycle Card'),
+        cycleDays: Value(30),
+        cycleReferenceDate: Value('2026-01-01'),
+        syncStatus: Value(1), // pendingCreate
+      ));
+
+      Map<String, dynamic>? capturedJson;
+      when(() => api.createCreditCard(any())).thenAnswer((inv) {
+        capturedJson = inv.positionalArguments[0] as Map<String, dynamic>;
+        return Future.value(const ApiCreditCard(id: 902, name: 'Cycle Card', isActive: true));
+      });
+
+      final result = await syncService.pushPending();
+
+      expect(result.pushed, 1);
+      expect(capturedJson!['cycle_days'], 30);
+      expect(capturedJson!['cycle_reference_date'], '2026-01-01');
+    });
+
+    test('_dioErrorDetail returns validation error for HTTP 400', () async {
+      await db.into(db.occurrences).insert(const OccurrencesCompanion(
+        serverId: Value(10),
+        eventServerId: Value(100),
+        occurrenceDate: Value('2026-05-01'),
+        syncStatus: Value(2),
+      ));
+
+      when(() => api.patchOccurrence(any(), any())).thenThrow(DioException(
+        requestOptions: RequestOptions(path: '/occ'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/occ'),
+          statusCode: 400,
+        ),
+      ));
+
+      final result = await syncService.pushPending();
+
+      expect(result.errors, hasLength(1));
+      expect(result.errors.first, contains('Validation error'));
+    });
+
+    test('_dioErrorDetail returns validation error for HTTP 422', () async {
+      await db.into(db.occurrences).insert(const OccurrencesCompanion(
+        serverId: Value(11),
+        eventServerId: Value(100),
+        occurrenceDate: Value('2026-05-02'),
+        syncStatus: Value(2),
+      ));
+
+      when(() => api.patchOccurrence(any(), any())).thenThrow(DioException(
+        requestOptions: RequestOptions(path: '/occ'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/occ'),
+          statusCode: 422,
+        ),
+      ));
+
+      final result = await syncService.pushPending();
+
+      expect(result.errors, hasLength(1));
+      expect(result.errors.first, contains('Validation error'));
+    });
+  });
 }

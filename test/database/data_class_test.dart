@@ -811,4 +811,478 @@ void main() {
       expect(c.itemServerId.value, 100);
     });
   });
+
+  // ── DataClass.toColumns() ─────────────────────────────────────────────────
+
+  group('DataClass toColumns', () {
+    test('Category.toColumns(false) includes nullable fields', () {
+      const cat = Category(
+        id: 1, serverId: 10, name: 'Work',
+        color: '#ff0000', icon: '💼', description: 'desc',
+      );
+      final cols = cat.toColumns(false);
+      expect(cols.containsKey('id'), isTrue);
+      expect(cols.containsKey('server_id'), isTrue);
+      expect(cols.containsKey('description'), isTrue);
+    });
+
+    test('Category.toColumns(true) omits absent nullable fields', () {
+      const cat = Category(id: 1, name: 'Min', color: '#000', icon: '📅');
+      final cols = cat.toColumns(true);
+      expect(cols.containsKey('server_id'), isFalse);
+      expect(cols.containsKey('description'), isFalse);
+    });
+
+    test('Person.toColumns(false) includes email', () {
+      const p = Person(id: 1, serverId: 2, name: 'Alice', email: 'a@b.com');
+      final cols = p.toColumns(false);
+      expect(cols.containsKey('server_id'), isTrue);
+      expect(cols.containsKey('email'), isTrue);
+    });
+
+    test('Person.toColumns(true) omits null email', () {
+      const p = Person(id: 1, name: 'Bob');
+      final cols = p.toColumns(true);
+      expect(cols.containsKey('email'), isFalse);
+    });
+
+    test('Event.toColumns(false) includes all optional fields', () {
+      const e = Event(
+        id: 1, serverId: 2, title: 'Mtg', categoryServerId: 5,
+        rrule: 'FREQ=WEEKLY', dtstart: '2026-05-01', priority: 'high',
+        description: 'desc', isActive: true,
+        amount: '9.99', location: 'Office', durationDays: 2,
+      );
+      final cols = e.toColumns(false);
+      expect(cols.containsKey('server_id'), isTrue);
+      expect(cols.containsKey('rrule'), isTrue);
+      expect(cols.containsKey('description'), isTrue);
+      expect(cols.containsKey('amount'), isTrue);
+      expect(cols.containsKey('location'), isTrue);
+    });
+
+    test('Event.toColumns(true) omits null optional fields', () {
+      const e = Event(
+        id: 1, title: 'Mtg', categoryServerId: 5,
+        dtstart: '2026-05-01', priority: 'medium', isActive: true,
+        durationDays: 1,
+      );
+      final cols = e.toColumns(true);
+      expect(cols.containsKey('server_id'), isFalse);
+      expect(cols.containsKey('rrule'), isFalse);
+      expect(cols.containsKey('description'), isFalse);
+    });
+
+    test('Occurrence.toColumns(false) includes notes', () {
+      const o = Occurrence(
+        id: 1, serverId: 2, eventServerId: 10,
+        occurrenceDate: '2026-05-01', status: 'upcoming',
+        notes: 'Bring laptop', syncStatus: 0,
+      );
+      final cols = o.toColumns(false);
+      expect(cols.containsKey('server_id'), isTrue);
+      expect(cols.containsKey('notes'), isTrue);
+      expect(cols.containsKey('sync_status'), isTrue);
+    });
+
+    test('Occurrence.toColumns(true) omits null notes', () {
+      const o = Occurrence(
+        id: 1, eventServerId: 10,
+        occurrenceDate: '2026-05-01', status: 'upcoming', syncStatus: 0,
+      );
+      final cols = o.toColumns(true);
+      expect(cols.containsKey('notes'), isFalse);
+    });
+
+    test('Task.toColumns(false) includes all optional fields', () {
+      const t = Task(
+        id: 1, serverId: 2, title: 'T', description: 'D',
+        status: 'todo', priority: 'high',
+        assigneeServerId: 3, categoryServerId: 4,
+        dueDate: '2026-05-20', estimatedMinutes: 30,
+        recurrence: 'none', occurrenceServerId: 5,
+        order: 0, syncStatus: 0, completedAt: '2026-05-21',
+        createdAt: '2026-01-01', updatedAt: '2026-01-02',
+      );
+      final cols = t.toColumns(false);
+      expect(cols.containsKey('server_id'), isTrue);
+      expect(cols.containsKey('description'), isTrue);
+      expect(cols.containsKey('assignee_server_id'), isTrue);
+      expect(cols.containsKey('category_server_id'), isTrue);
+      expect(cols.containsKey('due_date'), isTrue);
+      expect(cols.containsKey('estimated_minutes'), isTrue);
+      expect(cols.containsKey('completed_at'), isTrue);
+    });
+
+    test('Task.toColumns(true) omits null optional fields', () {
+      const t = Task(
+        id: 1, title: 'T', status: 'todo', priority: 'medium',
+        recurrence: 'none', order: 0, syncStatus: 0,
+        createdAt: '2026-01-01', updatedAt: '2026-01-01',
+      );
+      final cols = t.toColumns(true);
+      expect(cols.containsKey('server_id'), isFalse);
+      expect(cols.containsKey('description'), isFalse);
+    });
+
+    test('Subtask.toColumns(false) includes optional fields', () {
+      const s = Subtask(
+        id: 1, serverId: 2, taskLocalId: 5, taskServerId: 50,
+        title: 'Sub', status: 'todo', dueDate: '2026-05-20',
+        order: 0, completedAt: '2026-05-21', syncStatus: 0,
+      );
+      final cols = s.toColumns(false);
+      expect(cols.containsKey('server_id'), isTrue);
+      expect(cols.containsKey('due_date'), isTrue);
+      expect(cols.containsKey('completed_at'), isTrue);
+    });
+
+    test('Subtask.toColumns(true) omits null optional fields', () {
+      const s = Subtask(
+        id: 1, taskLocalId: 5, title: 'Sub', status: 'todo',
+        order: 0, syncStatus: 0,
+      );
+      final cols = s.toColumns(true);
+      expect(cols.containsKey('server_id'), isFalse);
+      expect(cols.containsKey('due_date'), isFalse);
+    });
+
+    test('CreditCard.toColumns(false) includes all optional fields', () {
+      const c = CreditCard(
+        id: 1, serverId: 2, name: 'Visa', issuer: 'Bank',
+        lastFour: '4321', statementCloseDay: 15, gracePeriodDays: 25,
+        weekendShift: 'before', cycleDays: 30,
+        cycleReferenceDate: '2026-01-01', dueDaySameMonth: null,
+        dueDayNextMonth: 5, annualFeeMonth: 1,
+        isActive: true, syncStatus: 0,
+      );
+      final cols = c.toColumns(false);
+      expect(cols.containsKey('server_id'), isTrue);
+      expect(cols.containsKey('issuer'), isTrue);
+      expect(cols.containsKey('last_four'), isTrue);
+      expect(cols.containsKey('cycle_days'), isTrue);
+    });
+
+    test('CreditCard.toColumns(true) omits null optional fields', () {
+      const c = CreditCard(id: 1, name: 'Card', isActive: true, syncStatus: 0);
+      final cols = c.toColumns(true);
+      expect(cols.containsKey('server_id'), isFalse);
+      expect(cols.containsKey('issuer'), isFalse);
+    });
+
+    test('CreditCardTrackerCacheData.toColumns(false) includes all fields', () {
+      const r = CreditCardTrackerCacheData(
+        id: 1, cardServerId: 10, name: 'Card', issuer: 'Bank',
+        lastFour: '1234', grace: '2026-05-15',
+        prevClose: '2026-04-15', prevDue: '2026-05-05',
+        nextClose: '2026-05-15', nextCloseDays: 7,
+        nextDue: '2026-06-05', nextDueDays: 28,
+        annualFeeDate: '2026-12-01', annualFeeDays: 207,
+        prevDueOverdue: false,
+      );
+      final cols = r.toColumns(false);
+      expect(cols.containsKey('issuer'), isTrue);
+      expect(cols.containsKey('last_four'), isTrue);
+      expect(cols.containsKey('annual_fee_date'), isTrue);
+    });
+
+    test('CreditCardTrackerCacheData.toColumns(true) omits null nullable fields', () {
+      const r = CreditCardTrackerCacheData(
+        id: 1, cardServerId: 10, name: 'Card',
+        grace: '2026-05-15', prevClose: '2026-04-15', prevDue: '2026-05-05',
+        nextClose: '2026-05-15', nextCloseDays: 7,
+        nextDue: '2026-06-05', nextDueDays: 28, prevDueOverdue: false,
+      );
+      final cols = r.toColumns(true);
+      expect(cols.containsKey('issuer'), isFalse);
+      expect(cols.containsKey('annual_fee_date'), isFalse);
+    });
+
+    test('GroceryStore.toColumns(false) includes location', () {
+      const s = GroceryStore(
+        id: 1, serverId: 2, name: 'Market',
+        location: 'Downtown', isActive: true, syncStatus: 0,
+      );
+      final cols = s.toColumns(false);
+      expect(cols.containsKey('server_id'), isTrue);
+      expect(cols.containsKey('location'), isTrue);
+    });
+
+    test('GroceryStore.toColumns(true) omits null location', () {
+      const s = GroceryStore(id: 1, name: 'Market', isActive: true, syncStatus: 0);
+      final cols = s.toColumns(true);
+      expect(cols.containsKey('location'), isFalse);
+    });
+
+    test('GroceryItem.toColumns(false) includes defaultStoreServerId', () {
+      const i = GroceryItem(
+        id: 1, serverId: 2, name: 'Milk',
+        defaultUnit: 'gallon', defaultStoreServerId: 5,
+      );
+      final cols = i.toColumns(false);
+      expect(cols.containsKey('server_id'), isTrue);
+      expect(cols.containsKey('default_store_server_id'), isTrue);
+    });
+
+    test('GroceryItem.toColumns(true) omits null defaultStoreServerId', () {
+      const i = GroceryItem(id: 1, name: 'Milk', defaultUnit: 'each');
+      final cols = i.toColumns(true);
+      expect(cols.containsKey('default_store_server_id'), isFalse);
+    });
+
+    test('GroceryOnHandData.toColumns includes all fields', () {
+      const o = GroceryOnHandData(
+        id: 1, itemServerId: 10, quantity: 2.5, unit: 'lb', syncStatus: 0,
+      );
+      final cols = o.toColumns(false);
+      expect(cols.containsKey('item_server_id'), isTrue);
+      expect(cols.containsKey('quantity'), isTrue);
+      expect(cols.containsKey('unit'), isTrue);
+    });
+
+    test('GroceryList.toColumns(false) includes storeServerId and shoppingDate', () {
+      const l = GroceryList(
+        id: 1, serverId: 2, name: 'Shop', storeServerId: 5,
+        status: 'draft', shoppingDate: '2026-05-20', syncStatus: 0,
+      );
+      final cols = l.toColumns(false);
+      expect(cols.containsKey('store_server_id'), isTrue);
+      expect(cols.containsKey('shopping_date'), isTrue);
+    });
+
+    test('GroceryList.toColumns(true) omits null storeServerId and shoppingDate', () {
+      const l = GroceryList(id: 1, name: 'Shop', status: 'draft', syncStatus: 0);
+      final cols = l.toColumns(true);
+      expect(cols.containsKey('store_server_id'), isFalse);
+      expect(cols.containsKey('shopping_date'), isFalse);
+    });
+
+    test('GroceryListItem.toColumns(false) includes price and notes', () {
+      const i = GroceryListItem(
+        id: 1, serverId: 2, listLocalId: 5, listServerId: 50,
+        itemServerId: 10, quantity: 2.0, unit: 'each',
+        price: 4.99, status: 'needed', notes: 'Organic', syncStatus: 0,
+      );
+      final cols = i.toColumns(false);
+      expect(cols.containsKey('server_id'), isTrue);
+      expect(cols.containsKey('price'), isTrue);
+      expect(cols.containsKey('notes'), isTrue);
+    });
+
+    test('GroceryListItem.toColumns(true) omits null price and notes', () {
+      const i = GroceryListItem(
+        id: 1, listLocalId: 5, itemServerId: 10,
+        quantity: 1.0, unit: 'each', status: 'needed', syncStatus: 0,
+      );
+      final cols = i.toColumns(true);
+      expect(cols.containsKey('price'), isFalse);
+      expect(cols.containsKey('notes'), isFalse);
+    });
+  });
+
+  // ── Companion.custom() factories ──────────────────────────────────────────
+
+  group('Companion custom() factories', () {
+    test('CategoriesCompanion.custom creates an insertable', () {
+      final ins = CategoriesCompanion.custom(
+        name: const Constant('Custom Cat'),
+        color: const Constant('#abc'),
+      );
+      expect(ins, isNotNull);
+    });
+
+    test('PersonsCompanion.custom creates an insertable', () {
+      final ins = PersonsCompanion.custom(
+        name: const Constant('Alice'),
+        email: const Constant('a@b.com'),
+      );
+      expect(ins, isNotNull);
+    });
+
+    test('EventsCompanion.custom creates an insertable', () {
+      final ins = EventsCompanion.custom(
+        title: const Constant('Meeting'),
+        categoryServerId: const Constant(1),
+        dtstart: const Constant('2026-05-01'),
+      );
+      expect(ins, isNotNull);
+    });
+
+    test('OccurrencesCompanion.custom creates an insertable', () {
+      final ins = OccurrencesCompanion.custom(
+        eventServerId: const Constant(10),
+        occurrenceDate: const Constant('2026-05-01'),
+      );
+      expect(ins, isNotNull);
+    });
+
+    test('TasksCompanion.custom creates an insertable', () {
+      final ins = TasksCompanion.custom(
+        title: const Constant('Task'),
+        createdAt: const Constant('2026-01-01'),
+        updatedAt: const Constant('2026-01-01'),
+      );
+      expect(ins, isNotNull);
+    });
+
+    test('SubtasksCompanion.custom creates an insertable', () {
+      final ins = SubtasksCompanion.custom(
+        taskLocalId: const Constant(1),
+        title: const Constant('Sub'),
+      );
+      expect(ins, isNotNull);
+    });
+
+    test('CreditCardsCompanion.custom creates an insertable', () {
+      final ins = CreditCardsCompanion.custom(
+        name: const Constant('Visa'),
+      );
+      expect(ins, isNotNull);
+    });
+
+    test('CreditCardTrackerCacheCompanion.custom creates an insertable', () {
+      final ins = CreditCardTrackerCacheCompanion.custom(
+        cardServerId: const Constant(1),
+        name: const Constant('Card'),
+        grace: const Constant('2026-05-15'),
+        prevClose: const Constant('2026-04-15'),
+        prevDue: const Constant('2026-05-05'),
+        nextClose: const Constant('2026-05-15'),
+        nextCloseDays: const Constant(7),
+        nextDue: const Constant('2026-06-05'),
+        nextDueDays: const Constant(28),
+      );
+      expect(ins, isNotNull);
+    });
+
+    test('GroceryStoresCompanion.custom creates an insertable', () {
+      final ins = GroceryStoresCompanion.custom(
+        name: const Constant('Market'),
+      );
+      expect(ins, isNotNull);
+    });
+
+    test('GroceryItemsCompanion.custom creates an insertable', () {
+      final ins = GroceryItemsCompanion.custom(
+        name: const Constant('Milk'),
+      );
+      expect(ins, isNotNull);
+    });
+
+    test('GroceryOnHandCompanion.custom creates an insertable', () {
+      final ins = GroceryOnHandCompanion.custom(
+        itemServerId: const Constant(10),
+      );
+      expect(ins, isNotNull);
+    });
+
+    test('GroceryListsCompanion.custom creates an insertable', () {
+      final ins = GroceryListsCompanion.custom(
+        name: const Constant('List'),
+      );
+      expect(ins, isNotNull);
+    });
+
+    test('GroceryListItemsCompanion.custom creates an insertable', () {
+      final ins = GroceryListItemsCompanion.custom(
+        listLocalId: const Constant(1),
+        itemServerId: const Constant(5),
+      );
+      expect(ins, isNotNull);
+    });
+  });
+
+  // ── Companion.toString() ─────────────────────────────────────────────────
+
+  group('Companion toString', () {
+    test('PersonsCompanion.toString contains field values', () {
+      const c = PersonsCompanion(name: Value('Alice'), email: Value('a@b.com'));
+      expect(c.toString(), contains('Alice'));
+    });
+
+    test('EventsCompanion.toString contains field values', () {
+      const c = EventsCompanion(
+        title: Value('Meeting'),
+        categoryServerId: Value(5),
+        dtstart: Value('2026-05-01'),
+      );
+      expect(c.toString(), contains('Meeting'));
+    });
+
+    test('OccurrencesCompanion.toString contains field values', () {
+      const c = OccurrencesCompanion(
+        eventServerId: Value(10),
+        occurrenceDate: Value('2026-05-01'),
+        status: Value('upcoming'),
+      );
+      expect(c.toString(), contains('upcoming'));
+    });
+
+    test('TasksCompanion.toString contains field values', () {
+      const c = TasksCompanion(
+        title: Value('Fix bug'),
+        createdAt: Value('2026-01-01'),
+        updatedAt: Value('2026-01-01'),
+      );
+      expect(c.toString(), contains('Fix bug'));
+    });
+
+    test('SubtasksCompanion.toString contains field values', () {
+      final c = SubtasksCompanion(
+        taskLocalId: const Value(1), title: const Value('Write test'),
+      );
+      expect(c.toString(), contains('Write test'));
+    });
+
+    test('CreditCardsCompanion.toString contains field values', () {
+      const c = CreditCardsCompanion(name: Value('Visa Platinum'));
+      expect(c.toString(), contains('Visa Platinum'));
+    });
+
+    test('CreditCardTrackerCacheCompanion.toString contains field values', () {
+      final c = CreditCardTrackerCacheCompanion(
+        cardServerId: const Value(1),
+        name: const Value('My Card'),
+        grace: const Value('2026-05-15'),
+        prevClose: const Value('2026-04-15'),
+        prevDue: const Value('2026-05-05'),
+        nextClose: const Value('2026-05-15'),
+        nextCloseDays: const Value(7),
+        nextDue: const Value('2026-06-05'),
+        nextDueDays: const Value(28),
+      );
+      expect(c.toString(), contains('My Card'));
+    });
+
+    test('GroceryStoresCompanion.toString contains field values', () {
+      const c = GroceryStoresCompanion(name: Value('Whole Foods'));
+      expect(c.toString(), contains('Whole Foods'));
+    });
+
+    test('GroceryItemsCompanion.toString contains field values', () {
+      const c = GroceryItemsCompanion(name: Value('Milk'));
+      expect(c.toString(), contains('Milk'));
+    });
+
+    test('GroceryOnHandCompanion.toString contains field values', () {
+      final c = GroceryOnHandCompanion(
+        itemServerId: const Value(10), quantity: const Value(2.5),
+      );
+      expect(c.toString(), contains('2.5'));
+    });
+
+    test('GroceryListsCompanion.toString contains field values', () {
+      const c = GroceryListsCompanion(name: Value('Weekly Shop'));
+      expect(c.toString(), contains('Weekly Shop'));
+    });
+
+    test('GroceryListItemsCompanion.toString contains field values', () {
+      final c = GroceryListItemsCompanion(
+        listLocalId: const Value(1),
+        itemServerId: const Value(5),
+        status: const Value('needed'),
+      );
+      expect(c.toString(), contains('needed'));
+    });
+  });
 }

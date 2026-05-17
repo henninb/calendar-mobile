@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:calendar_mobile/database/app_database.dart';
 import 'package:calendar_mobile/providers/providers.dart';
+import 'package:flutter/material.dart';
 import 'package:calendar_mobile/services/sync_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/native.dart';
@@ -496,6 +497,122 @@ void main() {
 
       final value = c.read(connectivityProvider);
       expect(value, isA<AsyncValue<List<ConnectivityResult>>>());
+    });
+  });
+
+  // ── ThemeModeNotifier ─────────────────────────────────────────────────────────
+
+  group('ThemeModeNotifier', () {
+    test('build() returns ThemeMode.light when saved=light', () async {
+      SharedPreferences.setMockInitialValues({'themeMode': 'light'});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(themeModeProvider), ThemeMode.light);
+    });
+
+    test('build() returns ThemeMode.dark when saved=dark', () async {
+      SharedPreferences.setMockInitialValues({'themeMode': 'dark'});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(themeModeProvider), ThemeMode.dark);
+    });
+
+    test('build() returns ThemeMode.system when nothing saved', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(themeModeProvider), ThemeMode.system);
+    });
+
+    test('set(ThemeMode.light) updates state and persists "light"', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      container.read(themeModeProvider.notifier).set(ThemeMode.light);
+      expect(container.read(themeModeProvider), ThemeMode.light);
+      expect(prefs.getString('themeMode'), 'light');
+    });
+
+    test('set(ThemeMode.dark) updates state and persists "dark"', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      container.read(themeModeProvider.notifier).set(ThemeMode.dark);
+      expect(container.read(themeModeProvider), ThemeMode.dark);
+      expect(prefs.getString('themeMode'), 'dark');
+    });
+
+    test('set(ThemeMode.system) updates state and persists "system"', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      container.read(themeModeProvider.notifier).set(ThemeMode.system);
+      expect(container.read(themeModeProvider), ThemeMode.system);
+      expect(prefs.getString('themeMode'), 'system');
+    });
+  });
+
+  // ── TaskSearchVisibleNotifier ─────────────────────────────────────────────────
+
+  group('TaskSearchVisibleNotifier', () {
+    test('initial state is false', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(taskSearchVisibleProvider), isFalse);
+    });
+
+    test('toggle() flips state from false to true', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      container.read(taskSearchVisibleProvider.notifier).toggle();
+      expect(container.read(taskSearchVisibleProvider), isTrue);
+    });
+
+    test('toggle() twice returns to false', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      container.read(taskSearchVisibleProvider.notifier).toggle();
+      container.read(taskSearchVisibleProvider.notifier).toggle();
+      expect(container.read(taskSearchVisibleProvider), isFalse);
     });
   });
 }
