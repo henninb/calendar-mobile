@@ -11,6 +11,44 @@ import '../widgets/sheet_handle.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/category_badge.dart';
 
+// ── File-level constants & helpers ────────────────────────────────────────────
+
+final _kDateFirst = DateTime(2000);
+final _kDateLast  = DateTime(2100);
+
+const _kFilterActive  = 'active';
+const _kDimmedOpacity = 0.55;
+
+// Section keys — used in _buildSections, _isCollapsed, and _kSectionAccents.
+const _kKeyDone     = 'done';
+const _kKeyOverdue  = 'overdue';
+const _kKeyToday    = 'today';
+const _kKeyTomorrow = 'tomorrow';
+const _kKeyThisWeek = 'this_week';
+const _kKeyNextWeek = 'next_week';
+const _kKeyLater    = 'later';
+const _kKeyNoDate   = 'no_date';
+
+bool _isTaskActive(String status) =>
+    status != TaskStatus.done && status != TaskStatus.cancelled;
+
+Future<T?> _showAppSheet<T>(
+  BuildContext context,
+  WidgetBuilder builder, {
+  bool isScrollControlled = true,
+}) =>
+    showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: isScrollControlled,
+      backgroundColor: AppColors.of(context).surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: builder,
+    );
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 class TaskListScreen extends ConsumerStatefulWidget {
   const TaskListScreen({super.key});
 
@@ -19,23 +57,23 @@ class TaskListScreen extends ConsumerStatefulWidget {
 }
 
 class _TaskListScreenState extends ConsumerState<TaskListScreen> {
-  String _filterStatus = 'active';
+  String _filterStatus = _kFilterActive;
   String _searchQuery = '';
   final Map<String, bool> _collapsedSections = {};
-  final TextEditingController _searchCtrl = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void dispose() {
-    _searchCtrl.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
-  bool _isCollapsed(String key, bool isEmpty) =>
-      _collapsedSections[key] ?? (key != 'overdue' && key != 'today');
+  bool _isCollapsed(String key) =>
+      _collapsedSections[key] ?? (key != _kKeyOverdue && key != _kKeyToday);
 
-  void _toggleSection(String key, bool isEmpty) {
+  void _toggleSection(String key) {
     setState(() {
-      _collapsedSections[key] = !_isCollapsed(key, isEmpty);
+      _collapsedSections[key] = !_isCollapsed(key);
     });
   }
 
@@ -47,7 +85,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 
     ref.listen<bool>(taskSearchVisibleProvider, (_, visible) {
       if (!visible) {
-        _searchCtrl.clear();
+        _searchController.clear();
         setState(() => _searchQuery = '');
       }
     });
@@ -57,7 +95,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
       error: (e, _) => const Center(child: Text('Failed to load tasks — try refreshing')),
       data: (tasks) {
         final categories = categoriesAsync.value ?? [];
-        final catMap = {for (final c in categories) c.serverId: c};
+        final categoryMap = {for (final c in categories) c.serverId: c};
+        final colors = AppColors.of(context);
 
         final today = DateTime.now();
         final todayStr    = today.toIso8601DateString();
@@ -72,17 +111,20 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           // Past due: only show if not completed
           return t.status != TaskStatus.done && t.status != TaskStatus.cancelled;
         }).toList();
-        if (_filterStatus == 'active') {
-          filtered = filtered.where((t) => t.status == TaskStatus.todo || t.status == TaskStatus.inProgress).toList();
+        if (_filterStatus == _kFilterActive) {
+          filtered = filtered
+              .where((t) => t.status == TaskStatus.todo || t.status == TaskStatus.inProgress)
+              .toList();
         } else if (_filterStatus != 'all') {
           filtered = filtered.where((t) => t.status == _filterStatus).toList();
         }
         if (_searchQuery.isNotEmpty) {
-          final q = _searchQuery.toLowerCase();
-          filtered = filtered.where((t) =>
-            t.title.toLowerCase().contains(q) ||
-            (t.description?.toLowerCase().contains(q) ?? false),
-          ).toList();
+          final query = _searchQuery.toLowerCase();
+          filtered = filtered
+              .where((t) =>
+                  t.title.toLowerCase().contains(query) ||
+                  (t.description?.toLowerCase().contains(query) ?? false))
+              .toList();
         }
         filtered.sort((a, b) {
           if (a.dueDate == null && b.dueDate == null) return _doneWeight(a) - _doneWeight(b);
@@ -101,12 +143,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
               children: [
                 _StatusFilter(
                   selected: _filterStatus,
-                  onChanged: (s) => setState(() => _filterStatus = s),
+                  onChanged: (status) => setState(() => _filterStatus = status),
                 ),
                 if (showSearch)
                   _SearchBar(
-                    controller: _searchCtrl,
-                    onChanged: (q) => setState(() => _searchQuery = q),
+                    controller: _searchController,
+                    onChanged: (query) => setState(() => _searchQuery = query),
                   ),
                 Expanded(
                   child: RefreshIndicator(
@@ -129,40 +171,38 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                                     sectionKey: section.key,
                                     label: section.label,
                                     count: section.tasks.length,
-                                    isExpanded: !_isCollapsed(section.key, section.tasks.isEmpty),
-                                    onTap: () => _toggleSection(section.key, section.tasks.isEmpty),
+                                    isExpanded: !_isCollapsed(section.key),
+                                    onTap: () => _toggleSection(section.key),
                                   ),
-                                  if (!_isCollapsed(section.key, section.tasks.isEmpty))
-                                    Builder(builder: (ctx) {
-                                      final colors = AppColors.of(ctx);
-                                      return Container(
-                                        decoration: BoxDecoration(
-                                          color: colors.dividerLight,
-                                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
-                                          border: Border(
-                                            left:   BorderSide(color: colors.divider),
-                                            right:  BorderSide(color: colors.divider),
-                                            bottom: BorderSide(color: colors.divider),
-                                          ),
+                                  if (!_isCollapsed(section.key))
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: colors.dividerLight,
+                                        borderRadius: const BorderRadius.vertical(
+                                          bottom: Radius.circular(12),
                                         ),
-                                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-                                        child: Column(
-                                          children: [
-                                            for (final task in section.tasks)
-                                              Padding(
-                                                padding: const EdgeInsets.only(bottom: 6),
-                                                child: _TaskCard(
-                                                  key: ValueKey(task.id),
-                                                  task: task,
-                                                  catMap: catMap,
-                                                  todayStr: todayStr,
-                                                  tomorrowStr: tomorrowStr,
-                                                ),
+                                        border: Border(
+                                          left:   BorderSide(color: colors.divider),
+                                          right:  BorderSide(color: colors.divider),
+                                          bottom: BorderSide(color: colors.divider),
+                                        ),
+                                      ),
+                                      padding: const EdgeInsets.all(12),
+                                      child: Column(
+                                        children: [
+                                          for (final task in section.tasks)
+                                            Padding(
+                                              padding: const EdgeInsets.only(bottom: 6),
+                                              child: _TaskCard(
+                                                key: ValueKey(task.id),
+                                                task: task,
+                                                categoryMap: categoryMap,
+                                                todayStr: todayStr,
                                               ),
-                                          ],
-                                        ),
-                                      );
-                                    }),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
                                   const SizedBox(height: 8),
                                 ],
                             ],
@@ -175,7 +215,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
               right: 16,
               bottom: 16,
               child: FloatingActionButton(
-                onPressed: () => _showTaskForm(context, null),
+                onPressed: () => _showTaskForm(context),
                 child: const Icon(Icons.add),
               ),
             ),
@@ -222,30 +262,22 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     }
 
     return [
-      _TaskSection(key: 'done',     label: 'Done',     tasks: done,         hideWhenEmpty: true),
-      _TaskSection(key: 'overdue',  label: 'Overdue',  tasks: overdue),
-      _TaskSection(key: 'today',    label: 'Today',    tasks: todayList),
-      _TaskSection(key: 'tomorrow', label: 'Tomorrow', tasks: tomorrowList),
-      _TaskSection(key: 'this_week', label: 'This Week', tasks: thisWeek),
-      _TaskSection(key: 'next_week', label: 'Next Week', tasks: nextWeek),
-      _TaskSection(key: 'later',    label: 'Later',    tasks: later),
-      _TaskSection(key: 'no_date',  label: 'No Date',  tasks: noDate,        hideWhenEmpty: true),
+      _TaskSection(key: _kKeyDone,     label: 'Done',      tasks: done,         hideWhenEmpty: true),
+      _TaskSection(key: _kKeyOverdue,  label: 'Overdue',   tasks: overdue),
+      _TaskSection(key: _kKeyToday,    label: 'Today',     tasks: todayList),
+      _TaskSection(key: _kKeyTomorrow, label: 'Tomorrow',  tasks: tomorrowList),
+      _TaskSection(key: _kKeyThisWeek, label: 'This Week', tasks: thisWeek),
+      _TaskSection(key: _kKeyNextWeek, label: 'Next Week', tasks: nextWeek),
+      _TaskSection(key: _kKeyLater,    label: 'Later',     tasks: later),
+      _TaskSection(key: _kKeyNoDate,   label: 'No Date',   tasks: noDate,        hideWhenEmpty: true),
     ];
   }
 
   static int _doneWeight(Task t) =>
       (t.status == TaskStatus.done || t.status == TaskStatus.cancelled) ? 1 : 0;
 
-  Future<void> _showTaskForm(BuildContext context, Task? existing) async {
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.of(context).surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => _TaskForm(existing: existing),
-    );
+  Future<void> _showTaskForm(BuildContext context) async {
+    await _showAppSheet(context, (_) => const _TaskForm());
   }
 }
 
@@ -310,11 +342,11 @@ class _StatusFilter extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   static const _statusOptions = [
-    'active', TaskStatus.todo, TaskStatus.inProgress,
+    _kFilterActive, TaskStatus.todo, TaskStatus.inProgress,
   ];
   static const _statusLabels = {
-    'active': 'Active',
-    TaskStatus.todo: 'Todo',
+    _kFilterActive:        'Active',
+    TaskStatus.todo:       'Todo',
     TaskStatus.inProgress: 'In Progress',
   };
 
@@ -323,9 +355,8 @@ class _StatusFilter extends StatelessWidget {
     required bool active,
     required VoidCallback onTap,
     required AppColors colors,
-    Color? activeColor,
   }) {
-    final bg = active ? (activeColor ?? AppColors.primary) : colors.surface;
+    final bg = active ? AppColors.primary : colors.surface;
     return Padding(
       padding: const EdgeInsets.only(right: 6),
       child: GestureDetector(
@@ -362,10 +393,10 @@ class _StatusFilter extends StatelessWidget {
         child: ListView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          children: _statusOptions.map((s) => _chip(
-            label: _statusLabels[s] ?? s,
-            active: selected == s,
-            onTap: () => onChanged(s),
+          children: _statusOptions.map((status) => _chip(
+            label: _statusLabels[status] ?? status,
+            active: selected == status,
+            onTap: () => onChanged(status),
             colors: colors,
           )).toList(),
         ),
@@ -378,15 +409,13 @@ class _TaskCard extends ConsumerStatefulWidget {
   const _TaskCard({
     super.key,
     required this.task,
-    required this.catMap,
+    required this.categoryMap,
     required this.todayStr,
-    required this.tomorrowStr,
   });
 
   final Task task;
-  final Map<int?, Category> catMap;
+  final Map<int?, Category> categoryMap;
   final String todayStr;
-  final String tomorrowStr;
 
   @override
   ConsumerState<_TaskCard> createState() => _TaskCardState();
@@ -394,18 +423,18 @@ class _TaskCard extends ConsumerStatefulWidget {
 
 class _TaskCardState extends ConsumerState<_TaskCard> {
   bool _expanded = false;
-  final _newSubtaskCtrl = TextEditingController();
+  final _newSubtaskController = TextEditingController();
 
   @override
   void dispose() {
-    _newSubtaskCtrl.dispose();
+    _newSubtaskController.dispose();
     super.dispose();
   }
 
   Future<void> _addSubtask() async {
-    final title = _newSubtaskCtrl.text.trim();
+    final title = _newSubtaskController.text.trim();
     if (title.isEmpty) return;
-    _newSubtaskCtrl.clear();
+    _newSubtaskController.clear();
     final task = widget.task;
     // Capture before the await — ref must not be accessed after an async gap
     // in a ConsumerStatefulWidget because the widget may be disposed by then.
@@ -423,20 +452,18 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     }
   }
 
-  Color _priorityStripe(String priority) {
-    switch (priority) {
-      case 'high':   return const Color(0xFFEF4444);
-      case 'medium': return const Color(0xFFF59E0B);
-      default:       return const Color(0xFF94A3B8);
-    }
-  }
+  static Color _priorityStripe(String priority) => switch (priority) {
+    'high'   => AppColors.priorityHigh,
+    'medium' => AppColors.priorityMedium,
+    _        => AppColors.priorityLow,
+  };
 
   @override
   Widget build(BuildContext context) {
     final task = widget.task;
-    final cat = widget.catMap[task.categoryServerId];
+    final cat = widget.categoryMap[task.categoryServerId];
     final todayStr = widget.todayStr;
-    final isActive = task.status != TaskStatus.done && task.status != TaskStatus.cancelled;
+    final isActive = _isTaskActive(task.status);
     final isDueToday = task.dueDate == todayStr;
     final isOverdue = task.dueDate != null && task.dueDate!.compareTo(todayStr) < 0;
     final isDimmed = !isActive;
@@ -459,17 +486,26 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     final card = Container(
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: colors.divider, width: 0.5),
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+        ),
+        border: Border(
+          left:   BorderSide(color: stripeColor, width: 4),
+          top:    BorderSide(color: colors.divider, width: 0.5),
+          right:  BorderSide(color: colors.divider, width: 0.5),
+          bottom: BorderSide(color: colors.divider, width: 0.5),
+        ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+        ),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Left priority stripe
-              Container(width: 4, color: stripeColor),
               Expanded(
                 child: InkWell(
                   onTap: () => _showDetail(context),
@@ -534,7 +570,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                                     value: progress,
                                     minHeight: 4,
                                     backgroundColor: colors.divider,
-                                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF22C55E)),
+                                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.btnGreen),
                                   ),
                                 ),
                               ),
@@ -573,15 +609,15 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                             children: [
                               Expanded(
                                 child: TextField(
-                                  controller: _newSubtaskCtrl,
+                                  controller: _newSubtaskController,
                                   style: AppText.small,
                                   maxLength: 255,
                                   decoration: InputDecoration(
                                     hintText: 'Add subtask…',
                                     hintStyle: TextStyle(fontSize: 12, color: colors.textMuted),
                                     isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                    border: OutlineInputBorder(),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    border: const OutlineInputBorder(),
                                     counterText: '',
                                   ),
                                   onSubmitted: (_) => _addSubtask(),
@@ -614,31 +650,18 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
       ),
     );
 
-    return isDimmed ? Opacity(opacity: 0.55, child: card) : card;
+    return isDimmed ? Opacity(opacity: _kDimmedOpacity, child: card) : card;
   }
 
   void _showDetail(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.of(context).surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => _TaskDetailSheet(task: widget.task, catMap: widget.catMap),
+    _showAppSheet(
+      context,
+      (_) => _TaskDetailSheet(task: widget.task, categoryMap: widget.categoryMap),
     );
   }
 
   void _showEdit(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.of(context).surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => _TaskForm(existing: widget.task),
-    );
+    _showAppSheet(context, (_) => _TaskForm(existing: widget.task));
   }
 
   Future<void> _updateDueDate(String? date) async {
@@ -663,89 +686,84 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
   void _showQuickDateSheet(BuildContext context) {
     final task = widget.task;
     final now = DateTime.now();
-    final today = now.toIso8601DateString();
+    final today    = now.toIso8601DateString();
     final tomorrow = now.add(const Duration(days: 1)).toIso8601DateString();
     final nextWeek = now.add(const Duration(days: 7)).toIso8601DateString();
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.of(context).surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    _showAppSheet<void>(
+      context,
+      (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SheetHandle(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Change Due Date', style: AppText.body.copyWith(fontWeight: FontWeight.w700)),
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.today_outlined, size: 20),
+              title: Text('Today', style: AppText.body),
+              subtitle: Text(today, style: AppText.small),
+              dense: true,
+              onTap: () async {
+                Navigator.pop(context);
+                await _updateDueDate(today);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_view_day_outlined, size: 20),
+              title: Text('Tomorrow', style: AppText.body),
+              subtitle: Text(tomorrow, style: AppText.small),
+              dense: true,
+              onTap: () async {
+                Navigator.pop(context);
+                await _updateDueDate(tomorrow);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.date_range_outlined, size: 20),
+              title: Text('Next Week', style: AppText.body),
+              subtitle: Text(nextWeek, style: AppText.small),
+              dense: true,
+              onTap: () async {
+                Navigator.pop(context);
+                await _updateDueDate(nextWeek);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.event_busy_outlined, size: 20),
+              title: Text('No Date', style: AppText.body),
+              dense: true,
+              onTap: () async {
+                Navigator.pop(context);
+                await _updateDueDate(null);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month_outlined, size: 20),
+              title: Text('Pick a date…', style: AppText.body),
+              dense: true,
+              onTap: () async {
+                Navigator.pop(context);
+                if (!mounted) return;
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.tryParse(task.dueDate ?? '') ?? DateTime.now(),
+                  firstDate: _kDateFirst,
+                  lastDate: _kDateLast,
+                );
+                if (picked != null && mounted) await _updateDueDate(picked.toIso8601DateString());
+              },
+            ),
+          ],
+        ),
       ),
-      builder: (_) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SheetHandle(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Change Due Date', style: AppText.body.copyWith(fontWeight: FontWeight.w700)),
-                ),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.today_outlined, size: 20),
-                title: Text('Today', style: AppText.body),
-                subtitle: Text(today, style: AppText.small),
-                dense: true,
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _updateDueDate(today);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.calendar_view_day_outlined, size: 20),
-                title: Text('Tomorrow', style: AppText.body),
-                subtitle: Text(tomorrow, style: AppText.small),
-                dense: true,
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _updateDueDate(tomorrow);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.date_range_outlined, size: 20),
-                title: Text('Next Week', style: AppText.body),
-                subtitle: Text(nextWeek, style: AppText.small),
-                dense: true,
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _updateDueDate(nextWeek);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.event_busy_outlined, size: 20),
-                title: Text('No Date', style: AppText.body),
-                dense: true,
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _updateDueDate(null);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.calendar_month_outlined, size: 20),
-                title: Text('Pick a date…', style: AppText.body),
-                dense: true,
-                onTap: () async {
-                  Navigator.pop(context);
-                  if (!mounted) return;
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.tryParse(task.dueDate ?? '') ?? DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null && mounted) await _updateDueDate(picked.toIso8601DateString());
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      isScrollControlled: false,
     );
   }
 }
@@ -758,6 +776,7 @@ class _InlineSubtaskRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final done = subtask.status == TaskStatus.done;
+    final colors = AppColors.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -783,7 +802,7 @@ class _InlineSubtaskRow extends ConsumerWidget {
             child: Icon(
               done ? Icons.check_circle : Icons.radio_button_unchecked,
               size: 18,
-              color: done ? AppColors.of(context).completedFg : AppColors.of(context).textMuted,
+              color: done ? colors.completedFg : colors.textMuted,
             ),
           ),
           const SizedBox(width: 8),
@@ -792,7 +811,7 @@ class _InlineSubtaskRow extends ConsumerWidget {
               subtask.title,
               style: AppText.small.copyWith(
                 decoration: done ? TextDecoration.lineThrough : null,
-                color: done ? AppColors.of(context).textMuted : AppColors.of(context).textPrimary,
+                color: done ? colors.textMuted : colors.textPrimary,
               ),
             ),
           ),
@@ -892,9 +911,9 @@ class _RecurrenceBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: isRecurring ? colors.pendingBanner : colors.textMuted.withOpacity(0.1),
+        color: isRecurring ? colors.pendingBanner : colors.textMuted.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: isRecurring ? colors.pendingBorder : colors.textMuted.withOpacity(0.3)),
+        border: Border.all(color: isRecurring ? colors.pendingBorder : colors.textMuted.withValues(alpha: 0.3)),
       ),
       child: Text(
         isRecurring ? '↻ $recurrence' : 'onetime',
@@ -918,6 +937,13 @@ class _WebStatusPill extends StatelessWidget {
     TaskStatus.inProgress: '◑',
     TaskStatus.done:       '✓',
     TaskStatus.cancelled:  '✕',
+  };
+
+  static const _labels = {
+    TaskStatus.todo:       'To Do',
+    TaskStatus.inProgress: 'In Progress',
+    TaskStatus.done:       'Done',
+    TaskStatus.cancelled:  'Cancelled',
   };
 
   static const _bgsLight = {
@@ -969,13 +995,8 @@ class _WebStatusPill extends StatelessWidget {
     final bg     = bgs[status]     ?? colors.surface;
     final fg     = fgs[status]     ?? colors.textMuted;
     final border = borders[status] ?? colors.divider;
-    final icon   = _icons[status]  ?? '○';
-    final label  = {
-      TaskStatus.todo:       'To Do',
-      TaskStatus.inProgress: 'In Progress',
-      TaskStatus.done:       'Done',
-      TaskStatus.cancelled:  'Cancelled',
-    }[status] ?? status;
+    final icon  = _icons[status]  ?? '○';
+    final label = _labels[status] ?? status;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -1008,18 +1029,18 @@ class _IconActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final db = ref.read(dbProvider);
-    final isActive = task.status != TaskStatus.done && task.status != TaskStatus.cancelled;
+    final isActive = _isTaskActive(task.status);
 
-    Future<void> setStatus(String s) async {
+    Future<void> setStatus(String status) async {
       final syncNotifier = ref.read(syncStateProvider.notifier);
       try {
         final now = DateTime.now().toIso8601String();
         await db.updateTask(
           task.id,
           TasksCompanion(
-            status: Value(s),
+            status: Value(status),
             updatedAt: Value(now),
-            completedAt: s == TaskStatus.done ? Value(now) : const Value.absent(),
+            completedAt: status == TaskStatus.done ? Value(now) : const Value.absent(),
             syncStatus: Value(SyncStatus.next(task.syncStatus)),
           ),
         );
@@ -1114,13 +1135,9 @@ class _IconActions extends ConsumerWidget {
         // Overflow menu (···)
         GestureDetector(
           onTap: () {
-            showModalBottomSheet(
-              context: context,
-              backgroundColor: colors.surface,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              builder: (_) => SafeArea(
+            _showAppSheet<void>(
+              context,
+              (_) => SafeArea(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1153,6 +1170,7 @@ class _IconActions extends ConsumerWidget {
                   ],
                 ),
               ),
+              isScrollControlled: false,
             );
           },
           child: Container(
@@ -1174,10 +1192,10 @@ class _IconActions extends ConsumerWidget {
 // ── Task Detail / Edit Sheet ──────────────────────────────────────────────────
 
 class _TaskDetailSheet extends ConsumerStatefulWidget {
-  const _TaskDetailSheet({required this.task, required this.catMap});
+  const _TaskDetailSheet({required this.task, required this.categoryMap});
 
   final Task task;
-  final Map<int?, Category> catMap;
+  final Map<int?, Category> categoryMap;
 
   @override
   ConsumerState<_TaskDetailSheet> createState() => _TaskDetailSheetState();
@@ -1246,14 +1264,10 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                     else ...[
                       _InfoRow(label: 'STATUS', child: TaskStatusBadge(_task.status)),
                       _InfoRow(label: 'PRIORITY', child: PriorityBadge(_task.priority)),
-                      if (widget.catMap[_task.categoryServerId] != null)
+                      if (widget.categoryMap[_task.categoryServerId] case final cat?)
                         _InfoRow(
                           label: 'CATEGORY',
-                          child: CategoryBadge(
-                            name: widget.catMap[_task.categoryServerId]!.name,
-                            color: widget.catMap[_task.categoryServerId]!.color,
-                            icon: widget.catMap[_task.categoryServerId]!.icon,
-                          ),
+                          child: CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
                         ),
                       if (_task.dueDate != null) _InfoRow(label: 'DUE', value: _task.dueDate!),
                       if (_task.completedAt != null) _InfoRow(label: 'COMPLETED', value: _task.completedAt!),
@@ -1286,13 +1300,15 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                     subtasksStream.when(
                       loading: () => const SizedBox(height: 32, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
                       error: (e, _) => const Text('Failed to load subtasks', style: AppText.small),
-                      data: (subs) => subs.isEmpty
+                      data: (subtasks) => subtasks.isEmpty
                           ? const Padding(
                               padding: EdgeInsets.symmetric(vertical: 8),
                               child: Text('No subtasks', style: AppText.small),
                             )
                           : Column(
-                              children: subs.map((s) => _SubtaskRow(subtask: s, taskId: _task.id)).toList(),
+                              children: subtasks
+                                  .map((s) => _SubtaskRow(subtask: s))
+                                  .toList(),
                             ),
                     ),
                     const SizedBox(height: 32),
@@ -1307,14 +1323,14 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
   }
 
   Future<void> _addSubtask() async {
-    final ctrl = TextEditingController();
+    final subtaskController = TextEditingController();
     try {
       await showDialog(
         context: context,
         builder: (_) => AlertDialog(
           title: const Text('Add Subtask', style: AppText.heading),
           content: TextField(
-            controller: ctrl,
+            controller: subtaskController,
             decoration: const InputDecoration(hintText: 'Subtask title'),
             maxLength: 255,
             autofocus: true,
@@ -1323,14 +1339,14 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () async {
-                if (ctrl.text.trim().isEmpty) return;
+                if (subtaskController.text.trim().isEmpty) return;
                 final syncNotifier = ref.read(syncStateProvider.notifier);
                 try {
                   final db = ref.read(dbProvider);
                   await db.insertSubtask(SubtasksCompanion(
                     taskLocalId: Value(_task.id),
                     taskServerId: Value(_task.serverId),
-                    title: Value(ctrl.text.trim()),
+                    title: Value(subtaskController.text.trim()),
                     syncStatus: Value(SyncStatus.pendingCreate.value),
                   ));
                   if (mounted) Navigator.pop(context);
@@ -1350,7 +1366,7 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
         ),
       );
     } finally {
-      ctrl.dispose();
+      subtaskController.dispose();
     }
   }
 
@@ -1390,20 +1406,22 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
 }
 
 class _SubtaskRow extends ConsumerWidget {
-  const _SubtaskRow({required this.subtask, required this.taskId});
+  const _SubtaskRow({required this.subtask});
 
   final Subtask subtask;
-  final int taskId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDone = subtask.status == TaskStatus.done;
+    final colors = AppColors.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           GestureDetector(
             onTap: () async {
-              final newStatus = subtask.status == TaskStatus.done ? TaskStatus.todo : TaskStatus.done;
+              final newStatus = isDone ? TaskStatus.todo : TaskStatus.done;
               final syncNotifier = ref.read(syncStateProvider.notifier);
               try {
                 await ref.read(dbProvider).updateSubtask(
@@ -1419,10 +1437,8 @@ class _SubtaskRow extends ConsumerWidget {
               }
             },
             child: Icon(
-              subtask.status == TaskStatus.done ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: subtask.status == TaskStatus.done
-                  ? AppColors.of(context).completedFg
-                  : AppColors.of(context).textMuted,
+              isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+              color: isDone ? colors.completedFg : colors.textMuted,
               size: 20,
             ),
           ),
@@ -1431,15 +1447,13 @@ class _SubtaskRow extends ConsumerWidget {
             child: Text(
               subtask.title,
               style: AppText.body.copyWith(
-                decoration: subtask.status == TaskStatus.done ? TextDecoration.lineThrough : null,
-                color: subtask.status == TaskStatus.done
-                    ? AppColors.of(context).textMuted
-                    : AppColors.of(context).textPrimary,
+                decoration: isDone ? TextDecoration.lineThrough : null,
+                color: isDone ? colors.textMuted : colors.textPrimary,
               ),
             ),
           ),
           IconButton(
-            icon: Icon(Icons.close, size: 16, color: AppColors.of(context).textMuted),
+            icon: Icon(Icons.close, size: 16, color: colors.textMuted),
             onPressed: () async {
               final syncNotifier = ref.read(syncStateProvider.notifier);
               try {
@@ -1494,10 +1508,10 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _title;
   late TextEditingController _description;
-  String _status   = 'todo';
-  String _priority = 'medium';
+  String _status     = TaskStatus.todo;
+  String _priority   = 'medium';
   String _recurrence = 'none';
-  String? _dueDate;
+  late String _dueDate;
   int? _assigneeServerId;
   int? _categoryServerId;
 
@@ -1508,15 +1522,15 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
   @override
   void initState() {
     super.initState();
-    final e = widget.existing;
-    _title       = TextEditingController(text: e?.title ?? '');
-    _description = TextEditingController(text: e?.description ?? '');
-    _status      = e?.status ?? TaskStatus.todo;
-    _priority    = e?.priority ?? 'medium';
-    _recurrence  = e?.recurrence ?? 'none';
-    _dueDate     = e?.dueDate ?? DateTime.now().toIso8601DateString();
-    _assigneeServerId = e?.assigneeServerId;
-    _categoryServerId = e?.categoryServerId;
+    final existing = widget.existing;
+    _title       = TextEditingController(text: existing?.title ?? '');
+    _description = TextEditingController(text: existing?.description ?? '');
+    _status      = existing?.status ?? TaskStatus.todo;
+    _priority    = existing?.priority ?? 'medium';
+    _recurrence  = existing?.recurrence ?? 'none';
+    _dueDate     = existing?.dueDate ?? DateTime.now().toIso8601DateString();
+    _assigneeServerId = existing?.assigneeServerId;
+    _categoryServerId = existing?.categoryServerId;
   }
 
   @override
@@ -1586,9 +1600,9 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
               onTap: () async {
                 final picked = await showDatePicker(
                   context: context,
-                  initialDate: DateTime.tryParse(_dueDate!) ?? DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
+                  initialDate: DateTime.tryParse(_dueDate) ?? DateTime.now(),
+                  firstDate: _kDateFirst,
+                  lastDate: _kDateLast,
                 );
                 if (picked != null) {
                   setState(() => _dueDate = picked.toIso8601DateString());
@@ -1599,7 +1613,7 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(_dueDate!, style: AppText.body),
+                    Text(_dueDate, style: AppText.body),
                     Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.of(context).textMuted),
                   ],
                 ),
@@ -1610,12 +1624,12 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             ref.watch(categoriesProvider).when(
               loading: () => const SizedBox.shrink(),
               error: (_, _) => const SizedBox.shrink(),
-              data: (cats) => DropdownButtonFormField<int?>(
+              data: (categories) => DropdownButtonFormField<int?>(
                 initialValue: _categoryServerId,
                 decoration: const InputDecoration(labelText: 'Category'),
                 items: [
                   const DropdownMenuItem(value: null, child: Text('None')),
-                  ...cats.map((c) => DropdownMenuItem(
+                  ...categories.map((c) => DropdownMenuItem(
                         value: c.serverId,
                         child: Text('${c.icon} ${c.name}'),
                       )),
@@ -1762,42 +1776,42 @@ class _SectionAccent {
 }
 
 const _kSectionAccents = <String, _SectionAccent>{
-  'overdue': _SectionAccent(
-    stripe: Color(0xFFEF4444), bg: Color(0xFFFEF2F2),
+  _kKeyOverdue: _SectionAccent(
+    stripe: AppColors.btnRed, bg: Color(0xFFFEF2F2),
     labelColor: Color(0xFFB91C1C), badgeBg: Color(0xFFFEE2E2), badgeFg: Color(0xFFB91C1C),
     icon: '🔥',
   ),
-  'today': _SectionAccent(
+  _kKeyToday: _SectionAccent(
     stripe: Color(0xFFF97316), bg: Color(0xFFFFF7ED),
     labelColor: Color(0xFFC2410C), badgeBg: Color(0xFFFED7AA), badgeFg: Color(0xFFC2410C),
     icon: '🔥',
   ),
-  'tomorrow': _SectionAccent(
+  _kKeyTomorrow: _SectionAccent(
     stripe: Color(0xFFF59E0B), bg: Color(0xFFFFFBEB),
     labelColor: Color(0xFFB45309), badgeBg: Color(0xFFFDE68A), badgeFg: Color(0xFFB45309),
     icon: '📅',
   ),
-  'this_week': _SectionAccent(
-    stripe: Color(0xFF3B82F6), bg: Color(0xFFEFF6FF),
+  _kKeyThisWeek: _SectionAccent(
+    stripe: AppColors.primary, bg: Color(0xFFEFF6FF),
     labelColor: Color(0xFF1D4ED8), badgeBg: Color(0xFFDBEAFE), badgeFg: Color(0xFF1D4ED8),
     icon: '📆',
   ),
-  'next_week': _SectionAccent(
+  _kKeyNextWeek: _SectionAccent(
     stripe: Color(0xFF8B5CF6), bg: Color(0xFFF5F3FF),
     labelColor: Color(0xFF6D28D9), badgeBg: Color(0xFFEDE9FE), badgeFg: Color(0xFF6D28D9),
     icon: '🗓',
   ),
-  'later': _SectionAccent(
+  _kKeyLater: _SectionAccent(
     stripe: Color(0xFF94A3B8), bg: Color(0xFFF8FAFC),
     labelColor: Color(0xFF475569), badgeBg: Color(0xFFE2E8F0), badgeFg: Color(0xFF475569),
     icon: '⏳',
   ),
-  'done': _SectionAccent(
-    stripe: Color(0xFF22C55E), bg: Color(0xFFF0FDF4),
+  _kKeyDone: _SectionAccent(
+    stripe: AppColors.btnGreen, bg: Color(0xFFF0FDF4),
     labelColor: Color(0xFF15803D), badgeBg: Color(0xFFDCFCE7), badgeFg: Color(0xFF15803D),
     icon: '✅',
   ),
-  'no_date': _SectionAccent(
+  _kKeyNoDate: _SectionAccent(
     stripe: Color(0xFF94A3B8), bg: Color(0xFFF8FAFC),
     labelColor: Color(0xFF64748B), badgeBg: Color(0xFFE2E8F0), badgeFg: Color(0xFF64748B),
     icon: '📌',
@@ -1805,42 +1819,42 @@ const _kSectionAccents = <String, _SectionAccent>{
 };
 
 const _kSectionAccentsDark = <String, _SectionAccent>{
-  'overdue': _SectionAccent(
-    stripe: Color(0xFFEF4444), bg: Color(0x1ADC2626),
+  _kKeyOverdue: _SectionAccent(
+    stripe: AppColors.btnRed, bg: Color(0x1ADC2626),
     labelColor: Color(0xFFFCA5A5), badgeBg: Color(0x26DC2626), badgeFg: Color(0xFFFCA5A5),
     icon: '🔥',
   ),
-  'today': _SectionAccent(
+  _kKeyToday: _SectionAccent(
     stripe: Color(0xFFF97316), bg: Color(0x1AF97316),
     labelColor: Color(0xFFFDBA74), badgeBg: Color(0x26F97316), badgeFg: Color(0xFFFDBA74),
     icon: '🔥',
   ),
-  'tomorrow': _SectionAccent(
+  _kKeyTomorrow: _SectionAccent(
     stripe: Color(0xFFF59E0B), bg: Color(0x1AF59E0B),
     labelColor: Color(0xFFFDE68A), badgeBg: Color(0x26F59E0B), badgeFg: Color(0xFFFDE68A),
     icon: '📅',
   ),
-  'this_week': _SectionAccent(
-    stripe: Color(0xFF3B82F6), bg: Color(0x1A3B82F6),
+  _kKeyThisWeek: _SectionAccent(
+    stripe: AppColors.primary, bg: Color(0x1A3B82F6),
     labelColor: Color(0xFF93C5FD), badgeBg: Color(0x263B82F6), badgeFg: Color(0xFF93C5FD),
     icon: '📆',
   ),
-  'next_week': _SectionAccent(
+  _kKeyNextWeek: _SectionAccent(
     stripe: Color(0xFF8B5CF6), bg: Color(0x1A8B5CF6),
     labelColor: Color(0xFFC4B5FD), badgeBg: Color(0x268B5CF6), badgeFg: Color(0xFFC4B5FD),
     icon: '🗓',
   ),
-  'later': _SectionAccent(
+  _kKeyLater: _SectionAccent(
     stripe: Color(0xFF94A3B8), bg: Color(0xFF1E293B),
     labelColor: Color(0xFF94A3B8), badgeBg: Color(0xFF334155), badgeFg: Color(0xFF94A3B8),
     icon: '⏳',
   ),
-  'done': _SectionAccent(
-    stripe: Color(0xFF22C55E), bg: Color(0x1A22C55E),
+  _kKeyDone: _SectionAccent(
+    stripe: AppColors.btnGreen, bg: Color(0x1A22C55E),
     labelColor: Color(0xFF86EFAC), badgeBg: Color(0x2622C55E), badgeFg: Color(0xFF86EFAC),
     icon: '✅',
   ),
-  'no_date': _SectionAccent(
+  _kKeyNoDate: _SectionAccent(
     stripe: Color(0xFF94A3B8), bg: Color(0xFF1E293B),
     labelColor: Color(0xFF64748B), badgeBg: Color(0xFF334155), badgeFg: Color(0xFF64748B),
     icon: '📌',
@@ -1873,6 +1887,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = _accentFor(context, sectionKey);
+    final divider = AppColors.of(context).divider;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1880,37 +1895,45 @@ class _SectionHeader extends StatelessWidget {
         decoration: BoxDecoration(
           color: accent.bg,
           borderRadius: isExpanded
-              ? const BorderRadius.vertical(top: Radius.circular(10))
-              : BorderRadius.circular(10),
-          border: Border.all(color: AppColors.of(context).divider),
-          // left priority stripe
+              ? const BorderRadius.vertical(top: Radius.circular(12))
+              : BorderRadius.circular(12),
+          border: Border(
+            left:   BorderSide(color: accent.stripe, width: 4),
+            top:    BorderSide(color: divider),
+            right:  BorderSide(color: divider),
+            bottom: BorderSide(color: divider),
+          ),
         ),
         child: Row(
           children: [
-            Container(
-              width: 4,
-              height: 16,
-              decoration: BoxDecoration(
-                color: accent.stripe,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 8),
             Text(accent.icon, style: const TextStyle(fontSize: 14)),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Text(
               label,
-              style: AppText.body.copyWith(
+              style: TextStyle(
+                fontSize: 16,
                 fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
                 color: accent.labelColor,
               ),
             ),
             const Spacer(),
+            if (sectionKey == _kKeyOverdue && count > 0) ...[
+              Text(
+                'Needs attention',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: accent.labelColor,
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: accent.badgeBg,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Text(
                 '$count',
@@ -1922,10 +1945,9 @@ class _SectionHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Icon(
-              isExpanded ? Icons.expand_less : Icons.expand_more,
-              size: 16,
-              color: accent.labelColor,
+            Text(
+              isExpanded ? '▾' : '▸',
+              style: TextStyle(fontSize: 13, color: accent.labelColor),
             ),
           ],
         ),
