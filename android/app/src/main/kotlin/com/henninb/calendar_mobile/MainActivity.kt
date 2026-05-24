@@ -1,5 +1,7 @@
 package com.henninb.calendar_mobile
 
+import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -46,6 +48,40 @@ class MainActivity : FlutterActivity() {
                             if (pendingResults.size == 1) {
                                 ActivityCompat.requestPermissions(this, arrayOf(wgPermission), requestCode)
                             }
+                        }
+                    }
+                    "launchApp" -> {
+                        val pkg = call.argument<String>("package") ?: ""
+                        try {
+                            val intent = packageManager.getLaunchIntentForPackage(pkg)
+                            if (intent != null) {
+                                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                                startActivity(intent)
+                                result.success(true)
+                            } else {
+                                result.success(false)
+                            }
+                        } catch (e: Exception) {
+                            result.error("LAUNCH_FAILED", e.message ?: "Launch failed", null)
+                        }
+                    }
+                    "sendTunnelBroadcast" -> {
+                        val tunnelName = call.argument<String>("tunnel") ?: ""
+                        val action = call.argument<String>("action") ?: ""
+                        try {
+                            val intent = Intent(action).apply {
+                                component = ComponentName(
+                                    "com.wireguard.android",
+                                    "com.wireguard.android.model.TunnelManager\$IntentReceiver"
+                                )
+                                putExtra("tunnel", tunnelName)
+                            }
+                            sendBroadcast(intent)
+                            result.success(true)
+                        } catch (e: SecurityException) {
+                            result.error("PERMISSION_DENIED", e.message ?: "Permission denied", null)
+                        } catch (e: Exception) {
+                            result.error("BROADCAST_FAILED", e.message ?: "Broadcast failed", null)
                         }
                     }
                     else -> result.notImplemented()

@@ -205,7 +205,11 @@ class _OfflineToggleButton extends ConsumerWidget {
             duration: const Duration(seconds: 2),
           ),
         );
-        toggleWireGuardTunnel(goOffline: next, context: context);
+        toggleWireGuardTunnel(
+          goOffline: next,
+          context: context,
+          tunnelName: ref.read(wgTunnelNameProvider),
+        );
       },
     );
   }

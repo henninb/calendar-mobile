@@ -8,19 +8,22 @@ abstract final class AppConstants {
     'DEFAULT_BASE_URL',
     defaultValue: '',
   );
-  static const String prefBaseUrl      = 'base_url';
-  static const String prefApiKey       = 'api_key';
-  static const String prefSyncDays     = 'gcal_sync_days';
-  static const String prefSyncForce    = 'gcal_sync_force';
+  static const String prefBaseUrl       = 'base_url';
+  static const String prefApiKey        = 'api_key';
+  static const String prefSyncDays      = 'gcal_sync_days';
+  static const String prefSyncForce     = 'gcal_sync_force';
   static const String prefForcedOffline = 'forced_offline';
+  static const String prefWgTunnelName  = 'wg_tunnel_name';
+  static const String defaultWgTunnelName = 'k8';
   static const int    defaultSyncDays = 365;
 
   static const Duration syncDebounce    = Duration(seconds: 3);
   static const Duration connectCheck    = Duration(seconds: 5);
   static const Duration periodicSync    = Duration(minutes: 5);
-  static const Duration wgCheckTimeout  = Duration(seconds: 3);
+  static const Duration wgCheckTimeout   = Duration(seconds: 3);
   static const Duration wgRequestTimeout = Duration(seconds: 15);
-  static const Duration wgVerifyDelay   = Duration(seconds: 2);
+  static const Duration wgVerifyDelay   = Duration(milliseconds: 750);
+  static const Duration wgVerifyTimeout = Duration(seconds: 8);
 
   static const int occurrencePastMonths   = 1;
   static const int occurrenceFutureMonths = 3;

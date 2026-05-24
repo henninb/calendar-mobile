@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/theme.dart';
 import '../providers/providers.dart';
-import '../services/wireguard_service.dart';
+import '../services/wireguard_service.dart' hide wgTunnelName;
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -21,20 +21,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   static const _wireGuardIosUri = 'wireguard://';
   late TextEditingController _urlCtrl;
   late TextEditingController _keyCtrl;
+  late TextEditingController _tunnelCtrl;
   bool _saved = false;
   bool _wgBusy = false;
 
   @override
   void initState() {
     super.initState();
-    _urlCtrl = TextEditingController(text: ref.read(baseUrlProvider));
-    _keyCtrl = TextEditingController(text: ref.read(apiKeyProvider));
+    _urlCtrl    = TextEditingController(text: ref.read(baseUrlProvider));
+    _keyCtrl    = TextEditingController(text: ref.read(apiKeyProvider));
+    _tunnelCtrl = TextEditingController(text: ref.read(wgTunnelNameProvider));
   }
 
   @override
   void dispose() {
     _urlCtrl.dispose();
     _keyCtrl.dispose();
+    _tunnelCtrl.dispose();
     super.dispose();
   }
 
@@ -184,9 +187,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ],
             const SizedBox(height: 8),
+            TextFormField(
+              controller: _tunnelCtrl,
+              decoration: InputDecoration(
+                labelText: 'WireGuard Tunnel Name',
+                hintText: 'e.g. k8',
+                helperText: 'Must match the tunnel name exactly in the WireGuard app (case-sensitive)',
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.save_outlined, color: AppColors.primary),
+                  onPressed: _saveTunnelName,
+                ),
+              ),
+              autocorrect: false,
+            ),
+            const SizedBox(height: 8),
             SwitchListTile(
               title: const Text('Force offline mode'),
-              subtitle: Text('Pause sync and disconnect WireGuard tunnel "$wgTunnelName"'),
+              subtitle: Text(
+                'Pause sync and disconnect WireGuard tunnel "${ref.watch(wgTunnelNameProvider)}"',
+              ),
               value: forcedOffline,
               onChanged: _wgBusy
                   ? null
@@ -195,6 +214,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       final ok = await toggleWireGuardTunnel(
                         goOffline: val,
                         context: context,
+                        tunnelName: ref.read(wgTunnelNameProvider),
                       );
                       if (!mounted) return;
                       if (ok) ref.read(forcedOfflineProvider.notifier).set(val);
@@ -335,6 +355,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _saveKey() async {
     await ref.read(apiKeyProvider.notifier).set(_keyCtrl.text.trim());
+    if (mounted) setState(() => _saved = true);
+  }
+
+  void _saveTunnelName() {
+    final name = _tunnelCtrl.text.trim();
+    if (name.isEmpty) return;
+    ref.read(wgTunnelNameProvider.notifier).set(name);
     if (mounted) setState(() => _saved = true);
   }
 

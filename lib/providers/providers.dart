@@ -57,6 +57,24 @@ class BaseUrlNotifier extends Notifier<String> {
   }
 }
 
+final wgTunnelNameProvider =
+    NotifierProvider<WgTunnelNameNotifier, String>(WgTunnelNameNotifier.new);
+
+class WgTunnelNameNotifier extends Notifier<String> {
+  @override
+  String build() {
+    return ref.read(sharedPreferencesProvider).getString(AppConstants.prefWgTunnelName) ??
+        AppConstants.defaultWgTunnelName;
+  }
+
+  void set(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    state = trimmed;
+    ref.read(sharedPreferencesProvider).setString(AppConstants.prefWgTunnelName, trimmed);
+  }
+}
+
 final apiKeyProvider = NotifierProvider<ApiKeyNotifier, String>(ApiKeyNotifier.new);
 
 class ApiKeyNotifier extends Notifier<String> {

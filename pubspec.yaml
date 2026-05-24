@@ -33,9 +33,6 @@ dependencies:
   # Launch external apps (e.g. WireGuard)
   url_launcher: ^6.3.0
 
-  # Send Android intents to WireGuard for tunnel control
-  android_intent_plus: ^6.0.0
-
   # Secure key storage (Android Keystore / iOS Keychain)
   flutter_secure_storage: ^10.0.0
 
