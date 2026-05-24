@@ -125,14 +125,16 @@ class ForcedOfflineNotifier extends Notifier<bool> {
         false;
   }
 
-  void toggle() {
-    final next = !state;
-    state = next;
+  void set(bool value) {
+    if (state == value) return;
+    state = value;
     ref
         .read(sharedPreferencesProvider)
-        .setBool(AppConstants.prefForcedOffline, next);
-    dev.log('ForcedOfflineNotifier: forcedOffline=$next', name: 'connectivity');
+        .setBool(AppConstants.prefForcedOffline, value);
+    dev.log('ForcedOfflineNotifier: forcedOffline=$value', name: 'connectivity');
   }
+
+  void toggle() => set(!state);
 }
 
 // ── Connectivity ─────────────────────────────────────────────────────────────

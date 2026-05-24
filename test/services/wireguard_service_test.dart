@@ -93,20 +93,20 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('returns false on any channel exception', () async {
+    test('returns null on any channel exception', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
         const MethodChannel('wireguard_permission'),
         (_) async => throw PlatformException(code: 'ERR'),
       );
       final result = await isWireGuardActive(isAndroid: _onAndroid);
-      expect(result, isFalse);
+      expect(result, isNull);
     });
 
     test('real Platform.isAndroid path is reachable (smoke)', () async {
       // Just verifies the function does not throw when no override is provided.
       final result = await isWireGuardActive();
-      expect(result, isA<bool>());
+      expect(result, anyOf(isNull, isTrue, isFalse));
     });
   });
 
@@ -219,7 +219,7 @@ void main() {
 
   group('toggleWireGuardTunnel — broadcast and VPN verify', () {
     testWidgets(
-      'goOffline=true: broadcast fires and returns true with snackbar',
+      'goOffline=true: broadcast fires, tunnel goes down, returns true with snackbar',
       (tester) async {
         _mockChannel(requestResult: true);
 
@@ -227,18 +227,46 @@ void main() {
         final context = tester.element(find.byType(SizedBox));
 
         var broadcastCalled = false;
+        int callCount = 0;
         final result = await toggleWireGuardTunnel(
           goOffline: true,
           context: context,
           isAndroid: _onAndroid,
-          vpnActiveCheck: () async => true, // was UP
+          vpnActiveCheck: () async {
+            callCount++;
+            return callCount == 1 ? true : false; // pre-flight: UP; verify: DOWN
+          },
+          verifyDelay: Duration.zero,
           broadcastFn: () async { broadcastCalled = true; },
         );
 
         expect(result, isTrue);
         expect(broadcastCalled, isTrue);
         await tester.pump();
-        expect(find.textContaining('bringing tunnel'), findsOneWidget);
+        expect(find.textContaining('is down'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'goOffline=true: tunnel stays up after broadcast returns false with snackbar',
+      (tester) async {
+        _mockChannel(requestResult: true);
+
+        await tester.pumpWidget(const _Host(child: SizedBox.shrink()));
+        final context = tester.element(find.byType(SizedBox));
+
+        final result = await toggleWireGuardTunnel(
+          goOffline: true,
+          context: context,
+          isAndroid: _onAndroid,
+          vpnActiveCheck: () async => true, // never goes down
+          verifyDelay: Duration.zero,
+          broadcastFn: () async {},
+        );
+
+        expect(result, isFalse);
+        await tester.pump();
+        expect(find.textContaining('did not stop'), findsOneWidget);
       },
     );
 

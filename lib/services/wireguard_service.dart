@@ -15,9 +15,10 @@ const _wgActionDown = 'com.wireguard.android.action.SET_TUNNEL_DOWN';
 const _wgChannel    = MethodChannel('wireguard_permission');
 
 /// Returns whether a VPN transport is currently active on this device.
+/// Returns null if the check could not complete (timeout / channel error).
 ///
 /// [isAndroid] overrides the platform check in tests.
-Future<bool> isWireGuardActive({
+Future<bool?> isWireGuardActive({
   bool Function()? isAndroid,
 }) async {
   if (!(isAndroid?.call() ?? Platform.isAndroid)) return false;
@@ -27,38 +28,39 @@ Future<bool> isWireGuardActive({
             .timeout(AppConstants.wgCheckTimeout) ??
         false;
   } catch (_) {
-    return false;
+    return null;
   }
 }
 
 /// Toggles the WireGuard tunnel [wgTunnelName].
 ///
 /// [goOffline] true → bring tunnel DOWN; false → bring tunnel UP.
-/// Returns true if the broadcast was dispatched, false on any failure.
+/// Returns true if the tunnel reached the desired state, false on any failure.
 /// Shows SnackBar feedback. No-ops silently on non-Android platforms.
 ///
 /// Optional overrides (for testing only):
 /// * [isAndroid] — replaces the `Platform.isAndroid` check.
 /// * [vpnActiveCheck] — replaces the `isWireGuardActive()` pre-flight and
-///   post-broadcast check.
+///   post-broadcast check. Returns null when the state is unknown.
 /// * [verifyDelay] — replaces the 2-second post-broadcast VPN-verify delay.
 /// * [broadcastFn] — replaces the `AndroidIntent.sendBroadcast()` call.
 Future<bool> toggleWireGuardTunnel({
   required bool goOffline,
   required BuildContext context,
   bool Function()? isAndroid,
-  Future<bool> Function()? vpnActiveCheck,
+  Future<bool?> Function()? vpnActiveCheck,
   Duration verifyDelay = AppConstants.wgVerifyDelay,
   Future<void> Function()? broadcastFn,
   Future<bool> Function()? permissionRequester,
 }) async {
   if (!(isAndroid?.call() ?? Platform.isAndroid)) return true;
 
-  // Pre-flight: skip the broadcast if the tunnel is already in the desired state.
+  // Pre-flight: skip the broadcast only when confident about the current state.
+  // A null result means the check failed — proceed rather than assume desired state.
   final checkVpn = vpnActiveCheck ?? () => isWireGuardActive();
   final alreadyActive = await checkVpn();
-  if (goOffline && !alreadyActive) return true;   // want DOWN, already DOWN
-  if (!goOffline && alreadyActive) return true;   // want UP, already UP
+  if (goOffline && alreadyActive == false) return true;   // confident: already DOWN
+  if (!goOffline && alreadyActive == true) return true;   // confident: already UP
 
   bool granted;
   try {
@@ -118,13 +120,30 @@ Future<bool> toggleWireGuardTunnel({
       await intent.sendBroadcast();
     }
 
-    // For the UP case, verify the VPN actually came up — WireGuard may be
-    // stopped and unable to process the broadcast (e.g. no VPN permission
-    // accepted yet). Give it 2 seconds before declaring failure.
-    if (!goOffline) {
-      if (verifyDelay > Duration.zero) await Future.delayed(verifyDelay);
-      final nowActive = await checkVpn();
-      if (!nowActive) {
+    // Verify the tunnel reached the desired state for both UP and DOWN.
+    // WireGuard may silently ignore the broadcast (no permission, app stopped,
+    // or the tunnel is mid-transition).
+    if (verifyDelay > Duration.zero) await Future.delayed(verifyDelay);
+    final nowActive = await checkVpn();
+
+    if (goOffline) {
+      // Tunnel should be DOWN — still active means the broadcast was ignored.
+      if (nowActive == true) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'WireGuard tunnel did not stop — open the WireGuard app and bring the tunnel down manually',
+              ),
+              duration: Duration(seconds: 6),
+            ),
+          );
+        }
+        return false;
+      }
+    } else {
+      // Tunnel should be UP — not active means the broadcast was ignored.
+      if (nowActive != true) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -144,7 +163,7 @@ Future<bool> toggleWireGuardTunnel({
         SnackBar(
           content: Text(
             goOffline
-                ? 'WireGuard: bringing tunnel "$wgTunnelName" down…'
+                ? 'WireGuard: tunnel "$wgTunnelName" is down'
                 : 'WireGuard: tunnel "$wgTunnelName" is up',
           ),
           duration: const Duration(seconds: 2),

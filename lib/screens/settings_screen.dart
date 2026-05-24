@@ -22,6 +22,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late TextEditingController _urlCtrl;
   late TextEditingController _keyCtrl;
   bool _saved = false;
+  bool _wgBusy = false;
 
   @override
   void initState() {
@@ -187,13 +188,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: const Text('Force offline mode'),
               subtitle: Text('Pause sync and disconnect WireGuard tunnel "$wgTunnelName"'),
               value: forcedOffline,
-              onChanged: (val) async {
-                ref.read(forcedOfflineProvider.notifier).toggle();
-                final ok = await toggleWireGuardTunnel(goOffline: val, context: context);
-                if (!ok && context.mounted) {
-                  ref.read(forcedOfflineProvider.notifier).toggle();
-                }
-              },
+              onChanged: _wgBusy
+                  ? null
+                  : (bool val) async {
+                      setState(() => _wgBusy = true);
+                      final ok = await toggleWireGuardTunnel(
+                        goOffline: val,
+                        context: context,
+                      );
+                      if (!mounted) return;
+                      if (ok) ref.read(forcedOfflineProvider.notifier).set(val);
+                      setState(() => _wgBusy = false);
+                    },
               dense: true,
               contentPadding: EdgeInsets.zero,
             ),
