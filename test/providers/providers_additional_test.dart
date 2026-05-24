@@ -614,5 +614,171 @@ void main() {
       container.read(taskSearchVisibleProvider.notifier).toggle();
       expect(container.read(taskSearchVisibleProvider), isFalse);
     });
+
+    test('hide() sets state to false', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      container.read(taskSearchVisibleProvider.notifier).toggle();
+      expect(container.read(taskSearchVisibleProvider), isTrue);
+      container.read(taskSearchVisibleProvider.notifier).hide();
+      expect(container.read(taskSearchVisibleProvider), isFalse);
+    });
+  });
+
+  // ── Unoverridden providers throw ──────────────────────────────────────────
+  // Riverpod wraps provider build errors in ProviderException; use throwsA(anything).
+
+  group('Unoverridden sentinel providers', () {
+    test('sharedPreferencesProvider throws when not overridden', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      expect(
+        () => container.read(sharedPreferencesProvider),
+        throwsA(anything),
+      );
+    });
+
+    test('secureStorageProvider throws when not overridden', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      expect(
+        () => container.read(secureStorageProvider),
+        throwsA(anything),
+      );
+    });
+
+    test('apiKeyInitialValueProvider throws when not overridden', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      expect(
+        () => container.read(apiKeyInitialValueProvider),
+        throwsA(anything),
+      );
+    });
+  });
+
+  // ── ApiClientNotifier.build() ─────────────────────────────────────────────
+
+  group('ApiClientNotifier', () {
+    test('build() creates ApiClient from baseUrl and apiKey providers', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          apiKeyInitialValueProvider.overrideWithValue('test-key'),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final client = container.read(apiClientProvider);
+      expect(client, isNotNull);
+    });
+
+    test('apiClientProvider updates baseUrl on listen', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          apiKeyInitialValueProvider.overrideWithValue(''),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      container.read(apiClientProvider);
+      // Trigger baseUrl change which exercises the ref.listen callback.
+      container.read(baseUrlProvider.notifier).set('https://new-server.com');
+      // No assertion needed beyond no exception being thrown.
+    });
+  });
+
+  // ── SyncServiceProvider ───────────────────────────────────────────────────
+
+  group('syncServiceProvider', () {
+    test('builds SyncService from dbProvider and apiClientProvider', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final db = AppDatabase.fromExecutor(NativeDatabase.memory());
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          apiKeyInitialValueProvider.overrideWithValue(''),
+          dbProvider.overrideWithValue(db),
+        ],
+      );
+      addTearDown(container.dispose);
+      addTearDown(db.close);
+
+      final svc = container.read(syncServiceProvider);
+      expect(svc, isNotNull);
+    });
+  });
+
+  // ── silentRefresh push error branch ──────────────────────────────────────
+
+  group('silentRefresh push error suppression', () {
+    test('silentRefresh() suppresses push errors and still completes', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final mockSyncService = MockSyncService();
+
+      when(() => mockSyncService.pushPending())
+          .thenAnswer((_) async => const SyncResult(pushed: 1, errors: ['item 5 failed']));
+      when(() => mockSyncService.fullRefresh()).thenAnswer((_) async {});
+
+      final container = _makeOnlineContainer(prefs, mockSyncService);
+      addTearDown(container.dispose);
+
+      await container.read(syncStateProvider.notifier).silentRefresh();
+
+      expect(container.read(syncStateProvider).phase, SyncPhase.idle);
+    });
+  });
+
+  // ── ConnectivityNotifier forcedOffline listener ───────────────────────────
+
+  group('ConnectivityNotifier forcedOffline listener', () {
+    test('toggling forcedOffline updates isOnline state', () async {
+      final mockConnectivity = MockConnectivity();
+      final ctrl = StreamController<List<ConnectivityResult>>.broadcast();
+
+      when(() => mockConnectivity.onConnectivityChanged)
+          .thenAnswer((_) => ctrl.stream);
+      when(() => mockConnectivity.checkConnectivity())
+          .thenAnswer((_) async => [ConnectivityResult.wifi]);
+
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          connectivityInstanceProvider.overrideWithValue(mockConnectivity),
+        ],
+      );
+      addTearDown(container.dispose);
+      addTearDown(ctrl.close);
+
+      // Initial state: online.
+      expect(container.read(isOnlineProvider), isTrue);
+
+      // Toggle forced offline — listener in ConnectivityNotifier.build fires.
+      container.read(forcedOfflineProvider.notifier).toggle();
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      expect(container.read(isOnlineProvider), isFalse);
+
+      // Toggle back online.
+      container.read(forcedOfflineProvider.notifier).toggle();
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      expect(container.read(isOnlineProvider), isTrue);
+    });
   });
 }

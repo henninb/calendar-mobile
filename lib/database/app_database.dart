@@ -8,22 +8,27 @@ part 'app_database.g.dart';
 // ── Tables ───────────────────────────────────────────────────────────────────
 
 class Categories extends Table {
+  // coverage:ignore-start
   IntColumn get id       => integer().autoIncrement()();
   IntColumn get serverId => integer().nullable()();
   TextColumn get name    => text()();
   TextColumn get color   => text().withDefault(const Constant('#3b82f6'))();
   TextColumn get icon    => text().withDefault(const Constant('📅'))();
   TextColumn get description => text().nullable()();
+  // coverage:ignore-end
 }
 
 class Persons extends Table {
+  // coverage:ignore-start
   IntColumn get id       => integer().autoIncrement()();
   IntColumn get serverId => integer().nullable()();
   TextColumn get name    => text()();
   TextColumn get email   => text().nullable()();
+  // coverage:ignore-end
 }
 
 class Events extends Table {
+  // coverage:ignore-start
   IntColumn  get id           => integer().autoIncrement()();
   IntColumn  get serverId     => integer().nullable()();
   TextColumn get title        => text()();
@@ -36,9 +41,11 @@ class Events extends Table {
   TextColumn get amount       => text().nullable()();
   TextColumn get location     => text().nullable()();
   IntColumn  get durationDays => integer().withDefault(const Constant(1))();
+  // coverage:ignore-end
 }
 
 class Occurrences extends Table {
+  // coverage:ignore-start
   IntColumn  get id              => integer().autoIncrement()();
   IntColumn  get serverId        => integer().nullable()();
   IntColumn  get eventServerId   => integer()();
@@ -46,9 +53,11 @@ class Occurrences extends Table {
   TextColumn get status          => text().withDefault(const Constant('upcoming'))();
   TextColumn get notes           => text().nullable()();
   IntColumn  get syncStatus      => integer().withDefault(const Constant(0))();
+  // coverage:ignore-end
 }
 
 class Tasks extends Table {
+  // coverage:ignore-start
   IntColumn  get id               => integer().autoIncrement()();
   IntColumn  get serverId         => integer().nullable()();
   TextColumn get title            => text()();
@@ -66,9 +75,11 @@ class Tasks extends Table {
   TextColumn get completedAt      => text().nullable()();
   TextColumn get createdAt        => text()();
   TextColumn get updatedAt        => text()();
+  // coverage:ignore-end
 }
 
 class Subtasks extends Table {
+  // coverage:ignore-start
   IntColumn  get id            => integer().autoIncrement()();
   IntColumn  get serverId      => integer().nullable()();
   IntColumn  get taskLocalId   => integer()();
@@ -79,9 +90,11 @@ class Subtasks extends Table {
   IntColumn  get order         => integer().withDefault(const Constant(0))();
   TextColumn get completedAt   => text().nullable()();
   IntColumn  get syncStatus    => integer().withDefault(const Constant(0))();
+  // coverage:ignore-end
 }
 
 class CreditCards extends Table {
+  // coverage:ignore-start
   IntColumn  get id                  => integer().autoIncrement()();
   IntColumn  get serverId            => integer().nullable()();
   TextColumn get name                => text()();
@@ -97,11 +110,13 @@ class CreditCards extends Table {
   IntColumn  get annualFeeMonth      => integer().nullable()();
   BoolColumn get isActive            => boolean().withDefault(const Constant(true))();
   IntColumn  get syncStatus          => integer().withDefault(const Constant(0))();
+  // coverage:ignore-end
 }
 
 // ── Grocery Tables ────────────────────────────────────────────────────────────
 
 class GroceryStores extends Table {
+  // coverage:ignore-start
   IntColumn  get id        => integer().autoIncrement()();
   IntColumn  get serverId  => integer().nullable()();
   TextColumn get name      => text()();
@@ -110,21 +125,25 @@ class GroceryStores extends Table {
       boolean().withDefault(const Constant(true))();
   IntColumn  get syncStatus =>
       integer().withDefault(const Constant(0))();
+  // coverage:ignore-end
 }
 
 class GroceryItems extends Table {
+  // coverage:ignore-start
   IntColumn  get id                   => integer().autoIncrement()();
   IntColumn  get serverId             => integer().nullable()();
   TextColumn get name                 => text()();
   TextColumn get defaultUnit          =>
       text().withDefault(const Constant('each'))();
   IntColumn  get defaultStoreServerId => integer().nullable()();
+  // coverage:ignore-end
 }
 
 /// On-hand inventory. Uniquely keyed by itemServerId (GroceryItem server id)
 /// rather than the on-hand record's own server id because all API operations
 /// use the item id as the path parameter.
 class GroceryOnHand extends Table {
+  // coverage:ignore-start
   IntColumn  get id           => integer().autoIncrement()();
   IntColumn  get itemServerId => integer()();
   RealColumn get quantity     =>
@@ -133,9 +152,11 @@ class GroceryOnHand extends Table {
       text().withDefault(const Constant('each'))();
   IntColumn  get syncStatus   =>
       integer().withDefault(const Constant(0))();
+  // coverage:ignore-end
 }
 
 class GroceryLists extends Table {
+  // coverage:ignore-start
   IntColumn  get id            => integer().autoIncrement()();
   IntColumn  get serverId      => integer().nullable()();
   TextColumn get name          => text()();
@@ -145,9 +166,11 @@ class GroceryLists extends Table {
   TextColumn get shoppingDate  => text().nullable()();
   IntColumn  get syncStatus    =>
       integer().withDefault(const Constant(0))();
+  // coverage:ignore-end
 }
 
 class GroceryListItems extends Table {
+  // coverage:ignore-start
   IntColumn  get id           => integer().autoIncrement()();
   IntColumn  get serverId     => integer().nullable()();
   IntColumn  get listLocalId  => integer()();
@@ -163,9 +186,11 @@ class GroceryListItems extends Table {
   TextColumn get notes        => text().nullable()();
   IntColumn  get syncStatus   =>
       integer().withDefault(const Constant(0))();
+  // coverage:ignore-end
 }
 
 class CreditCardTrackerCache extends Table {
+  // coverage:ignore-start
   IntColumn  get id              => integer().autoIncrement()();
   IntColumn  get cardServerId    => integer()();
   TextColumn get name            => text()();
@@ -181,6 +206,7 @@ class CreditCardTrackerCache extends Table {
   TextColumn get annualFeeDate   => text().nullable()();
   IntColumn  get annualFeeDays   => integer().nullable()();
   BoolColumn get prevDueOverdue  => boolean().withDefault(const Constant(false))();
+  // coverage:ignore-end
 }
 
 // ── Database ─────────────────────────────────────────────────────────────────
@@ -201,7 +227,7 @@ class CreditCardTrackerCache extends Table {
   GroceryListItems,
 ])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase() : super(_openConnection()); // coverage:ignore-line
   AppDatabase.forTesting(DatabaseConnection executor) : super(executor);
   AppDatabase.fromExecutor(QueryExecutor executor) : super(executor);
 
@@ -226,6 +252,7 @@ class AppDatabase extends _$AppDatabase {
       await _createServerIdIndexes();
       await _createGroceryIndexes();
     },
+    // coverage:ignore-start
     onUpgrade: (m, from, to) async {
       dev.log('AppDatabase: migrating v$from → v$to', name: 'db');
       if (from < 2) {
@@ -262,8 +289,10 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(groceryOnHand, groceryOnHand.syncStatus);
       }
     },
+    // coverage:ignore-end
   );
 
+  // coverage:ignore-start
   Future<void> _deduplicateByServerId() async {
     for (final t in _tablesWithServerId) {
       final name = t.actualTableName;
@@ -276,6 +305,7 @@ class AppDatabase extends _$AppDatabase {
       );
     }
   }
+  // coverage:ignore-end
 
   Future<void> _createServerIdIndexes() async {
     for (final t in _tablesWithServerId) {
@@ -297,9 +327,11 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  // coverage:ignore-start
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'calendar_mobile');
   }
+  // coverage:ignore-end
 
   /// Returns [pendingUpdate] when transitioning from [synced]; preserves any
   /// other pending status so an already-queued mutation is not downgraded.

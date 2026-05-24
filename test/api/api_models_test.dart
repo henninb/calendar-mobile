@@ -546,6 +546,20 @@ void main() {
       });
       expect(i.status, 'needed');
     });
+
+    test('parses nested item when present', () {
+      final i = ApiGroceryListItem.fromJson({
+        'id': 7,
+        'list_id': 20,
+        'item_id': 10,
+        'quantity': 1,
+        'unit': 'each',
+        'status': 'needed',
+        'item': {'id': 10, 'name': 'Milk', 'default_unit': 'liter'},
+      });
+      expect(i.item, isNotNull);
+      expect(i.item!.name, 'Milk');
+    });
   });
 
   // ── ApiGroceryList ───────────────────────────────────────────────────────────

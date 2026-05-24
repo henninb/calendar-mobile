@@ -19,9 +19,25 @@ void main() {
   });
 
   group('ApiClient initialization', () {
+    test('default constructor builds its own Dio with baseUrl', () {
+      final c = ApiClient('https://example.com', apiKey: 'mykey');
+      expect(c, isNotNull);
+    });
+
+    test('default constructor with empty baseUrl uses localhost placeholder', () {
+      final c = ApiClient('', apiKey: '');
+      expect(c, isNotNull);
+    });
+
     test('updateBaseUrl updates dio options', () {
       client.updateBaseUrl('https://new-api.com');
       expect(dio.options.baseUrl, 'https://new-api.com/api');
+    });
+
+    test('updateBaseUrl is no-op when empty', () {
+      final original = dio.options.baseUrl;
+      client.updateBaseUrl('');
+      expect(dio.options.baseUrl, original);
     });
 
     test('updateBaseUrl throws on invalid URL', () {
@@ -68,6 +84,20 @@ void main() {
       );
 
       await client.fetchOccurrences(startDate: '2026-05-01', status: 'upcoming');
+    });
+
+    test('fetchOccurrences includes endDate and categoryId params', () async {
+      dioAdapter.onGet(
+        '/occurrences',
+        (server) => server.reply(200, []),
+        queryParameters: {
+          'limit': 500,
+          'end_date': '2026-05-31',
+          'category_id': 3,
+        },
+      );
+
+      await client.fetchOccurrences(endDate: '2026-05-31', categoryId: 3);
     });
 
     test('patchOccurrence sends PATCH request', () async {
@@ -275,6 +305,12 @@ void main() {
     test('fetchCreditCards', () async {
       dioAdapter.onGet('/credit-cards', (server) => server.reply(200, []), queryParameters: {'limit': 500});
       await client.fetchCreditCards();
+    });
+
+    test('createCreditCard', () async {
+      dioAdapter.onPost('/credit-cards', (server) => server.reply(201, {'id': 5, 'name': 'Visa', 'is_active': true}), data: {'name': 'Visa'});
+      final result = await client.createCreditCard({'name': 'Visa'});
+      expect(result.id, 5);
     });
 
     test('updateCreditCard', () async {
