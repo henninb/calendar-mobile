@@ -262,77 +262,85 @@ void main() {
           syncStatus: Value(0),
         ),
       ]);
-      final id2 = await database.into(database.occurrences).insert(
-        const OccurrencesCompanion(
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-02'),
-          syncStatus: Value(1),
-        ),
-      );
+      final id2 = await database
+          .into(database.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-02'),
+              syncStatus: Value(1),
+            ),
+          );
 
       final pending = await database.getPendingOccurrences();
       expect(pending.length, 1);
       expect(pending.first.id, id2);
     });
 
-    test('updateOccurrenceStatus updates status and sets pendingUpdate', () async {
-      final id = await database.into(database.occurrences).insert(
-        const OccurrencesCompanion(
-          serverId: Value(1),
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-          status: Value('upcoming'),
-          syncStatus: Value(0),
-        ),
-      );
-
-      await database.updateOccurrenceStatus(id, 'completed');
-
-      final updated = await (database.select(database.occurrences)
-            ..where((o) => o.id.equals(id)))
-          .getSingle();
-      expect(updated.status, 'completed');
-      expect(updated.syncStatus, SyncStatus.pendingUpdate.value);
-    });
-
     test(
-      'updateOccurrenceStatus preserves pendingCreate syncStatus',
+      'updateOccurrenceStatus updates status and sets pendingUpdate',
       () async {
-        final id = await database.into(database.occurrences).insert(
-          const OccurrencesCompanion(
-            eventServerId: Value(100),
-            occurrenceDate: Value('2026-05-01'),
-            syncStatus: Value(1),
-          ),
-        );
+        final id = await database
+            .into(database.occurrences)
+            .insert(
+              const OccurrencesCompanion(
+                serverId: Value(1),
+                eventServerId: Value(100),
+                occurrenceDate: Value('2026-05-01'),
+                status: Value('upcoming'),
+                syncStatus: Value(0),
+              ),
+            );
 
         await database.updateOccurrenceStatus(id, 'completed');
 
-        final updated = await (database.select(database.occurrences)
-              ..where((o) => o.id.equals(id)))
-            .getSingle();
-        expect(updated.syncStatus, SyncStatus.pendingCreate.value);
+        final updated = await (database.select(
+          database.occurrences,
+        )..where((o) => o.id.equals(id))).getSingle();
+        expect(updated.status, 'completed');
+        expect(updated.syncStatus, SyncStatus.pendingUpdate.value);
       },
     );
+
+    test('updateOccurrenceStatus preserves pendingCreate syncStatus', () async {
+      final id = await database
+          .into(database.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+              syncStatus: Value(1),
+            ),
+          );
+
+      await database.updateOccurrenceStatus(id, 'completed');
+
+      final updated = await (database.select(
+        database.occurrences,
+      )..where((o) => o.id.equals(id))).getSingle();
+      expect(updated.syncStatus, SyncStatus.pendingCreate.value);
+    });
 
     test('updateOccurrenceStatus no-ops for non-existent id', () async {
       await database.updateOccurrenceStatus(999, 'completed');
     });
 
     test('markOccurrenceSynced sets serverId and clears syncStatus', () async {
-      final id = await database.into(database.occurrences).insert(
-        const OccurrencesCompanion(
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-          syncStatus: Value(1),
-        ),
-      );
+      final id = await database
+          .into(database.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+              syncStatus: Value(1),
+            ),
+          );
 
       await database.markOccurrenceSynced(id, 42);
 
-      final row = await (database.select(database.occurrences)
-            ..where((o) => o.id.equals(id)))
-          .getSingle();
+      final row = await (database.select(
+        database.occurrences,
+      )..where((o) => o.id.equals(id))).getSingle();
       expect(row.serverId, 42);
       expect(row.syncStatus, SyncStatus.synced.value);
     });
@@ -340,12 +348,14 @@ void main() {
     test(
       'markOccurrenceDeleted purges local-only occurrence (no serverId)',
       () async {
-        final id = await database.into(database.occurrences).insert(
-          const OccurrencesCompanion(
-            eventServerId: Value(100),
-            occurrenceDate: Value('2026-05-01'),
-          ),
-        );
+        final id = await database
+            .into(database.occurrences)
+            .insert(
+              const OccurrencesCompanion(
+                eventServerId: Value(100),
+                occurrenceDate: Value('2026-05-01'),
+              ),
+            );
 
         await database.markOccurrenceDeleted(id);
 
@@ -357,20 +367,22 @@ void main() {
     test(
       'markOccurrenceDeleted sets pendingDelete for synced occurrence',
       () async {
-        final id = await database.into(database.occurrences).insert(
-          const OccurrencesCompanion(
-            serverId: Value(5),
-            eventServerId: Value(100),
-            occurrenceDate: Value('2026-05-01'),
-            syncStatus: Value(0),
-          ),
-        );
+        final id = await database
+            .into(database.occurrences)
+            .insert(
+              const OccurrencesCompanion(
+                serverId: Value(5),
+                eventServerId: Value(100),
+                occurrenceDate: Value('2026-05-01'),
+                syncStatus: Value(0),
+              ),
+            );
 
         await database.markOccurrenceDeleted(id);
 
-        final row = await (database.select(database.occurrences)
-              ..where((o) => o.id.equals(id)))
-            .getSingle();
+        final row = await (database.select(
+          database.occurrences,
+        )..where((o) => o.id.equals(id))).getSingle();
         expect(row.syncStatus, SyncStatus.pendingDelete.value);
       },
     );
@@ -380,12 +392,14 @@ void main() {
     });
 
     test('deleteOccurrenceLocal removes the row', () async {
-      final id = await database.into(database.occurrences).insert(
-        const OccurrencesCompanion(
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-        ),
-      );
+      final id = await database
+          .into(database.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+            ),
+          );
 
       await database.deleteOccurrenceLocal(id);
 
@@ -394,24 +408,30 @@ void main() {
     });
 
     test('deleteOccurrencesLocalBatch removes all specified rows', () async {
-      final id1 = await database.into(database.occurrences).insert(
-        const OccurrencesCompanion(
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-        ),
-      );
-      final id2 = await database.into(database.occurrences).insert(
-        const OccurrencesCompanion(
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-02'),
-        ),
-      );
-      await database.into(database.occurrences).insert(
-        const OccurrencesCompanion(
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-03'),
-        ),
-      );
+      final id1 = await database
+          .into(database.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+            ),
+          );
+      final id2 = await database
+          .into(database.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-02'),
+            ),
+          );
+      await database
+          .into(database.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-03'),
+            ),
+          );
 
       await database.deleteOccurrencesLocalBatch([id1, id2]);
 
@@ -421,12 +441,14 @@ void main() {
     });
 
     test('deleteOccurrencesLocalBatch is no-op for empty list', () async {
-      await database.into(database.occurrences).insert(
-        const OccurrencesCompanion(
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-        ),
-      );
+      await database
+          .into(database.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+            ),
+          );
 
       await database.deleteOccurrencesLocalBatch([]);
 
@@ -479,9 +501,9 @@ void main() {
       final task = await database.getTaskById(taskId);
       expect(task!.serverId, 500);
 
-      final subtask = await (database.select(database.subtasks)
-            ..where((s) => s.id.equals(subtaskId)))
-          .getSingle();
+      final subtask = await (database.select(
+        database.subtasks,
+      )..where((s) => s.id.equals(subtaskId))).getSingle();
       expect(subtask.taskServerId, 500);
     });
 
@@ -505,28 +527,31 @@ void main() {
       expect(tasks.length, 2);
     });
 
-    test('getPendingTasks returns only tasks with non-zero syncStatus', () async {
-      await database.insertTask(
-        const TasksCompanion(
-          title: Value('Synced'),
-          syncStatus: Value(0),
-          createdAt: Value('2026-01-01'),
-          updatedAt: Value('2026-01-01'),
-        ),
-      );
-      final pendingId = await database.insertTask(
-        const TasksCompanion(
-          title: Value('Pending'),
-          syncStatus: Value(1),
-          createdAt: Value('2026-01-01'),
-          updatedAt: Value('2026-01-01'),
-        ),
-      );
+    test(
+      'getPendingTasks returns only tasks with non-zero syncStatus',
+      () async {
+        await database.insertTask(
+          const TasksCompanion(
+            title: Value('Synced'),
+            syncStatus: Value(0),
+            createdAt: Value('2026-01-01'),
+            updatedAt: Value('2026-01-01'),
+          ),
+        );
+        final pendingId = await database.insertTask(
+          const TasksCompanion(
+            title: Value('Pending'),
+            syncStatus: Value(1),
+            createdAt: Value('2026-01-01'),
+            updatedAt: Value('2026-01-01'),
+          ),
+        );
 
-      final pending = await database.getPendingTasks();
-      expect(pending.length, 1);
-      expect(pending.first.id, pendingId);
-    });
+        final pending = await database.getPendingTasks();
+        expect(pending.length, 1);
+        expect(pending.first.id, pendingId);
+      },
+    );
 
     test('updateTask modifies the specified task', () async {
       final id = await database.insertTask(
@@ -556,23 +581,20 @@ void main() {
       expect(task, isNull);
     });
 
-    test(
-      'markTaskDeleted purges local-only task (no serverId)',
-      () async {
-        final id = await database.insertTask(
-          const TasksCompanion(
-            title: Value('Local only'),
-            createdAt: Value('2026-01-01'),
-            updatedAt: Value('2026-01-01'),
-          ),
-        );
+    test('markTaskDeleted purges local-only task (no serverId)', () async {
+      final id = await database.insertTask(
+        const TasksCompanion(
+          title: Value('Local only'),
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
 
-        await database.markTaskDeleted(id);
+      await database.markTaskDeleted(id);
 
-        final task = await database.getTaskById(id);
-        expect(task, isNull);
-      },
-    );
+      final task = await database.getTaskById(id);
+      expect(task, isNull);
+    });
 
     test('markTaskDeleted sets pendingDelete for synced task', () async {
       final id = await database.insertTask(
@@ -663,10 +685,7 @@ void main() {
         ),
       );
       await database.insertSubtask(
-        SubtasksCompanion(
-          taskLocalId: Value(id1),
-          title: const Value('S1'),
-        ),
+        SubtasksCompanion(taskLocalId: Value(id1), title: const Value('S1')),
       );
 
       await database.deleteTasksLocalBatch([id1, id2]);
@@ -796,15 +815,12 @@ void main() {
 
       await database.updateSubtask(
         id,
-        const SubtasksCompanion(
-          title: Value('New'),
-          status: Value('done'),
-        ),
+        const SubtasksCompanion(title: Value('New'), status: Value('done')),
       );
 
-      final sub = await (database.select(database.subtasks)
-            ..where((s) => s.id.equals(id)))
-          .getSingle();
+      final sub = await (database.select(
+        database.subtasks,
+      )..where((s) => s.id.equals(id))).getSingle();
       expect(sub.title, 'New');
       expect(sub.status, 'done');
     });
@@ -837,9 +853,9 @@ void main() {
 
       await database.markSubtaskDeleted(id);
 
-      final sub = await (database.select(database.subtasks)
-            ..where((s) => s.id.equals(id)))
-          .getSingle();
+      final sub = await (database.select(
+        database.subtasks,
+      )..where((s) => s.id.equals(id))).getSingle();
       expect(sub.syncStatus, SyncStatus.pendingDelete.value);
     });
 
@@ -858,9 +874,9 @@ void main() {
 
       await database.markSubtaskSynced(id, 77);
 
-      final sub = await (database.select(database.subtasks)
-            ..where((s) => s.id.equals(id)))
-          .getSingle();
+      final sub = await (database.select(
+        database.subtasks,
+      )..where((s) => s.id.equals(id))).getSingle();
       expect(sub.serverId, 77);
       expect(sub.syncStatus, SyncStatus.synced.value);
     });
@@ -880,22 +896,13 @@ void main() {
 
     test('deleteSubtasksLocalBatch removes specified rows', () async {
       final id1 = await database.insertSubtask(
-        SubtasksCompanion(
-          taskLocalId: Value(taskId),
-          title: const Value('S1'),
-        ),
+        SubtasksCompanion(taskLocalId: Value(taskId), title: const Value('S1')),
       );
       final id2 = await database.insertSubtask(
-        SubtasksCompanion(
-          taskLocalId: Value(taskId),
-          title: const Value('S2'),
-        ),
+        SubtasksCompanion(taskLocalId: Value(taskId), title: const Value('S2')),
       );
       await database.insertSubtask(
-        SubtasksCompanion(
-          taskLocalId: Value(taskId),
-          title: const Value('S3'),
-        ),
+        SubtasksCompanion(taskLocalId: Value(taskId), title: const Value('S3')),
       );
 
       await database.deleteSubtasksLocalBatch([id1, id2]);
@@ -1044,10 +1051,7 @@ void main() {
 
     test('markCreditCardSynced sets serverId and clears syncStatus', () async {
       final id = await database.insertCreditCard(
-        const CreditCardsCompanion(
-          name: Value('Card'),
-          syncStatus: Value(1),
-        ),
+        const CreditCardsCompanion(name: Value('Card'), syncStatus: Value(1)),
       );
 
       await database.markCreditCardSynced(id, 99);
@@ -1200,22 +1204,25 @@ void main() {
       expect(pending.first.id, pendingId);
     });
 
-    test('markGroceryStoreSynced sets serverId and clears syncStatus', () async {
-      final id = await database.insertGroceryStore(
-        const GroceryStoresCompanion(
-          name: Value('Store'),
-          syncStatus: Value(1),
-        ),
-      );
+    test(
+      'markGroceryStoreSynced sets serverId and clears syncStatus',
+      () async {
+        final id = await database.insertGroceryStore(
+          const GroceryStoresCompanion(
+            name: Value('Store'),
+            syncStatus: Value(1),
+          ),
+        );
 
-      await database.markGroceryStoreSynced(id, 55);
+        await database.markGroceryStoreSynced(id, 55);
 
-      final store = await (database.select(database.groceryStores)
-            ..where((s) => s.id.equals(id)))
-          .getSingle();
-      expect(store.serverId, 55);
-      expect(store.syncStatus, SyncStatus.synced.value);
-    });
+        final store = await (database.select(
+          database.groceryStores,
+        )..where((s) => s.id.equals(id))).getSingle();
+        expect(store.serverId, 55);
+        expect(store.syncStatus, SyncStatus.synced.value);
+      },
+    );
 
     test(
       'markGroceryStoreDeleted purges local-only store (no serverId)',
@@ -1226,10 +1233,7 @@ void main() {
 
         await database.markGroceryStoreDeleted(id);
 
-        expect(
-          await (database.select(database.groceryStores)).get(),
-          isEmpty,
-        );
+        expect(await (database.select(database.groceryStores)).get(), isEmpty);
       },
     );
 
@@ -1246,9 +1250,9 @@ void main() {
 
         await database.markGroceryStoreDeleted(id);
 
-        final store = await (database.select(database.groceryStores)
-              ..where((s) => s.id.equals(id)))
-            .getSingle();
+        final store = await (database.select(
+          database.groceryStores,
+        )..where((s) => s.id.equals(id))).getSingle();
         expect(store.syncStatus, SyncStatus.pendingDelete.value);
       },
     );
@@ -1284,16 +1288,21 @@ void main() {
       expect(stores.map((s) => s.serverId), containsAll([1, 3]));
     });
 
-    test('purgeGroceryStores preserves local-only stores (null serverId)',
-        () async {
-      await database.insertGroceryStore(
-        const GroceryStoresCompanion(name: Value('Local only')),
-      );
+    test(
+      'purgeGroceryStores preserves local-only stores (null serverId)',
+      () async {
+        await database.insertGroceryStore(
+          const GroceryStoresCompanion(name: Value('Local only')),
+        );
 
-      await database.purgeGroceryStores({});
+        await database.purgeGroceryStores({});
 
-      expect(await (database.select(database.groceryStores)).get(), hasLength(1));
-    });
+        expect(
+          await (database.select(database.groceryStores)).get(),
+          hasLength(1),
+        );
+      },
+    );
 
     test('watchGroceryStores emits updates', () async {
       final stream = database.watchGroceryStores();
@@ -1352,9 +1361,9 @@ void main() {
     });
 
     test('purgeGroceryItems preserves items without serverId', () async {
-      await database.into(database.groceryItems).insert(
-        const GroceryItemsCompanion(name: Value('Local only')),
-      );
+      await database
+          .into(database.groceryItems)
+          .insert(const GroceryItemsCompanion(name: Value('Local only')));
 
       await database.purgeGroceryItems({});
 
@@ -1404,27 +1413,24 @@ void main() {
       expect(rows.first.quantity, 2.5);
     });
 
-    test(
-      'upsertGroceryOnHand updates on itemServerId conflict',
-      () async {
-        await database.upsertGroceryOnHand([
-          const GroceryOnHandCompanion(
-            itemServerId: Value(1),
-            quantity: Value(1.0),
-          ),
-        ]);
-        await database.upsertGroceryOnHand([
-          const GroceryOnHandCompanion(
-            itemServerId: Value(1),
-            quantity: Value(3.0),
-          ),
-        ]);
+    test('upsertGroceryOnHand updates on itemServerId conflict', () async {
+      await database.upsertGroceryOnHand([
+        const GroceryOnHandCompanion(
+          itemServerId: Value(1),
+          quantity: Value(1.0),
+        ),
+      ]);
+      await database.upsertGroceryOnHand([
+        const GroceryOnHandCompanion(
+          itemServerId: Value(1),
+          quantity: Value(3.0),
+        ),
+      ]);
 
-        final rows = await (database.select(database.groceryOnHand)).get();
-        expect(rows.length, 1);
-        expect(rows.first.quantity, 3.0);
-      },
-    );
+      final rows = await (database.select(database.groceryOnHand)).get();
+      expect(rows.length, 1);
+      expect(rows.first.quantity, 3.0);
+    });
 
     test('getPendingGroceryOnHand returns non-zero syncStatus rows', () async {
       await database.upsertGroceryOnHand([
@@ -1456,7 +1462,9 @@ void main() {
 
       await database.markGroceryOnHandSynced(row.id);
 
-      final updated = await (database.select(database.groceryOnHand)).getSingle();
+      final updated = await (database.select(
+        database.groceryOnHand,
+      )).getSingle();
       expect(updated.syncStatus, 0);
     });
 
@@ -1552,24 +1560,26 @@ void main() {
       expect(await database.getGroceryListById(999), isNull);
     });
 
-    test('updateGroceryListStatus updates status and sets pendingUpdate',
-        () async {
-      await database.upsertGroceryLists([
-        const GroceryListsCompanion(
-          serverId: Value(1),
-          name: Value('List'),
-          status: Value('draft'),
-          syncStatus: Value(0),
-        ),
-      ]);
-      final list = await (database.select(database.groceryLists)).getSingle();
+    test(
+      'updateGroceryListStatus updates status and sets pendingUpdate',
+      () async {
+        await database.upsertGroceryLists([
+          const GroceryListsCompanion(
+            serverId: Value(1),
+            name: Value('List'),
+            status: Value('draft'),
+            syncStatus: Value(0),
+          ),
+        ]);
+        final list = await (database.select(database.groceryLists)).getSingle();
 
-      await database.updateGroceryListStatus(list.id, 'active');
+        await database.updateGroceryListStatus(list.id, 'active');
 
-      final updated = await database.getGroceryListById(list.id);
-      expect(updated!.status, 'active');
-      expect(updated.syncStatus, SyncStatus.pendingUpdate.value);
-    });
+        final updated = await database.getGroceryListById(list.id);
+        expect(updated!.status, 'active');
+        expect(updated.syncStatus, SyncStatus.pendingUpdate.value);
+      },
+    );
 
     test(
       'updateGroceryListStatus preserves pendingCreate syncStatus',
@@ -1678,16 +1688,10 @@ void main() {
 
     test('upsertGroceryLists updates on serverId conflict', () async {
       await database.upsertGroceryLists([
-        const GroceryListsCompanion(
-          serverId: Value(1),
-          name: Value('Old'),
-        ),
+        const GroceryListsCompanion(serverId: Value(1), name: Value('Old')),
       ]);
       await database.upsertGroceryLists([
-        const GroceryListsCompanion(
-          serverId: Value(1),
-          name: Value('New'),
-        ),
+        const GroceryListsCompanion(serverId: Value(1), name: Value('New')),
       ]);
 
       final lists = await database.getGroceryLists();
@@ -1807,13 +1811,15 @@ void main() {
           syncStatus: const Value(0),
         ),
       ]);
-      final item = await (database.select(database.groceryListItems)).getSingle();
+      final item = await (database.select(
+        database.groceryListItems,
+      )).getSingle();
 
       await database.updateGroceryListItemStatus(item.id, 'in_cart');
 
-      final updated = await (database.select(database.groceryListItems)
-            ..where((i) => i.id.equals(item.id)))
-          .getSingle();
+      final updated = await (database.select(
+        database.groceryListItems,
+      )..where((i) => i.id.equals(item.id))).getSingle();
       expect(updated.status, 'in_cart');
       expect(updated.syncStatus, SyncStatus.pendingUpdate.value);
     });
@@ -1831,9 +1837,9 @@ void main() {
 
         await database.updateGroceryListItemStatus(id, 'in_cart');
 
-        final updated = await (database.select(database.groceryListItems)
-              ..where((i) => i.id.equals(id)))
-            .getSingle();
+        final updated = await (database.select(
+          database.groceryListItems,
+        )..where((i) => i.id.equals(id))).getSingle();
         expect(updated.syncStatus, SyncStatus.pendingCreate.value);
       },
     );
@@ -1869,14 +1875,15 @@ void main() {
             syncStatus: const Value(0),
           ),
         ]);
-        final item =
-            await (database.select(database.groceryListItems)).getSingle();
+        final item = await (database.select(
+          database.groceryListItems,
+        )).getSingle();
 
         await database.markGroceryListItemDeleted(item.id);
 
-        final updated = await (database.select(database.groceryListItems)
-              ..where((i) => i.id.equals(item.id)))
-            .getSingle();
+        final updated = await (database.select(
+          database.groceryListItems,
+        )..where((i) => i.id.equals(item.id))).getSingle();
         expect(updated.syncStatus, SyncStatus.pendingDelete.value);
       },
     );
@@ -1885,24 +1892,26 @@ void main() {
       await database.markGroceryListItemDeleted(999);
     });
 
-    test('markGroceryListItemSynced sets serverId and clears syncStatus',
-        () async {
-      final id = await database.insertGroceryListItem(
-        GroceryListItemsCompanion(
-          listLocalId: Value(listId),
-          itemServerId: const Value(1),
-          syncStatus: const Value(1),
-        ),
-      );
+    test(
+      'markGroceryListItemSynced sets serverId and clears syncStatus',
+      () async {
+        final id = await database.insertGroceryListItem(
+          GroceryListItemsCompanion(
+            listLocalId: Value(listId),
+            itemServerId: const Value(1),
+            syncStatus: const Value(1),
+          ),
+        );
 
-      await database.markGroceryListItemSynced(id, 66);
+        await database.markGroceryListItemSynced(id, 66);
 
-      final item = await (database.select(database.groceryListItems)
-            ..where((i) => i.id.equals(id)))
-          .getSingle();
-      expect(item.serverId, 66);
-      expect(item.syncStatus, SyncStatus.synced.value);
-    });
+        final item = await (database.select(
+          database.groceryListItems,
+        )..where((i) => i.id.equals(id))).getSingle();
+        expect(item.serverId, 66);
+        expect(item.syncStatus, SyncStatus.synced.value);
+      },
+    );
 
     test('deleteGroceryListItemLocal removes the row', () async {
       final id = await database.insertGroceryListItem(
@@ -2014,10 +2023,7 @@ void main() {
 
       final expectation = expectLater(
         stream,
-        emitsInOrder([
-          isEmpty,
-          hasLength(1),
-        ]),
+        emitsInOrder([isEmpty, hasLength(1)]),
       );
 
       await Future.delayed(Duration.zero);

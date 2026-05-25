@@ -18,15 +18,18 @@ void main() {
 
   group('Manager API - Categories', () {
     test('create and get all', () async {
-      await database.managers.categories.create((o) => o(name: 'Work', color: const Value('#ff0000')));
+      await database.managers.categories.create(
+        (o) => o(name: 'Work', color: const Value('#ff0000')),
+      );
       final cats = await database.managers.categories.get();
       expect(cats.length, 1);
       expect(cats.first.name, 'Work');
     });
 
     test('createReturning gives back the data class', () async {
-      final cat = await database.managers.categories
-          .createReturning((o) => o(name: 'Personal', icon: const Value('🏠')));
+      final cat = await database.managers.categories.createReturning(
+        (o) => o(name: 'Personal', icon: const Value('🏠')),
+      );
       expect(cat.name, 'Personal');
       expect(cat.icon, '🏠');
     });
@@ -42,7 +45,9 @@ void main() {
     });
 
     test('filter by id equals', () async {
-      final cat = await database.managers.categories.createReturning((o) => o(name: 'X'));
+      final cat = await database.managers.categories.createReturning(
+        (o) => o(name: 'X'),
+      );
       final result = await database.managers.categories
           .filter((f) => f.id.equals(cat.id))
           .get();
@@ -50,8 +55,12 @@ void main() {
     });
 
     test('filter by color equals', () async {
-      await database.managers.categories.create((o) => o(name: 'Red', color: const Value('#ff0000')));
-      await database.managers.categories.create((o) => o(name: 'Blue', color: const Value('#0000ff')));
+      await database.managers.categories.create(
+        (o) => o(name: 'Red', color: const Value('#ff0000')),
+      );
+      await database.managers.categories.create(
+        (o) => o(name: 'Blue', color: const Value('#0000ff')),
+      );
       final result = await database.managers.categories
           .filter((f) => f.color.equals('#ff0000'))
           .get();
@@ -60,7 +69,9 @@ void main() {
     });
 
     test('filter by icon equals', () async {
-      await database.managers.categories.create((o) => o(name: 'Calendar', icon: const Value('📅')));
+      await database.managers.categories.create(
+        (o) => o(name: 'Calendar', icon: const Value('📅')),
+      );
       final result = await database.managers.categories
           .filter((f) => f.icon.equals('📅'))
           .get();
@@ -69,7 +80,10 @@ void main() {
 
     test('filter by serverId equals', () async {
       await database.upsertCategories([
-        const CategoriesCompanion(serverId: Value(99), name: Value('Server Cat')),
+        const CategoriesCompanion(
+          serverId: Value(99),
+          name: Value('Server Cat'),
+        ),
       ]);
       final result = await database.managers.categories
           .filter((f) => f.serverId.equals(99))
@@ -87,7 +101,10 @@ void main() {
 
     test('filter by serverId isNotNull', () async {
       await database.upsertCategories([
-        const CategoriesCompanion(serverId: Value(1), name: Value('Has server id')),
+        const CategoriesCompanion(
+          serverId: Value(1),
+          name: Value('Has server id'),
+        ),
       ]);
       final result = await database.managers.categories
           .filter((f) => f.serverId.isNotNull())
@@ -161,8 +178,12 @@ void main() {
     });
 
     test('orderBy color', () async {
-      await database.managers.categories.create((o) => o(name: 'A', color: const Value('#000000')));
-      await database.managers.categories.create((o) => o(name: 'B', color: const Value('#ffffff')));
+      await database.managers.categories.create(
+        (o) => o(name: 'A', color: const Value('#000000')),
+      );
+      await database.managers.categories.create(
+        (o) => o(name: 'B', color: const Value('#ffffff')),
+      );
       final result = await database.managers.categories
           .orderBy((o) => o.color.asc())
           .get();
@@ -185,8 +206,9 @@ void main() {
     });
 
     test('delete via manager filter', () async {
-      final cat = await database.managers.categories
-          .createReturning((o) => o(name: 'Delete me'));
+      final cat = await database.managers.categories.createReturning(
+        (o) => o(name: 'Delete me'),
+      );
       await database.managers.categories
           .filter((f) => f.id.equals(cat.id))
           .delete();
@@ -194,8 +216,9 @@ void main() {
     });
 
     test('update via manager filter', () async {
-      final cat = await database.managers.categories
-          .createReturning((o) => o(name: 'Old'));
+      final cat = await database.managers.categories.createReturning(
+        (o) => o(name: 'Old'),
+      );
       await database.managers.categories
           .filter((f) => f.id.equals(cat.id))
           .update((m) => m(name: const Value('New')));
@@ -218,8 +241,10 @@ void main() {
 
     test('watch stream emits changes', () async {
       final stream = database.managers.categories.watch();
-      final expectation =
-          expectLater(stream, emitsInOrder([isEmpty, hasLength(1)]));
+      final expectation = expectLater(
+        stream,
+        emitsInOrder([isEmpty, hasLength(1)]),
+      );
       await Future.delayed(Duration.zero);
       await database.managers.categories.create((o) => o(name: 'Stream test'));
       await expectation;
@@ -241,14 +266,16 @@ void main() {
     test('filter by name', () async {
       await database.managers.persons.create((o) => o(name: 'Alice'));
       await database.managers.persons.create((o) => o(name: 'Bob'));
-      final result =
-          await database.managers.persons.filter((f) => f.name.equals('Alice')).get();
+      final result = await database.managers.persons
+          .filter((f) => f.name.equals('Alice'))
+          .get();
       expect(result.length, 1);
     });
 
     test('filter by email equals', () async {
       await database.managers.persons.create(
-          (o) => o(name: 'Alice', email: const Value('alice@example.com')));
+        (o) => o(name: 'Alice', email: const Value('alice@example.com')),
+      );
       final result = await database.managers.persons
           .filter((f) => f.email.equals('alice@example.com'))
           .get();
@@ -257,31 +284,35 @@ void main() {
 
     test('filter by email isNull', () async {
       await database.managers.persons.create((o) => o(name: 'No email'));
-      final result =
-          await database.managers.persons.filter((f) => f.email.isNull()).get();
+      final result = await database.managers.persons
+          .filter((f) => f.email.isNull())
+          .get();
       expect(result.isNotEmpty, isTrue);
     });
 
     test('filter by serverId isNull', () async {
       await database.managers.persons.create((o) => o(name: 'Local'));
-      final result =
-          await database.managers.persons.filter((f) => f.serverId.isNull()).get();
+      final result = await database.managers.persons
+          .filter((f) => f.serverId.isNull())
+          .get();
       expect(result.isNotEmpty, isTrue);
     });
 
     test('orderBy name asc', () async {
       await database.managers.persons.create((o) => o(name: 'Zara'));
       await database.managers.persons.create((o) => o(name: 'Aaron'));
-      final result =
-          await database.managers.persons.orderBy((o) => o.name.asc()).get();
+      final result = await database.managers.persons
+          .orderBy((o) => o.name.asc())
+          .get();
       expect(result.first.name, 'Aaron');
     });
 
     test('orderBy id desc', () async {
       await database.managers.persons.create((o) => o(name: 'First'));
       await database.managers.persons.create((o) => o(name: 'Second'));
-      final result =
-          await database.managers.persons.orderBy((o) => o.id.desc()).get();
+      final result = await database.managers.persons
+          .orderBy((o) => o.id.desc())
+          .get();
       expect(result.first.name, 'Second');
     });
 
@@ -293,18 +324,23 @@ void main() {
     });
 
     test('delete', () async {
-      final p = await database.managers.persons.createReturning((o) => o(name: 'Del'));
+      final p = await database.managers.persons.createReturning(
+        (o) => o(name: 'Del'),
+      );
       await database.managers.persons.filter((f) => f.id.equals(p.id)).delete();
       expect(await database.managers.persons.count(), 0);
     });
 
     test('update name', () async {
-      final p = await database.managers.persons.createReturning((o) => o(name: 'Old'));
+      final p = await database.managers.persons.createReturning(
+        (o) => o(name: 'Old'),
+      );
       await database.managers.persons
           .filter((f) => f.id.equals(p.id))
           .update((m) => m(name: const Value('New')));
-      final updated =
-          await database.managers.persons.filter((f) => f.id.equals(p.id)).getSingle();
+      final updated = await database.managers.persons
+          .filter((f) => f.id.equals(p.id))
+          .getSingle();
       expect(updated.name, 'New');
     });
   });
@@ -322,10 +358,12 @@ void main() {
     });
 
     test('filter by title', () async {
-      await database.managers.events
-          .create((o) => o(title: 'Standup', categoryServerId: 1, dtstart: '2026-05-01'));
-      await database.managers.events
-          .create((o) => o(title: 'Review', categoryServerId: 1, dtstart: '2026-05-02'));
+      await database.managers.events.create(
+        (o) => o(title: 'Standup', categoryServerId: 1, dtstart: '2026-05-01'),
+      );
+      await database.managers.events.create(
+        (o) => o(title: 'Review', categoryServerId: 1, dtstart: '2026-05-02'),
+      );
       final result = await database.managers.events
           .filter((f) => f.title.equals('Standup'))
           .get();
@@ -333,10 +371,12 @@ void main() {
     });
 
     test('filter by categoryServerId', () async {
-      await database.managers.events
-          .create((o) => o(title: 'A', categoryServerId: 10, dtstart: '2026-05-01'));
-      await database.managers.events
-          .create((o) => o(title: 'B', categoryServerId: 20, dtstart: '2026-05-02'));
+      await database.managers.events.create(
+        (o) => o(title: 'A', categoryServerId: 10, dtstart: '2026-05-01'),
+      );
+      await database.managers.events.create(
+        (o) => o(title: 'B', categoryServerId: 20, dtstart: '2026-05-02'),
+      );
       final result = await database.managers.events
           .filter((f) => f.categoryServerId.equals(10))
           .get();
@@ -344,8 +384,9 @@ void main() {
     });
 
     test('filter by dtstart', () async {
-      await database.managers.events
-          .create((o) => o(title: 'May', categoryServerId: 1, dtstart: '2026-05-01'));
+      await database.managers.events.create(
+        (o) => o(title: 'May', categoryServerId: 1, dtstart: '2026-05-01'),
+      );
       final result = await database.managers.events
           .filter((f) => f.dtstart.equals('2026-05-01'))
           .get();
@@ -354,12 +395,20 @@ void main() {
 
     test('filter by priority', () async {
       await database.managers.events.create(
-        (o) => o(title: 'High', categoryServerId: 1, dtstart: '2026-05-01',
-            priority: const Value('high')),
+        (o) => o(
+          title: 'High',
+          categoryServerId: 1,
+          dtstart: '2026-05-01',
+          priority: const Value('high'),
+        ),
       );
       await database.managers.events.create(
-        (o) => o(title: 'Low', categoryServerId: 1, dtstart: '2026-05-02',
-            priority: const Value('low')),
+        (o) => o(
+          title: 'Low',
+          categoryServerId: 1,
+          dtstart: '2026-05-02',
+          priority: const Value('low'),
+        ),
       );
       final result = await database.managers.events
           .filter((f) => f.priority.equals('high'))
@@ -369,12 +418,20 @@ void main() {
 
     test('filter by isActive', () async {
       await database.managers.events.create(
-        (o) => o(title: 'Active', categoryServerId: 1, dtstart: '2026-05-01',
-            isActive: const Value(true)),
+        (o) => o(
+          title: 'Active',
+          categoryServerId: 1,
+          dtstart: '2026-05-01',
+          isActive: const Value(true),
+        ),
       );
       await database.managers.events.create(
-        (o) => o(title: 'Inactive', categoryServerId: 1, dtstart: '2026-05-02',
-            isActive: const Value(false)),
+        (o) => o(
+          title: 'Inactive',
+          categoryServerId: 1,
+          dtstart: '2026-05-02',
+          isActive: const Value(false),
+        ),
       );
       final result = await database.managers.events
           .filter((f) => f.isActive.equals(true))
@@ -384,24 +441,33 @@ void main() {
     });
 
     test('filter by serverId isNull', () async {
-      await database.managers.events
-          .create((o) => o(title: 'Local', categoryServerId: 1, dtstart: '2026-05-01'));
-      final result =
-          await database.managers.events.filter((f) => f.serverId.isNull()).get();
+      await database.managers.events.create(
+        (o) => o(title: 'Local', categoryServerId: 1, dtstart: '2026-05-01'),
+      );
+      final result = await database.managers.events
+          .filter((f) => f.serverId.isNull())
+          .get();
       expect(result.isNotEmpty, isTrue);
     });
 
     test('filter by rrule isNull', () async {
-      await database.managers.events
-          .create((o) => o(title: 'No rrule', categoryServerId: 1, dtstart: '2026-05-01'));
-      final result =
-          await database.managers.events.filter((f) => f.rrule.isNull()).get();
+      await database.managers.events.create(
+        (o) => o(title: 'No rrule', categoryServerId: 1, dtstart: '2026-05-01'),
+      );
+      final result = await database.managers.events
+          .filter((f) => f.rrule.isNull())
+          .get();
       expect(result.isNotEmpty, isTrue);
     });
 
     test('filter title contains', () async {
-      await database.managers.events
-          .create((o) => o(title: 'Sprint Review', categoryServerId: 1, dtstart: '2026-05-01'));
+      await database.managers.events.create(
+        (o) => o(
+          title: 'Sprint Review',
+          categoryServerId: 1,
+          dtstart: '2026-05-01',
+        ),
+      );
       final result = await database.managers.events
           .filter((f) => f.title.contains('Review'))
           .get();
@@ -409,30 +475,38 @@ void main() {
     });
 
     test('orderBy title asc', () async {
-      await database.managers.events
-          .create((o) => o(title: 'Z Event', categoryServerId: 1, dtstart: '2026-05-01'));
-      await database.managers.events
-          .create((o) => o(title: 'A Event', categoryServerId: 1, dtstart: '2026-05-02'));
-      final result =
-          await database.managers.events.orderBy((o) => o.title.asc()).get();
+      await database.managers.events.create(
+        (o) => o(title: 'Z Event', categoryServerId: 1, dtstart: '2026-05-01'),
+      );
+      await database.managers.events.create(
+        (o) => o(title: 'A Event', categoryServerId: 1, dtstart: '2026-05-02'),
+      );
+      final result = await database.managers.events
+          .orderBy((o) => o.title.asc())
+          .get();
       expect(result.first.title, 'A Event');
     });
 
     test('orderBy dtstart desc', () async {
-      await database.managers.events
-          .create((o) => o(title: 'Old', categoryServerId: 1, dtstart: '2026-01-01'));
-      await database.managers.events
-          .create((o) => o(title: 'New', categoryServerId: 1, dtstart: '2026-12-01'));
-      final result =
-          await database.managers.events.orderBy((o) => o.dtstart.desc()).get();
+      await database.managers.events.create(
+        (o) => o(title: 'Old', categoryServerId: 1, dtstart: '2026-01-01'),
+      );
+      await database.managers.events.create(
+        (o) => o(title: 'New', categoryServerId: 1, dtstart: '2026-12-01'),
+      );
+      final result = await database.managers.events
+          .orderBy((o) => o.dtstart.desc())
+          .get();
       expect(result.first.title, 'New');
     });
 
     test('orderBy categoryServerId', () async {
-      await database.managers.events
-          .create((o) => o(title: 'B', categoryServerId: 2, dtstart: '2026-05-01'));
-      await database.managers.events
-          .create((o) => o(title: 'A', categoryServerId: 1, dtstart: '2026-05-02'));
+      await database.managers.events.create(
+        (o) => o(title: 'B', categoryServerId: 2, dtstart: '2026-05-01'),
+      );
+      await database.managers.events.create(
+        (o) => o(title: 'A', categoryServerId: 1, dtstart: '2026-05-02'),
+      );
       final result = await database.managers.events
           .orderBy((o) => o.categoryServerId.asc())
           .get();
@@ -441,15 +515,17 @@ void main() {
 
     test('count and exists', () async {
       expect(await database.managers.events.count(), 0);
-      await database.managers.events
-          .create((o) => o(title: 'E', categoryServerId: 1, dtstart: '2026-05-01'));
+      await database.managers.events.create(
+        (o) => o(title: 'E', categoryServerId: 1, dtstart: '2026-05-01'),
+      );
       expect(await database.managers.events.count(), 1);
       expect(await database.managers.events.exists(), isTrue);
     });
 
     test('delete', () async {
-      final ev = await database.managers.events
-          .createReturning((o) => o(title: 'Del', categoryServerId: 1, dtstart: '2026-05-01'));
+      final ev = await database.managers.events.createReturning(
+        (o) => o(title: 'Del', categoryServerId: 1, dtstart: '2026-05-01'),
+      );
       await database.managers.events.filter((f) => f.id.equals(ev.id)).delete();
       expect(await database.managers.events.count(), 0);
     });
@@ -467,10 +543,12 @@ void main() {
     });
 
     test('filter by eventServerId', () async {
-      await database.managers.occurrences
-          .create((o) => o(eventServerId: 10, occurrenceDate: '2026-05-01'));
-      await database.managers.occurrences
-          .create((o) => o(eventServerId: 20, occurrenceDate: '2026-05-02'));
+      await database.managers.occurrences.create(
+        (o) => o(eventServerId: 10, occurrenceDate: '2026-05-01'),
+      );
+      await database.managers.occurrences.create(
+        (o) => o(eventServerId: 20, occurrenceDate: '2026-05-02'),
+      );
       final result = await database.managers.occurrences
           .filter((f) => f.eventServerId.equals(10))
           .get();
@@ -479,12 +557,18 @@ void main() {
 
     test('filter by status', () async {
       await database.managers.occurrences.create(
-        (o) => o(eventServerId: 1, occurrenceDate: '2026-05-01',
-            status: const Value('completed')),
+        (o) => o(
+          eventServerId: 1,
+          occurrenceDate: '2026-05-01',
+          status: const Value('completed'),
+        ),
       );
       await database.managers.occurrences.create(
-        (o) => o(eventServerId: 1, occurrenceDate: '2026-05-02',
-            status: const Value('upcoming')),
+        (o) => o(
+          eventServerId: 1,
+          occurrenceDate: '2026-05-02',
+          status: const Value('upcoming'),
+        ),
       );
       final result = await database.managers.occurrences
           .filter((f) => f.status.equals('completed'))
@@ -493,8 +577,9 @@ void main() {
     });
 
     test('filter by occurrenceDate', () async {
-      await database.managers.occurrences
-          .create((o) => o(eventServerId: 1, occurrenceDate: '2026-05-15'));
+      await database.managers.occurrences.create(
+        (o) => o(eventServerId: 1, occurrenceDate: '2026-05-15'),
+      );
       final result = await database.managers.occurrences
           .filter((f) => f.occurrenceDate.equals('2026-05-15'))
           .get();
@@ -503,12 +588,18 @@ void main() {
 
     test('filter by syncStatus', () async {
       await database.managers.occurrences.create(
-        (o) => o(eventServerId: 1, occurrenceDate: '2026-05-01',
-            syncStatus: const Value(1)),
+        (o) => o(
+          eventServerId: 1,
+          occurrenceDate: '2026-05-01',
+          syncStatus: const Value(1),
+        ),
       );
       await database.managers.occurrences.create(
-        (o) => o(eventServerId: 1, occurrenceDate: '2026-05-02',
-            syncStatus: const Value(0)),
+        (o) => o(
+          eventServerId: 1,
+          occurrenceDate: '2026-05-02',
+          syncStatus: const Value(0),
+        ),
       );
       final result = await database.managers.occurrences
           .filter((f) => f.syncStatus.equals(1))
@@ -517,8 +608,9 @@ void main() {
     });
 
     test('filter by notes isNull', () async {
-      await database.managers.occurrences
-          .create((o) => o(eventServerId: 1, occurrenceDate: '2026-05-01'));
+      await database.managers.occurrences.create(
+        (o) => o(eventServerId: 1, occurrenceDate: '2026-05-01'),
+      );
       final result = await database.managers.occurrences
           .filter((f) => f.notes.isNull())
           .get();
@@ -526,10 +618,12 @@ void main() {
     });
 
     test('orderBy occurrenceDate asc', () async {
-      await database.managers.occurrences
-          .create((o) => o(eventServerId: 1, occurrenceDate: '2026-06-01'));
-      await database.managers.occurrences
-          .create((o) => o(eventServerId: 1, occurrenceDate: '2026-05-01'));
+      await database.managers.occurrences.create(
+        (o) => o(eventServerId: 1, occurrenceDate: '2026-06-01'),
+      );
+      await database.managers.occurrences.create(
+        (o) => o(eventServerId: 1, occurrenceDate: '2026-05-01'),
+      );
       final result = await database.managers.occurrences
           .orderBy((o) => o.occurrenceDate.asc())
           .get();
@@ -538,9 +632,19 @@ void main() {
 
     test('orderBy syncStatus', () async {
       await database.managers.occurrences.create(
-          (o) => o(eventServerId: 1, occurrenceDate: '2026-05-01', syncStatus: const Value(2)));
+        (o) => o(
+          eventServerId: 1,
+          occurrenceDate: '2026-05-01',
+          syncStatus: const Value(2),
+        ),
+      );
       await database.managers.occurrences.create(
-          (o) => o(eventServerId: 1, occurrenceDate: '2026-05-02', syncStatus: const Value(0)));
+        (o) => o(
+          eventServerId: 1,
+          occurrenceDate: '2026-05-02',
+          syncStatus: const Value(0),
+        ),
+      );
       final result = await database.managers.occurrences
           .orderBy((o) => o.syncStatus.asc())
           .get();
@@ -549,8 +653,9 @@ void main() {
 
     test('count and exists', () async {
       expect(await database.managers.occurrences.count(), 0);
-      await database.managers.occurrences
-          .create((o) => o(eventServerId: 1, occurrenceDate: '2026-05-01'));
+      await database.managers.occurrences.create(
+        (o) => o(eventServerId: 1, occurrenceDate: '2026-05-01'),
+      );
       expect(await database.managers.occurrences.count(), 1);
       expect(await database.managers.occurrences.exists(), isTrue);
     });
@@ -571,7 +676,8 @@ void main() {
   group('Manager API - Tasks', () {
     test('create and get', () async {
       await database.managers.tasks.create(
-        (o) => o(title: 'Task', createdAt: '2026-01-01', updatedAt: '2026-01-01'),
+        (o) =>
+            o(title: 'Task', createdAt: '2026-01-01', updatedAt: '2026-01-01'),
       );
       final tasks = await database.managers.tasks.get();
       expect(tasks.length, 1);
@@ -579,9 +685,19 @@ void main() {
 
     test('filter by title', () async {
       await database.managers.tasks.create(
-          (o) => o(title: 'Write tests', createdAt: '2026-01-01', updatedAt: '2026-01-01'));
+        (o) => o(
+          title: 'Write tests',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        ),
+      );
       await database.managers.tasks.create(
-          (o) => o(title: 'Fix bug', createdAt: '2026-01-01', updatedAt: '2026-01-01'));
+        (o) => o(
+          title: 'Fix bug',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        ),
+      );
       final result = await database.managers.tasks
           .filter((f) => f.title.equals('Fix bug'))
           .get();
@@ -590,8 +706,12 @@ void main() {
 
     test('filter by status', () async {
       await database.managers.tasks.create(
-        (o) => o(title: 'T', createdAt: '2026-01-01', updatedAt: '2026-01-01',
-            status: const Value('done')),
+        (o) => o(
+          title: 'T',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          status: const Value('done'),
+        ),
       );
       final result = await database.managers.tasks
           .filter((f) => f.status.equals('done'))
@@ -601,8 +721,12 @@ void main() {
 
     test('filter by priority', () async {
       await database.managers.tasks.create(
-        (o) => o(title: 'T', createdAt: '2026-01-01', updatedAt: '2026-01-01',
-            priority: const Value('high')),
+        (o) => o(
+          title: 'T',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          priority: const Value('high'),
+        ),
       );
       final result = await database.managers.tasks
           .filter((f) => f.priority.equals('high'))
@@ -612,8 +736,12 @@ void main() {
 
     test('filter by syncStatus', () async {
       await database.managers.tasks.create(
-        (o) => o(title: 'Pending', createdAt: '2026-01-01', updatedAt: '2026-01-01',
-            syncStatus: const Value(1)),
+        (o) => o(
+          title: 'Pending',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          syncStatus: const Value(1),
+        ),
       );
       final result = await database.managers.tasks
           .filter((f) => f.syncStatus.equals(1))
@@ -623,7 +751,12 @@ void main() {
 
     test('filter by dueDate isNull', () async {
       await database.managers.tasks.create(
-          (o) => o(title: 'No due', createdAt: '2026-01-01', updatedAt: '2026-01-01'));
+        (o) => o(
+          title: 'No due',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        ),
+      );
       final result = await database.managers.tasks
           .filter((f) => f.dueDate.isNull())
           .get();
@@ -632,7 +765,12 @@ void main() {
 
     test('filter by assigneeServerId isNull', () async {
       await database.managers.tasks.create(
-          (o) => o(title: 'Unassigned', createdAt: '2026-01-01', updatedAt: '2026-01-01'));
+        (o) => o(
+          title: 'Unassigned',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        ),
+      );
       final result = await database.managers.tasks
           .filter((f) => f.assigneeServerId.isNull())
           .get();
@@ -641,7 +779,12 @@ void main() {
 
     test('filter by categoryServerId isNull', () async {
       await database.managers.tasks.create(
-          (o) => o(title: 'No cat', createdAt: '2026-01-01', updatedAt: '2026-01-01'));
+        (o) => o(
+          title: 'No cat',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        ),
+      );
       final result = await database.managers.tasks
           .filter((f) => f.categoryServerId.isNull())
           .get();
@@ -650,8 +793,12 @@ void main() {
 
     test('filter by recurrence', () async {
       await database.managers.tasks.create(
-        (o) => o(title: 'Daily', createdAt: '2026-01-01', updatedAt: '2026-01-01',
-            recurrence: const Value('daily')),
+        (o) => o(
+          title: 'Daily',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          recurrence: const Value('daily'),
+        ),
       );
       final result = await database.managers.tasks
           .filter((f) => f.recurrence.equals('daily'))
@@ -661,8 +808,12 @@ void main() {
 
     test('filter by order', () async {
       await database.managers.tasks.create(
-        (o) => o(title: 'T', createdAt: '2026-01-01', updatedAt: '2026-01-01',
-            order: const Value(5)),
+        (o) => o(
+          title: 'T',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          order: const Value(5),
+        ),
       );
       final result = await database.managers.tasks
           .filter((f) => f.order.equals(5))
@@ -672,19 +823,28 @@ void main() {
 
     test('orderBy title asc', () async {
       await database.managers.tasks.create(
-          (o) => o(title: 'Zap', createdAt: '2026-01-01', updatedAt: '2026-01-01'));
+        (o) =>
+            o(title: 'Zap', createdAt: '2026-01-01', updatedAt: '2026-01-01'),
+      );
       await database.managers.tasks.create(
-          (o) => o(title: 'Alpha', createdAt: '2026-01-01', updatedAt: '2026-01-01'));
-      final result =
-          await database.managers.tasks.orderBy((o) => o.title.asc()).get();
+        (o) =>
+            o(title: 'Alpha', createdAt: '2026-01-01', updatedAt: '2026-01-01'),
+      );
+      final result = await database.managers.tasks
+          .orderBy((o) => o.title.asc())
+          .get();
       expect(result.first.title, 'Alpha');
     });
 
     test('orderBy createdAt', () async {
       await database.managers.tasks.create(
-          (o) => o(title: 'Old', createdAt: '2025-01-01', updatedAt: '2025-01-01'));
+        (o) =>
+            o(title: 'Old', createdAt: '2025-01-01', updatedAt: '2025-01-01'),
+      );
       await database.managers.tasks.create(
-          (o) => o(title: 'New', createdAt: '2026-01-01', updatedAt: '2026-01-01'));
+        (o) =>
+            o(title: 'New', createdAt: '2026-01-01', updatedAt: '2026-01-01'),
+      );
       final result = await database.managers.tasks
           .orderBy((o) => o.createdAt.desc())
           .get();
@@ -693,31 +853,44 @@ void main() {
 
     test('orderBy order asc', () async {
       await database.managers.tasks.create(
-        (o) => o(title: 'B', createdAt: '2026-01-01', updatedAt: '2026-01-01',
-            order: const Value(2)),
+        (o) => o(
+          title: 'B',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          order: const Value(2),
+        ),
       );
       await database.managers.tasks.create(
-        (o) => o(title: 'A', createdAt: '2026-01-01', updatedAt: '2026-01-01',
-            order: const Value(1)),
+        (o) => o(
+          title: 'A',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          order: const Value(1),
+        ),
       );
-      final result =
-          await database.managers.tasks.orderBy((o) => o.order.asc()).get();
+      final result = await database.managers.tasks
+          .orderBy((o) => o.order.asc())
+          .get();
       expect(result.first.title, 'A');
     });
 
     test('count and exists', () async {
       expect(await database.managers.tasks.count(), 0);
       await database.managers.tasks.create(
-          (o) => o(title: 'T', createdAt: '2026-01-01', updatedAt: '2026-01-01'));
+        (o) => o(title: 'T', createdAt: '2026-01-01', updatedAt: '2026-01-01'),
+      );
       expect(await database.managers.tasks.count(), 1);
       expect(await database.managers.tasks.exists(), isTrue);
     });
 
     test('delete', () async {
       final task = await database.managers.tasks.createReturning(
-        (o) => o(title: 'Del', createdAt: '2026-01-01', updatedAt: '2026-01-01'),
+        (o) =>
+            o(title: 'Del', createdAt: '2026-01-01', updatedAt: '2026-01-01'),
       );
-      await database.managers.tasks.filter((f) => f.id.equals(task.id)).delete();
+      await database.managers.tasks
+          .filter((f) => f.id.equals(task.id))
+          .delete();
       expect(await database.managers.tasks.count(), 0);
     });
   });
@@ -746,7 +919,9 @@ void main() {
     });
 
     test('filter by taskLocalId', () async {
-      await database.managers.subtasks.create((o) => o(taskLocalId: taskId, title: 'Sub'));
+      await database.managers.subtasks.create(
+        (o) => o(taskLocalId: taskId, title: 'Sub'),
+      );
       final result = await database.managers.subtasks
           .filter((f) => f.taskLocalId.equals(taskId))
           .get();
@@ -755,7 +930,11 @@ void main() {
 
     test('filter by status', () async {
       await database.managers.subtasks.create(
-        (o) => o(taskLocalId: taskId, title: 'Done sub', status: const Value('done')),
+        (o) => o(
+          taskLocalId: taskId,
+          title: 'Done sub',
+          status: const Value('done'),
+        ),
       );
       final result = await database.managers.subtasks
           .filter((f) => f.status.equals('done'))
@@ -764,7 +943,9 @@ void main() {
     });
 
     test('filter by title contains', () async {
-      await database.managers.subtasks.create((o) => o(taskLocalId: taskId, title: 'Write code'));
+      await database.managers.subtasks.create(
+        (o) => o(taskLocalId: taskId, title: 'Write code'),
+      );
       final result = await database.managers.subtasks
           .filter((f) => f.title.contains('code'))
           .get();
@@ -773,7 +954,11 @@ void main() {
 
     test('filter by syncStatus', () async {
       await database.managers.subtasks.create(
-        (o) => o(taskLocalId: taskId, title: 'Pending', syncStatus: const Value(1)),
+        (o) => o(
+          taskLocalId: taskId,
+          title: 'Pending',
+          syncStatus: const Value(1),
+        ),
       );
       final result = await database.managers.subtasks
           .filter((f) => f.syncStatus.equals(1))
@@ -782,7 +967,9 @@ void main() {
     });
 
     test('filter by dueDate isNull', () async {
-      await database.managers.subtasks.create((o) => o(taskLocalId: taskId, title: 'No due'));
+      await database.managers.subtasks.create(
+        (o) => o(taskLocalId: taskId, title: 'No due'),
+      );
       final result = await database.managers.subtasks
           .filter((f) => f.dueDate.isNull())
           .get();
@@ -790,7 +977,9 @@ void main() {
     });
 
     test('filter by serverId isNull', () async {
-      await database.managers.subtasks.create((o) => o(taskLocalId: taskId, title: 'Local'));
+      await database.managers.subtasks.create(
+        (o) => o(taskLocalId: taskId, title: 'Local'),
+      );
       final result = await database.managers.subtasks
           .filter((f) => f.serverId.isNull())
           .get();
@@ -799,28 +988,39 @@ void main() {
 
     test('orderBy order asc', () async {
       await database.managers.subtasks.create(
-          (o) => o(taskLocalId: taskId, title: 'B', order: const Value(2)));
+        (o) => o(taskLocalId: taskId, title: 'B', order: const Value(2)),
+      );
       await database.managers.subtasks.create(
-          (o) => o(taskLocalId: taskId, title: 'A', order: const Value(1)));
-      final result =
-          await database.managers.subtasks.orderBy((o) => o.order.asc()).get();
+        (o) => o(taskLocalId: taskId, title: 'A', order: const Value(1)),
+      );
+      final result = await database.managers.subtasks
+          .orderBy((o) => o.order.asc())
+          .get();
       expect(result.first.title, 'A');
     });
 
     test('orderBy title desc', () async {
-      await database.managers.subtasks.create((o) => o(taskLocalId: taskId, title: 'Alpha'));
-      await database.managers.subtasks.create((o) => o(taskLocalId: taskId, title: 'Zeta'));
-      final result =
-          await database.managers.subtasks.orderBy((o) => o.title.desc()).get();
+      await database.managers.subtasks.create(
+        (o) => o(taskLocalId: taskId, title: 'Alpha'),
+      );
+      await database.managers.subtasks.create(
+        (o) => o(taskLocalId: taskId, title: 'Zeta'),
+      );
+      final result = await database.managers.subtasks
+          .orderBy((o) => o.title.desc())
+          .get();
       expect(result.first.title, 'Zeta');
     });
 
     test('count, exists, delete', () async {
-      final sub = await database.managers.subtasks
-          .createReturning((o) => o(taskLocalId: taskId, title: 'Del'));
+      final sub = await database.managers.subtasks.createReturning(
+        (o) => o(taskLocalId: taskId, title: 'Del'),
+      );
       expect(await database.managers.subtasks.count(), 1);
       expect(await database.managers.subtasks.exists(), isTrue);
-      await database.managers.subtasks.filter((f) => f.id.equals(sub.id)).delete();
+      await database.managers.subtasks
+          .filter((f) => f.id.equals(sub.id))
+          .delete();
       expect(await database.managers.subtasks.count(), 0);
     });
   });
@@ -845,9 +1045,11 @@ void main() {
 
     test('filter by isActive', () async {
       await database.managers.creditCards.create(
-          (o) => o(name: 'Active', isActive: const Value(true)));
+        (o) => o(name: 'Active', isActive: const Value(true)),
+      );
       await database.managers.creditCards.create(
-          (o) => o(name: 'Inactive', isActive: const Value(false)));
+        (o) => o(name: 'Inactive', isActive: const Value(false)),
+      );
       final result = await database.managers.creditCards
           .filter((f) => f.isActive.equals(true))
           .get();
@@ -856,7 +1058,8 @@ void main() {
 
     test('filter by syncStatus', () async {
       await database.managers.creditCards.create(
-          (o) => o(name: 'Card', syncStatus: const Value(1)));
+        (o) => o(name: 'Card', syncStatus: const Value(1)),
+      );
       final result = await database.managers.creditCards
           .filter((f) => f.syncStatus.equals(1))
           .get();
@@ -880,7 +1083,9 @@ void main() {
     });
 
     test('filter by lastFour isNull', () async {
-      await database.managers.creditCards.create((o) => o(name: 'No last four'));
+      await database.managers.creditCards.create(
+        (o) => o(name: 'No last four'),
+      );
       final result = await database.managers.creditCards
           .filter((f) => f.lastFour.isNull())
           .get();
@@ -898,9 +1103,11 @@ void main() {
 
     test('orderBy syncStatus', () async {
       await database.managers.creditCards.create(
-          (o) => o(name: 'A', syncStatus: const Value(2)));
+        (o) => o(name: 'A', syncStatus: const Value(2)),
+      );
       await database.managers.creditCards.create(
-          (o) => o(name: 'B', syncStatus: const Value(0)));
+        (o) => o(name: 'B', syncStatus: const Value(0)),
+      );
       final result = await database.managers.creditCards
           .orderBy((o) => o.syncStatus.asc())
           .get();
@@ -908,11 +1115,14 @@ void main() {
     });
 
     test('count, exists, delete', () async {
-      final card =
-          await database.managers.creditCards.createReturning((o) => o(name: 'Del'));
+      final card = await database.managers.creditCards.createReturning(
+        (o) => o(name: 'Del'),
+      );
       expect(await database.managers.creditCards.count(), 1);
       expect(await database.managers.creditCards.exists(), isTrue);
-      await database.managers.creditCards.filter((f) => f.id.equals(card.id)).delete();
+      await database.managers.creditCards
+          .filter((f) => f.id.equals(card.id))
+          .delete();
       expect(await database.managers.creditCards.count(), 0);
     });
   });
@@ -1015,14 +1225,20 @@ void main() {
 
   group('Manager API - GroceryStores', () {
     test('create and get', () async {
-      await database.managers.groceryStores.create((o) => o(name: 'Whole Foods'));
+      await database.managers.groceryStores.create(
+        (o) => o(name: 'Whole Foods'),
+      );
       final stores = await database.managers.groceryStores.get();
       expect(stores.length, 1);
     });
 
     test('filter by name', () async {
-      await database.managers.groceryStores.create((o) => o(name: 'Whole Foods'));
-      await database.managers.groceryStores.create((o) => o(name: 'Trader Joes'));
+      await database.managers.groceryStores.create(
+        (o) => o(name: 'Whole Foods'),
+      );
+      await database.managers.groceryStores.create(
+        (o) => o(name: 'Trader Joes'),
+      );
       final result = await database.managers.groceryStores
           .filter((f) => f.name.equals('Whole Foods'))
           .get();
@@ -1031,9 +1247,11 @@ void main() {
 
     test('filter by isActive', () async {
       await database.managers.groceryStores.create(
-          (o) => o(name: 'Active', isActive: const Value(true)));
+        (o) => o(name: 'Active', isActive: const Value(true)),
+      );
       await database.managers.groceryStores.create(
-          (o) => o(name: 'Closed', isActive: const Value(false)));
+        (o) => o(name: 'Closed', isActive: const Value(false)),
+      );
       final result = await database.managers.groceryStores
           .filter((f) => f.isActive.equals(true))
           .get();
@@ -1042,7 +1260,8 @@ void main() {
 
     test('filter by syncStatus', () async {
       await database.managers.groceryStores.create(
-          (o) => o(name: 'Pending', syncStatus: const Value(1)));
+        (o) => o(name: 'Pending', syncStatus: const Value(1)),
+      );
       final result = await database.managers.groceryStores
           .filter((f) => f.syncStatus.equals(1))
           .get();
@@ -1076,9 +1295,11 @@ void main() {
 
     test('orderBy syncStatus', () async {
       await database.managers.groceryStores.create(
-          (o) => o(name: 'A', syncStatus: const Value(2)));
+        (o) => o(name: 'A', syncStatus: const Value(2)),
+      );
       await database.managers.groceryStores.create(
-          (o) => o(name: 'B', syncStatus: const Value(0)));
+        (o) => o(name: 'B', syncStatus: const Value(0)),
+      );
       final result = await database.managers.groceryStores
           .orderBy((o) => o.syncStatus.asc())
           .get();
@@ -1086,8 +1307,9 @@ void main() {
     });
 
     test('count, exists, delete', () async {
-      final store =
-          await database.managers.groceryStores.createReturning((o) => o(name: 'Del'));
+      final store = await database.managers.groceryStores.createReturning(
+        (o) => o(name: 'Del'),
+      );
       expect(await database.managers.groceryStores.count(), 1);
       expect(await database.managers.groceryStores.exists(), isTrue);
       await database.managers.groceryStores
@@ -1117,7 +1339,8 @@ void main() {
 
     test('filter by defaultUnit', () async {
       await database.managers.groceryItems.create(
-          (o) => o(name: 'Milk', defaultUnit: const Value('gallon')));
+        (o) => o(name: 'Milk', defaultUnit: const Value('gallon')),
+      );
       final result = await database.managers.groceryItems
           .filter((f) => f.defaultUnit.equals('gallon'))
           .get();
@@ -1158,8 +1381,9 @@ void main() {
     });
 
     test('count, exists, delete', () async {
-      final item =
-          await database.managers.groceryItems.createReturning((o) => o(name: 'Del'));
+      final item = await database.managers.groceryItems.createReturning(
+        (o) => o(name: 'Del'),
+      );
       expect(await database.managers.groceryItems.count(), 1);
       expect(await database.managers.groceryItems.exists(), isTrue);
       await database.managers.groceryItems
@@ -1189,7 +1413,8 @@ void main() {
 
     test('filter by syncStatus', () async {
       await database.managers.groceryOnHand.create(
-          (o) => o(itemServerId: 1, syncStatus: const Value(1)));
+        (o) => o(itemServerId: 1, syncStatus: const Value(1)),
+      );
       final result = await database.managers.groceryOnHand
           .filter((f) => f.syncStatus.equals(1))
           .get();
@@ -1198,7 +1423,8 @@ void main() {
 
     test('filter by unit', () async {
       await database.managers.groceryOnHand.create(
-          (o) => o(itemServerId: 1, unit: const Value('lb')));
+        (o) => o(itemServerId: 1, unit: const Value('lb')),
+      );
       final result = await database.managers.groceryOnHand
           .filter((f) => f.unit.equals('lb'))
           .get();
@@ -1216,9 +1442,11 @@ void main() {
 
     test('orderBy syncStatus desc', () async {
       await database.managers.groceryOnHand.create(
-          (o) => o(itemServerId: 1, syncStatus: const Value(0)));
+        (o) => o(itemServerId: 1, syncStatus: const Value(0)),
+      );
       await database.managers.groceryOnHand.create(
-          (o) => o(itemServerId: 2, syncStatus: const Value(2)));
+        (o) => o(itemServerId: 2, syncStatus: const Value(2)),
+      );
       final result = await database.managers.groceryOnHand
           .orderBy((o) => o.syncStatus.desc())
           .get();
@@ -1226,8 +1454,9 @@ void main() {
     });
 
     test('count, exists, delete', () async {
-      final row = await database.managers.groceryOnHand
-          .createReturning((o) => o(itemServerId: 99));
+      final row = await database.managers.groceryOnHand.createReturning(
+        (o) => o(itemServerId: 99),
+      );
       expect(await database.managers.groceryOnHand.count(), 1);
       expect(await database.managers.groceryOnHand.exists(), isTrue);
       await database.managers.groceryOnHand
@@ -1257,9 +1486,11 @@ void main() {
 
     test('filter by status', () async {
       await database.managers.groceryLists.create(
-          (o) => o(name: 'Active', status: const Value('active')));
+        (o) => o(name: 'Active', status: const Value('active')),
+      );
       await database.managers.groceryLists.create(
-          (o) => o(name: 'Draft', status: const Value('draft')));
+        (o) => o(name: 'Draft', status: const Value('draft')),
+      );
       final result = await database.managers.groceryLists
           .filter((f) => f.status.equals('active'))
           .get();
@@ -1268,7 +1499,8 @@ void main() {
 
     test('filter by syncStatus', () async {
       await database.managers.groceryLists.create(
-          (o) => o(name: 'Pending', syncStatus: const Value(1)));
+        (o) => o(name: 'Pending', syncStatus: const Value(1)),
+      );
       final result = await database.managers.groceryLists
           .filter((f) => f.syncStatus.equals(1))
           .get();
@@ -1310,9 +1542,11 @@ void main() {
 
     test('orderBy status', () async {
       await database.managers.groceryLists.create(
-          (o) => o(name: 'Active', status: const Value('active')));
+        (o) => o(name: 'Active', status: const Value('active')),
+      );
       await database.managers.groceryLists.create(
-          (o) => o(name: 'Draft', status: const Value('draft')));
+        (o) => o(name: 'Draft', status: const Value('draft')),
+      );
       final result = await database.managers.groceryLists
           .orderBy((o) => o.status.asc())
           .get();
@@ -1320,8 +1554,9 @@ void main() {
     });
 
     test('count, exists, delete', () async {
-      final list =
-          await database.managers.groceryLists.createReturning((o) => o(name: 'Del'));
+      final list = await database.managers.groceryLists.createReturning(
+        (o) => o(name: 'Del'),
+      );
       expect(await database.managers.groceryLists.count(), 1);
       expect(await database.managers.groceryLists.exists(), isTrue);
       await database.managers.groceryLists
@@ -1352,7 +1587,8 @@ void main() {
 
     test('filter by listLocalId', () async {
       await database.managers.groceryListItems.create(
-          (o) => o(listLocalId: listId, itemServerId: 1));
+        (o) => o(listLocalId: listId, itemServerId: 1),
+      );
       final result = await database.managers.groceryListItems
           .filter((f) => f.listLocalId.equals(listId))
           .get();
@@ -1361,9 +1597,11 @@ void main() {
 
     test('filter by itemServerId', () async {
       await database.managers.groceryListItems.create(
-          (o) => o(listLocalId: listId, itemServerId: 10));
+        (o) => o(listLocalId: listId, itemServerId: 10),
+      );
       await database.managers.groceryListItems.create(
-          (o) => o(listLocalId: listId, itemServerId: 20));
+        (o) => o(listLocalId: listId, itemServerId: 20),
+      );
       final result = await database.managers.groceryListItems
           .filter((f) => f.itemServerId.equals(10))
           .get();
@@ -1372,7 +1610,11 @@ void main() {
 
     test('filter by status', () async {
       await database.managers.groceryListItems.create(
-        (o) => o(listLocalId: listId, itemServerId: 1, status: const Value('in_cart')),
+        (o) => o(
+          listLocalId: listId,
+          itemServerId: 1,
+          status: const Value('in_cart'),
+        ),
       );
       final result = await database.managers.groceryListItems
           .filter((f) => f.status.equals('in_cart'))
@@ -1382,7 +1624,8 @@ void main() {
 
     test('filter by syncStatus', () async {
       await database.managers.groceryListItems.create(
-        (o) => o(listLocalId: listId, itemServerId: 1, syncStatus: const Value(1)),
+        (o) =>
+            o(listLocalId: listId, itemServerId: 1, syncStatus: const Value(1)),
       );
       final result = await database.managers.groceryListItems
           .filter((f) => f.syncStatus.equals(1))
@@ -1402,7 +1645,8 @@ void main() {
 
     test('filter by serverId isNull', () async {
       await database.managers.groceryListItems.create(
-          (o) => o(listLocalId: listId, itemServerId: 1));
+        (o) => o(listLocalId: listId, itemServerId: 1),
+      );
       final result = await database.managers.groceryListItems
           .filter((f) => f.serverId.isNull())
           .get();
@@ -1411,7 +1655,8 @@ void main() {
 
     test('filter by listServerId isNull', () async {
       await database.managers.groceryListItems.create(
-          (o) => o(listLocalId: listId, itemServerId: 1));
+        (o) => o(listLocalId: listId, itemServerId: 1),
+      );
       final result = await database.managers.groceryListItems
           .filter((f) => f.listServerId.isNull())
           .get();
@@ -1420,7 +1665,8 @@ void main() {
 
     test('filter by notes isNull', () async {
       await database.managers.groceryListItems.create(
-          (o) => o(listLocalId: listId, itemServerId: 1));
+        (o) => o(listLocalId: listId, itemServerId: 1),
+      );
       final result = await database.managers.groceryListItems
           .filter((f) => f.notes.isNull())
           .get();
@@ -1429,7 +1675,8 @@ void main() {
 
     test('filter by price isNull', () async {
       await database.managers.groceryListItems.create(
-          (o) => o(listLocalId: listId, itemServerId: 1));
+        (o) => o(listLocalId: listId, itemServerId: 1),
+      );
       final result = await database.managers.groceryListItems
           .filter((f) => f.price.isNull())
           .get();
@@ -1438,9 +1685,11 @@ void main() {
 
     test('orderBy itemServerId asc', () async {
       await database.managers.groceryListItems.create(
-          (o) => o(listLocalId: listId, itemServerId: 5));
+        (o) => o(listLocalId: listId, itemServerId: 5),
+      );
       await database.managers.groceryListItems.create(
-          (o) => o(listLocalId: listId, itemServerId: 1));
+        (o) => o(listLocalId: listId, itemServerId: 1),
+      );
       final result = await database.managers.groceryListItems
           .orderBy((o) => o.itemServerId.asc())
           .get();
@@ -1449,10 +1698,18 @@ void main() {
 
     test('orderBy status', () async {
       await database.managers.groceryListItems.create(
-        (o) => o(listLocalId: listId, itemServerId: 1, status: const Value('needed')),
+        (o) => o(
+          listLocalId: listId,
+          itemServerId: 1,
+          status: const Value('needed'),
+        ),
       );
       await database.managers.groceryListItems.create(
-        (o) => o(listLocalId: listId, itemServerId: 2, status: const Value('in_cart')),
+        (o) => o(
+          listLocalId: listId,
+          itemServerId: 2,
+          status: const Value('in_cart'),
+        ),
       );
       final result = await database.managers.groceryListItems
           .orderBy((o) => o.status.asc())
@@ -1481,11 +1738,16 @@ void main() {
     test('computedField covers all column getters', () async {
       await database.managers.categories.create((o) => o(name: 'Work'));
       final nameField = database.managers.categories.computedField((a) {
-        a.id; a.serverId; a.color; a.icon; a.description;
+        a.id;
+        a.serverId;
+        a.color;
+        a.icon;
+        a.description;
         return a.name;
       });
-      final rows = await database.managers.categories
-          .withFields([nameField]).get();
+      final rows = await database.managers.categories.withFields([
+        nameField,
+      ]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.name, 'Work');
     });
@@ -1495,11 +1757,14 @@ void main() {
     test('computedField covers all column getters', () async {
       await database.managers.persons.create((o) => o(name: 'Alice'));
       final nameField = database.managers.persons.computedField((a) {
-        a.id; a.serverId; a.email;
+        a.id;
+        a.serverId;
+        a.email;
         return a.name;
       });
-      final rows = await database.managers.persons
-          .withFields([nameField]).get();
+      final rows = await database.managers.persons.withFields([
+        nameField,
+      ]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.name, 'Alice');
     });
@@ -1511,13 +1776,22 @@ void main() {
         (o) => o(title: 'Meeting', categoryServerId: 1, dtstart: '2026-05-01'),
       );
       final titleField = database.managers.events.computedField((a) {
-        a.id; a.serverId; a.categoryServerId; a.rrule; a.dtstart;
-        a.priority; a.description; a.isActive; a.amount; a.location;
+        a.id;
+        a.serverId;
+        a.categoryServerId;
+        a.rrule;
+        a.dtstart;
+        a.priority;
+        a.description;
+        a.isActive;
+        a.amount;
+        a.location;
         a.durationDays;
         return a.title;
       });
-      final rows = await database.managers.events
-          .withFields([titleField]).get();
+      final rows = await database.managers.events.withFields([
+        titleField,
+      ]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.title, 'Meeting');
     });
@@ -1529,11 +1803,17 @@ void main() {
         (o) => o(eventServerId: 100, occurrenceDate: '2026-05-01'),
       );
       final dateField = database.managers.occurrences.computedField((a) {
-        a.id; a.serverId; a.eventServerId; a.status; a.notes; a.syncStatus;
+        a.id;
+        a.serverId;
+        a.eventServerId;
+        a.status;
+        a.notes;
+        a.syncStatus;
         return a.occurrenceDate;
       });
-      final rows = await database.managers.occurrences
-          .withFields([dateField]).get();
+      final rows = await database.managers.occurrences.withFields([
+        dateField,
+      ]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.occurrenceDate, '2026-05-01');
     });
@@ -1542,17 +1822,32 @@ void main() {
   group('AnnotationComposer - Tasks', () {
     test('computedField covers all column getters', () async {
       await database.managers.tasks.create(
-        (o) => o(title: 'Do work', createdAt: '2026-01-01', updatedAt: '2026-01-01'),
+        (o) => o(
+          title: 'Do work',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        ),
       );
       final titleField = database.managers.tasks.computedField((a) {
-        a.id; a.serverId; a.description; a.status; a.priority;
-        a.assigneeServerId; a.categoryServerId; a.dueDate; a.estimatedMinutes;
-        a.recurrence; a.occurrenceServerId; a.order; a.syncStatus;
-        a.completedAt; a.createdAt; a.updatedAt;
+        a.id;
+        a.serverId;
+        a.description;
+        a.status;
+        a.priority;
+        a.assigneeServerId;
+        a.categoryServerId;
+        a.dueDate;
+        a.estimatedMinutes;
+        a.recurrence;
+        a.occurrenceServerId;
+        a.order;
+        a.syncStatus;
+        a.completedAt;
+        a.createdAt;
+        a.updatedAt;
         return a.title;
       });
-      final rows = await database.managers.tasks
-          .withFields([titleField]).get();
+      final rows = await database.managers.tasks.withFields([titleField]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.title, 'Do work');
     });
@@ -1562,7 +1857,11 @@ void main() {
     late int taskId;
     setUp(() async {
       taskId = await database.managers.tasks.create(
-        (o) => o(title: 'Parent', createdAt: '2026-01-01', updatedAt: '2026-01-01'),
+        (o) => o(
+          title: 'Parent',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        ),
       );
     });
 
@@ -1571,12 +1870,20 @@ void main() {
         (o) => o(taskLocalId: taskId, title: 'Sub'),
       );
       final titleField = database.managers.subtasks.computedField((a) {
-        a.id; a.serverId; a.taskLocalId; a.taskServerId; a.status;
-        a.dueDate; a.order; a.completedAt; a.syncStatus;
+        a.id;
+        a.serverId;
+        a.taskLocalId;
+        a.taskServerId;
+        a.status;
+        a.dueDate;
+        a.order;
+        a.completedAt;
+        a.syncStatus;
         return a.title;
       });
-      final rows = await database.managers.subtasks
-          .withFields([titleField]).get();
+      final rows = await database.managers.subtasks.withFields([
+        titleField,
+      ]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.title, 'Sub');
     });
@@ -1586,14 +1893,25 @@ void main() {
     test('computedField covers all column getters', () async {
       await database.managers.creditCards.create((o) => o(name: 'Visa'));
       final nameField = database.managers.creditCards.computedField((a) {
-        a.id; a.serverId; a.issuer; a.lastFour; a.statementCloseDay;
-        a.gracePeriodDays; a.weekendShift; a.cycleDays; a.cycleReferenceDate;
-        a.dueDaySameMonth; a.dueDayNextMonth; a.annualFeeMonth;
-        a.isActive; a.syncStatus;
+        a.id;
+        a.serverId;
+        a.issuer;
+        a.lastFour;
+        a.statementCloseDay;
+        a.gracePeriodDays;
+        a.weekendShift;
+        a.cycleDays;
+        a.cycleReferenceDate;
+        a.dueDaySameMonth;
+        a.dueDayNextMonth;
+        a.annualFeeMonth;
+        a.isActive;
+        a.syncStatus;
         return a.name;
       });
-      final rows = await database.managers.creditCards
-          .withFields([nameField]).get();
+      final rows = await database.managers.creditCards.withFields([
+        nameField,
+      ]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.name, 'Visa');
     });
@@ -1614,14 +1932,28 @@ void main() {
           nextDueDays: 28,
         ),
       );
-      final nameField = database.managers.creditCardTrackerCache.computedField((a) {
-        a.id; a.cardServerId; a.issuer; a.lastFour; a.grace; a.prevClose;
-        a.prevDue; a.nextClose; a.nextCloseDays; a.nextDue; a.nextDueDays;
-        a.annualFeeDate; a.annualFeeDays; a.prevDueOverdue;
+      final nameField = database.managers.creditCardTrackerCache.computedField((
+        a,
+      ) {
+        a.id;
+        a.cardServerId;
+        a.issuer;
+        a.lastFour;
+        a.grace;
+        a.prevClose;
+        a.prevDue;
+        a.nextClose;
+        a.nextCloseDays;
+        a.nextDue;
+        a.nextDueDays;
+        a.annualFeeDate;
+        a.annualFeeDays;
+        a.prevDueOverdue;
         return a.name;
       });
-      final rows = await database.managers.creditCardTrackerCache
-          .withFields([nameField]).get();
+      final rows = await database.managers.creditCardTrackerCache.withFields([
+        nameField,
+      ]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.name, 'Card');
     });
@@ -1631,11 +1963,16 @@ void main() {
     test('computedField covers all column getters', () async {
       await database.managers.groceryStores.create((o) => o(name: 'Walmart'));
       final nameField = database.managers.groceryStores.computedField((a) {
-        a.id; a.serverId; a.location; a.isActive; a.syncStatus;
+        a.id;
+        a.serverId;
+        a.location;
+        a.isActive;
+        a.syncStatus;
         return a.name;
       });
-      final rows = await database.managers.groceryStores
-          .withFields([nameField]).get();
+      final rows = await database.managers.groceryStores.withFields([
+        nameField,
+      ]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.name, 'Walmart');
     });
@@ -1645,11 +1982,15 @@ void main() {
     test('computedField covers all column getters', () async {
       await database.managers.groceryItems.create((o) => o(name: 'Milk'));
       final nameField = database.managers.groceryItems.computedField((a) {
-        a.id; a.serverId; a.defaultUnit; a.defaultStoreServerId;
+        a.id;
+        a.serverId;
+        a.defaultUnit;
+        a.defaultStoreServerId;
         return a.name;
       });
-      final rows = await database.managers.groceryItems
-          .withFields([nameField]).get();
+      final rows = await database.managers.groceryItems.withFields([
+        nameField,
+      ]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.name, 'Milk');
     });
@@ -1659,11 +2000,15 @@ void main() {
     test('computedField covers all column getters', () async {
       await database.managers.groceryOnHand.create((o) => o(itemServerId: 1));
       final field = database.managers.groceryOnHand.computedField((a) {
-        a.id; a.quantity; a.unit; a.syncStatus;
+        a.id;
+        a.quantity;
+        a.unit;
+        a.syncStatus;
         return a.itemServerId;
       });
-      final rows = await database.managers.groceryOnHand
-          .withFields([field]).get();
+      final rows = await database.managers.groceryOnHand.withFields([
+        field,
+      ]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.itemServerId, 1);
     });
@@ -1673,12 +2018,17 @@ void main() {
     test('computedField covers all column getters', () async {
       await database.managers.groceryLists.create((o) => o(name: 'Weekly'));
       final nameField = database.managers.groceryLists.computedField((a) {
-        a.id; a.serverId; a.storeServerId; a.status; a.shoppingDate;
+        a.id;
+        a.serverId;
+        a.storeServerId;
+        a.status;
+        a.shoppingDate;
         a.syncStatus;
         return a.name;
       });
-      final rows = await database.managers.groceryLists
-          .withFields([nameField]).get();
+      final rows = await database.managers.groceryLists.withFields([
+        nameField,
+      ]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.name, 'Weekly');
     });
@@ -1697,12 +2047,21 @@ void main() {
         (o) => o(listLocalId: listId, itemServerId: 5),
       );
       final field = database.managers.groceryListItems.computedField((a) {
-        a.id; a.serverId; a.listServerId; a.itemServerId; a.quantity;
-        a.unit; a.price; a.status; a.notes; a.syncStatus;
+        a.id;
+        a.serverId;
+        a.listServerId;
+        a.itemServerId;
+        a.quantity;
+        a.unit;
+        a.price;
+        a.status;
+        a.notes;
+        a.syncStatus;
         return a.listLocalId;
       });
-      final rows = await database.managers.groceryListItems
-          .withFields([field]).get();
+      final rows = await database.managers.groceryListItems.withFields([
+        field,
+      ]).get();
       expect(rows.length, 1);
       expect(rows.first.$1.listLocalId, listId);
     });
@@ -1717,16 +2076,24 @@ void main() {
       await database.managers.categories.create((o) => o(name: 'CovCat'));
     });
     test('filter remaining columns', () async {
-      await database.managers.categories.filter((f) => f.serverId.isNull()).get();
-      await database.managers.categories.filter((f) => f.icon.equals('📅')).get();
-      await database.managers.categories.filter((f) => f.description.isNull()).get();
+      await database.managers.categories
+          .filter((f) => f.serverId.isNull())
+          .get();
+      await database.managers.categories
+          .filter((f) => f.icon.equals('📅'))
+          .get();
+      await database.managers.categories
+          .filter((f) => f.description.isNull())
+          .get();
     });
     test('orderBy remaining columns', () async {
       await database.managers.categories.orderBy((o) => o.id.asc()).get();
       await database.managers.categories.orderBy((o) => o.serverId.asc()).get();
       await database.managers.categories.orderBy((o) => o.color.asc()).get();
       await database.managers.categories.orderBy((o) => o.icon.asc()).get();
-      await database.managers.categories.orderBy((o) => o.description.asc()).get();
+      await database.managers.categories
+          .orderBy((o) => o.description.asc())
+          .get();
     });
   });
 
@@ -1750,10 +2117,14 @@ void main() {
     test('filter remaining columns', () async {
       await database.managers.events.filter((f) => f.serverId.isNull()).get();
       await database.managers.events.filter((f) => f.rrule.isNull()).get();
-      await database.managers.events.filter((f) => f.description.isNull()).get();
+      await database.managers.events
+          .filter((f) => f.description.isNull())
+          .get();
       await database.managers.events.filter((f) => f.amount.isNull()).get();
       await database.managers.events.filter((f) => f.location.isNull()).get();
-      await database.managers.events.filter((f) => f.durationDays.equals(1)).get();
+      await database.managers.events
+          .filter((f) => f.durationDays.equals(1))
+          .get();
     });
     test('orderBy remaining columns', () async {
       await database.managers.events.orderBy((o) => o.id.asc()).get();
@@ -1776,17 +2147,27 @@ void main() {
     });
     test('filter remaining columns', () async {
       await database.managers.occurrences.filter((f) => f.id.equals(1)).get();
-      await database.managers.occurrences.filter((f) => f.serverId.isNull()).get();
+      await database.managers.occurrences
+          .filter((f) => f.serverId.isNull())
+          .get();
       await database.managers.occurrences.filter((f) => f.notes.isNull()).get();
     });
     test('orderBy remaining columns', () async {
       await database.managers.occurrences.orderBy((o) => o.id.asc()).get();
-      await database.managers.occurrences.orderBy((o) => o.serverId.asc()).get();
-      await database.managers.occurrences.orderBy((o) => o.eventServerId.asc()).get();
-      await database.managers.occurrences.orderBy((o) => o.occurrenceDate.asc()).get();
+      await database.managers.occurrences
+          .orderBy((o) => o.serverId.asc())
+          .get();
+      await database.managers.occurrences
+          .orderBy((o) => o.eventServerId.asc())
+          .get();
+      await database.managers.occurrences
+          .orderBy((o) => o.occurrenceDate.asc())
+          .get();
       await database.managers.occurrences.orderBy((o) => o.status.asc()).get();
       await database.managers.occurrences.orderBy((o) => o.notes.asc()).get();
-      await database.managers.occurrences.orderBy((o) => o.syncStatus.asc()).get();
+      await database.managers.occurrences
+          .orderBy((o) => o.syncStatus.asc())
+          .get();
     });
   });
 
@@ -1803,11 +2184,19 @@ void main() {
     test('filter remaining columns', () async {
       await database.managers.tasks.filter((f) => f.serverId.isNull()).get();
       await database.managers.tasks.filter((f) => f.description.isNull()).get();
-      await database.managers.tasks.filter((f) => f.estimatedMinutes.isNull()).get();
-      await database.managers.tasks.filter((f) => f.occurrenceServerId.isNull()).get();
+      await database.managers.tasks
+          .filter((f) => f.estimatedMinutes.isNull())
+          .get();
+      await database.managers.tasks
+          .filter((f) => f.occurrenceServerId.isNull())
+          .get();
       await database.managers.tasks.filter((f) => f.completedAt.isNull()).get();
-      await database.managers.tasks.filter((f) => f.createdAt.equals('2026-01-01')).get();
-      await database.managers.tasks.filter((f) => f.updatedAt.equals('2026-01-01')).get();
+      await database.managers.tasks
+          .filter((f) => f.createdAt.equals('2026-01-01'))
+          .get();
+      await database.managers.tasks
+          .filter((f) => f.updatedAt.equals('2026-01-01'))
+          .get();
     });
     test('orderBy remaining columns', () async {
       await database.managers.tasks.orderBy((o) => o.id.asc()).get();
@@ -1815,12 +2204,20 @@ void main() {
       await database.managers.tasks.orderBy((o) => o.description.asc()).get();
       await database.managers.tasks.orderBy((o) => o.status.asc()).get();
       await database.managers.tasks.orderBy((o) => o.priority.asc()).get();
-      await database.managers.tasks.orderBy((o) => o.assigneeServerId.asc()).get();
-      await database.managers.tasks.orderBy((o) => o.categoryServerId.asc()).get();
+      await database.managers.tasks
+          .orderBy((o) => o.assigneeServerId.asc())
+          .get();
+      await database.managers.tasks
+          .orderBy((o) => o.categoryServerId.asc())
+          .get();
       await database.managers.tasks.orderBy((o) => o.dueDate.asc()).get();
-      await database.managers.tasks.orderBy((o) => o.estimatedMinutes.asc()).get();
+      await database.managers.tasks
+          .orderBy((o) => o.estimatedMinutes.asc())
+          .get();
       await database.managers.tasks.orderBy((o) => o.recurrence.asc()).get();
-      await database.managers.tasks.orderBy((o) => o.occurrenceServerId.asc()).get();
+      await database.managers.tasks
+          .orderBy((o) => o.occurrenceServerId.asc())
+          .get();
       await database.managers.tasks.orderBy((o) => o.syncStatus.asc()).get();
       await database.managers.tasks.orderBy((o) => o.completedAt.asc()).get();
       await database.managers.tasks.orderBy((o) => o.updatedAt.asc()).get();
@@ -1831,7 +2228,11 @@ void main() {
     late int taskId;
     setUp(() async {
       taskId = await database.managers.tasks.create(
-        (o) => o(title: 'Parent', createdAt: '2026-01-01', updatedAt: '2026-01-01'),
+        (o) => o(
+          title: 'Parent',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        ),
       );
       await database.managers.subtasks.create(
         (o) => o(taskLocalId: taskId, title: 'CovSub'),
@@ -1840,17 +2241,27 @@ void main() {
     test('filter remaining columns', () async {
       await database.managers.subtasks.filter((f) => f.id.equals(1)).get();
       await database.managers.subtasks.filter((f) => f.serverId.isNull()).get();
-      await database.managers.subtasks.filter((f) => f.taskServerId.isNull()).get();
-      await database.managers.subtasks.filter((f) => f.completedAt.isNull()).get();
+      await database.managers.subtasks
+          .filter((f) => f.taskServerId.isNull())
+          .get();
+      await database.managers.subtasks
+          .filter((f) => f.completedAt.isNull())
+          .get();
     });
     test('orderBy remaining columns', () async {
       await database.managers.subtasks.orderBy((o) => o.id.asc()).get();
       await database.managers.subtasks.orderBy((o) => o.serverId.asc()).get();
-      await database.managers.subtasks.orderBy((o) => o.taskLocalId.asc()).get();
-      await database.managers.subtasks.orderBy((o) => o.taskServerId.asc()).get();
+      await database.managers.subtasks
+          .orderBy((o) => o.taskLocalId.asc())
+          .get();
+      await database.managers.subtasks
+          .orderBy((o) => o.taskServerId.asc())
+          .get();
       await database.managers.subtasks.orderBy((o) => o.status.asc()).get();
       await database.managers.subtasks.orderBy((o) => o.dueDate.asc()).get();
-      await database.managers.subtasks.orderBy((o) => o.completedAt.asc()).get();
+      await database.managers.subtasks
+          .orderBy((o) => o.completedAt.asc())
+          .get();
       await database.managers.subtasks.orderBy((o) => o.syncStatus.asc()).get();
     });
   });
@@ -1861,31 +2272,73 @@ void main() {
     });
     test('filter remaining columns', () async {
       await database.managers.creditCards.filter((f) => f.id.equals(1)).get();
-      await database.managers.creditCards.filter((f) => f.serverId.isNull()).get();
-      await database.managers.creditCards.filter((f) => f.statementCloseDay.isNull()).get();
-      await database.managers.creditCards.filter((f) => f.gracePeriodDays.isNull()).get();
-      await database.managers.creditCards.filter((f) => f.weekendShift.isNull()).get();
-      await database.managers.creditCards.filter((f) => f.cycleDays.isNull()).get();
-      await database.managers.creditCards.filter((f) => f.cycleReferenceDate.isNull()).get();
-      await database.managers.creditCards.filter((f) => f.dueDaySameMonth.isNull()).get();
-      await database.managers.creditCards.filter((f) => f.dueDayNextMonth.isNull()).get();
-      await database.managers.creditCards.filter((f) => f.annualFeeMonth.isNull()).get();
-      await database.managers.creditCards.filter((f) => f.isActive.isTrue()).get();
+      await database.managers.creditCards
+          .filter((f) => f.serverId.isNull())
+          .get();
+      await database.managers.creditCards
+          .filter((f) => f.statementCloseDay.isNull())
+          .get();
+      await database.managers.creditCards
+          .filter((f) => f.gracePeriodDays.isNull())
+          .get();
+      await database.managers.creditCards
+          .filter((f) => f.weekendShift.isNull())
+          .get();
+      await database.managers.creditCards
+          .filter((f) => f.cycleDays.isNull())
+          .get();
+      await database.managers.creditCards
+          .filter((f) => f.cycleReferenceDate.isNull())
+          .get();
+      await database.managers.creditCards
+          .filter((f) => f.dueDaySameMonth.isNull())
+          .get();
+      await database.managers.creditCards
+          .filter((f) => f.dueDayNextMonth.isNull())
+          .get();
+      await database.managers.creditCards
+          .filter((f) => f.annualFeeMonth.isNull())
+          .get();
+      await database.managers.creditCards
+          .filter((f) => f.isActive.isTrue())
+          .get();
     });
     test('orderBy remaining columns', () async {
       await database.managers.creditCards.orderBy((o) => o.id.asc()).get();
-      await database.managers.creditCards.orderBy((o) => o.serverId.asc()).get();
+      await database.managers.creditCards
+          .orderBy((o) => o.serverId.asc())
+          .get();
       await database.managers.creditCards.orderBy((o) => o.issuer.asc()).get();
-      await database.managers.creditCards.orderBy((o) => o.lastFour.asc()).get();
-      await database.managers.creditCards.orderBy((o) => o.statementCloseDay.asc()).get();
-      await database.managers.creditCards.orderBy((o) => o.gracePeriodDays.asc()).get();
-      await database.managers.creditCards.orderBy((o) => o.weekendShift.asc()).get();
-      await database.managers.creditCards.orderBy((o) => o.cycleDays.asc()).get();
-      await database.managers.creditCards.orderBy((o) => o.cycleReferenceDate.asc()).get();
-      await database.managers.creditCards.orderBy((o) => o.dueDaySameMonth.asc()).get();
-      await database.managers.creditCards.orderBy((o) => o.dueDayNextMonth.asc()).get();
-      await database.managers.creditCards.orderBy((o) => o.annualFeeMonth.asc()).get();
-      await database.managers.creditCards.orderBy((o) => o.isActive.asc()).get();
+      await database.managers.creditCards
+          .orderBy((o) => o.lastFour.asc())
+          .get();
+      await database.managers.creditCards
+          .orderBy((o) => o.statementCloseDay.asc())
+          .get();
+      await database.managers.creditCards
+          .orderBy((o) => o.gracePeriodDays.asc())
+          .get();
+      await database.managers.creditCards
+          .orderBy((o) => o.weekendShift.asc())
+          .get();
+      await database.managers.creditCards
+          .orderBy((o) => o.cycleDays.asc())
+          .get();
+      await database.managers.creditCards
+          .orderBy((o) => o.cycleReferenceDate.asc())
+          .get();
+      await database.managers.creditCards
+          .orderBy((o) => o.dueDaySameMonth.asc())
+          .get();
+      await database.managers.creditCards
+          .orderBy((o) => o.dueDayNextMonth.asc())
+          .get();
+      await database.managers.creditCards
+          .orderBy((o) => o.annualFeeMonth.asc())
+          .get();
+      await database.managers.creditCards
+          .orderBy((o) => o.isActive.asc())
+          .get();
     });
   });
 
@@ -1906,27 +2359,65 @@ void main() {
       );
     });
     test('filter remaining columns', () async {
-      await database.managers.creditCardTrackerCache.filter((f) => f.id.equals(1)).get();
-      await database.managers.creditCardTrackerCache.filter((f) => f.issuer.isNull()).get();
-      await database.managers.creditCardTrackerCache.filter((f) => f.lastFour.isNull()).get();
-      await database.managers.creditCardTrackerCache.filter((f) => f.annualFeeDate.isNull()).get();
-      await database.managers.creditCardTrackerCache.filter((f) => f.annualFeeDays.isNull()).get();
-      await database.managers.creditCardTrackerCache.filter((f) => f.prevDueOverdue.isFalse()).get();
+      await database.managers.creditCardTrackerCache
+          .filter((f) => f.id.equals(1))
+          .get();
+      await database.managers.creditCardTrackerCache
+          .filter((f) => f.issuer.isNull())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .filter((f) => f.lastFour.isNull())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .filter((f) => f.annualFeeDate.isNull())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .filter((f) => f.annualFeeDays.isNull())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .filter((f) => f.prevDueOverdue.isFalse())
+          .get();
     });
     test('orderBy remaining columns', () async {
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.id.asc()).get();
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.issuer.asc()).get();
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.lastFour.asc()).get();
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.grace.asc()).get();
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.prevClose.asc()).get();
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.prevDue.asc()).get();
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.nextClose.asc()).get();
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.nextCloseDays.asc()).get();
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.nextDue.asc()).get();
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.nextDueDays.asc()).get();
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.annualFeeDate.asc()).get();
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.annualFeeDays.asc()).get();
-      await database.managers.creditCardTrackerCache.orderBy((o) => o.prevDueOverdue.asc()).get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.id.asc())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.issuer.asc())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.lastFour.asc())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.grace.asc())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.prevClose.asc())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.prevDue.asc())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.nextClose.asc())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.nextCloseDays.asc())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.nextDue.asc())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.nextDueDays.asc())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.annualFeeDate.asc())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.annualFeeDays.asc())
+          .get();
+      await database.managers.creditCardTrackerCache
+          .orderBy((o) => o.prevDueOverdue.asc())
+          .get();
     });
   });
 
@@ -1936,13 +2427,21 @@ void main() {
     });
     test('filter remaining columns', () async {
       await database.managers.groceryStores.filter((f) => f.id.equals(1)).get();
-      await database.managers.groceryStores.filter((f) => f.isActive.isTrue()).get();
+      await database.managers.groceryStores
+          .filter((f) => f.isActive.isTrue())
+          .get();
     });
     test('orderBy remaining columns', () async {
       await database.managers.groceryStores.orderBy((o) => o.id.asc()).get();
-      await database.managers.groceryStores.orderBy((o) => o.serverId.asc()).get();
-      await database.managers.groceryStores.orderBy((o) => o.location.asc()).get();
-      await database.managers.groceryStores.orderBy((o) => o.isActive.asc()).get();
+      await database.managers.groceryStores
+          .orderBy((o) => o.serverId.asc())
+          .get();
+      await database.managers.groceryStores
+          .orderBy((o) => o.location.asc())
+          .get();
+      await database.managers.groceryStores
+          .orderBy((o) => o.isActive.asc())
+          .get();
     });
   });
 
@@ -1955,9 +2454,15 @@ void main() {
     });
     test('orderBy remaining columns', () async {
       await database.managers.groceryItems.orderBy((o) => o.id.asc()).get();
-      await database.managers.groceryItems.orderBy((o) => o.serverId.asc()).get();
-      await database.managers.groceryItems.orderBy((o) => o.defaultUnit.asc()).get();
-      await database.managers.groceryItems.orderBy((o) => o.defaultStoreServerId.asc()).get();
+      await database.managers.groceryItems
+          .orderBy((o) => o.serverId.asc())
+          .get();
+      await database.managers.groceryItems
+          .orderBy((o) => o.defaultUnit.asc())
+          .get();
+      await database.managers.groceryItems
+          .orderBy((o) => o.defaultStoreServerId.asc())
+          .get();
     });
   });
 
@@ -1967,11 +2472,15 @@ void main() {
     });
     test('filter remaining columns', () async {
       await database.managers.groceryOnHand.filter((f) => f.id.equals(1)).get();
-      await database.managers.groceryOnHand.filter((f) => f.quantity.equals(0)).get();
+      await database.managers.groceryOnHand
+          .filter((f) => f.quantity.equals(0))
+          .get();
     });
     test('orderBy remaining columns', () async {
       await database.managers.groceryOnHand.orderBy((o) => o.id.asc()).get();
-      await database.managers.groceryOnHand.orderBy((o) => o.quantity.asc()).get();
+      await database.managers.groceryOnHand
+          .orderBy((o) => o.quantity.asc())
+          .get();
       await database.managers.groceryOnHand.orderBy((o) => o.unit.asc()).get();
     });
   });
@@ -1982,42 +2491,78 @@ void main() {
     });
     test('filter remaining columns', () async {
       await database.managers.groceryLists.filter((f) => f.id.equals(1)).get();
-      await database.managers.groceryLists.filter((f) => f.serverId.isNull()).get();
-      await database.managers.groceryLists.filter((f) => f.storeServerId.isNull()).get();
-      await database.managers.groceryLists.filter((f) => f.shoppingDate.isNull()).get();
+      await database.managers.groceryLists
+          .filter((f) => f.serverId.isNull())
+          .get();
+      await database.managers.groceryLists
+          .filter((f) => f.storeServerId.isNull())
+          .get();
+      await database.managers.groceryLists
+          .filter((f) => f.shoppingDate.isNull())
+          .get();
     });
     test('orderBy remaining columns', () async {
       await database.managers.groceryLists.orderBy((o) => o.id.asc()).get();
-      await database.managers.groceryLists.orderBy((o) => o.serverId.asc()).get();
-      await database.managers.groceryLists.orderBy((o) => o.storeServerId.asc()).get();
+      await database.managers.groceryLists
+          .orderBy((o) => o.serverId.asc())
+          .get();
+      await database.managers.groceryLists
+          .orderBy((o) => o.storeServerId.asc())
+          .get();
       await database.managers.groceryLists.orderBy((o) => o.status.asc()).get();
-      await database.managers.groceryLists.orderBy((o) => o.shoppingDate.asc()).get();
-      await database.managers.groceryLists.orderBy((o) => o.syncStatus.asc()).get();
+      await database.managers.groceryLists
+          .orderBy((o) => o.shoppingDate.asc())
+          .get();
+      await database.managers.groceryLists
+          .orderBy((o) => o.syncStatus.asc())
+          .get();
     });
   });
 
   group('Column coverage - GroceryListItems', () {
     late int listId;
     setUp(() async {
-      listId = await database.managers.groceryLists.create((o) => o(name: 'Parent'));
+      listId = await database.managers.groceryLists.create(
+        (o) => o(name: 'Parent'),
+      );
       await database.managers.groceryListItems.create(
         (o) => o(listLocalId: listId, itemServerId: 3),
       );
     });
     test('filter remaining columns', () async {
-      await database.managers.groceryListItems.filter((f) => f.id.equals(1)).get();
-      await database.managers.groceryListItems.filter((f) => f.listServerId.isNull()).get();
-      await database.managers.groceryListItems.filter((f) => f.quantity.equals(0)).get();
-      await database.managers.groceryListItems.filter((f) => f.price.isNull()).get();
+      await database.managers.groceryListItems
+          .filter((f) => f.id.equals(1))
+          .get();
+      await database.managers.groceryListItems
+          .filter((f) => f.listServerId.isNull())
+          .get();
+      await database.managers.groceryListItems
+          .filter((f) => f.quantity.equals(0))
+          .get();
+      await database.managers.groceryListItems
+          .filter((f) => f.price.isNull())
+          .get();
     });
     test('orderBy remaining columns', () async {
       await database.managers.groceryListItems.orderBy((o) => o.id.asc()).get();
-      await database.managers.groceryListItems.orderBy((o) => o.serverId.asc()).get();
-      await database.managers.groceryListItems.orderBy((o) => o.listServerId.asc()).get();
-      await database.managers.groceryListItems.orderBy((o) => o.quantity.asc()).get();
-      await database.managers.groceryListItems.orderBy((o) => o.price.asc()).get();
-      await database.managers.groceryListItems.orderBy((o) => o.notes.asc()).get();
-      await database.managers.groceryListItems.orderBy((o) => o.syncStatus.asc()).get();
+      await database.managers.groceryListItems
+          .orderBy((o) => o.serverId.asc())
+          .get();
+      await database.managers.groceryListItems
+          .orderBy((o) => o.listServerId.asc())
+          .get();
+      await database.managers.groceryListItems
+          .orderBy((o) => o.quantity.asc())
+          .get();
+      await database.managers.groceryListItems
+          .orderBy((o) => o.price.asc())
+          .get();
+      await database.managers.groceryListItems
+          .orderBy((o) => o.notes.asc())
+          .get();
+      await database.managers.groceryListItems
+          .orderBy((o) => o.syncStatus.asc())
+          .get();
     });
   });
 }

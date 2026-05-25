@@ -9,107 +9,107 @@ part 'app_database.g.dart';
 
 class Categories extends Table {
   // coverage:ignore-start
-  IntColumn get id       => integer().autoIncrement()();
+  IntColumn get id => integer().autoIncrement()();
   IntColumn get serverId => integer().nullable()();
-  TextColumn get name    => text()();
-  TextColumn get color   => text().withDefault(const Constant('#3b82f6'))();
-  TextColumn get icon    => text().withDefault(const Constant('📅'))();
+  TextColumn get name => text()();
+  TextColumn get color => text().withDefault(const Constant('#3b82f6'))();
+  TextColumn get icon => text().withDefault(const Constant('📅'))();
   TextColumn get description => text().nullable()();
   // coverage:ignore-end
 }
 
 class Persons extends Table {
   // coverage:ignore-start
-  IntColumn get id       => integer().autoIncrement()();
+  IntColumn get id => integer().autoIncrement()();
   IntColumn get serverId => integer().nullable()();
-  TextColumn get name    => text()();
-  TextColumn get email   => text().nullable()();
+  TextColumn get name => text()();
+  TextColumn get email => text().nullable()();
   // coverage:ignore-end
 }
 
 class Events extends Table {
   // coverage:ignore-start
-  IntColumn  get id           => integer().autoIncrement()();
-  IntColumn  get serverId     => integer().nullable()();
-  TextColumn get title        => text()();
-  IntColumn  get categoryServerId => integer()();
-  TextColumn get rrule        => text().nullable()();
-  TextColumn get dtstart      => text()();
-  TextColumn get priority     => text().withDefault(const Constant('medium'))();
-  TextColumn get description  => text().nullable()();
-  BoolColumn get isActive     => boolean().withDefault(const Constant(true))();
-  TextColumn get amount       => text().nullable()();
-  TextColumn get location     => text().nullable()();
-  IntColumn  get durationDays => integer().withDefault(const Constant(1))();
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get serverId => integer().nullable()();
+  TextColumn get title => text()();
+  IntColumn get categoryServerId => integer()();
+  TextColumn get rrule => text().nullable()();
+  TextColumn get dtstart => text()();
+  TextColumn get priority => text().withDefault(const Constant('medium'))();
+  TextColumn get description => text().nullable()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  TextColumn get amount => text().nullable()();
+  TextColumn get location => text().nullable()();
+  IntColumn get durationDays => integer().withDefault(const Constant(1))();
   // coverage:ignore-end
 }
 
 class Occurrences extends Table {
   // coverage:ignore-start
-  IntColumn  get id              => integer().autoIncrement()();
-  IntColumn  get serverId        => integer().nullable()();
-  IntColumn  get eventServerId   => integer()();
-  TextColumn get occurrenceDate  => text()();
-  TextColumn get status          => text().withDefault(const Constant('upcoming'))();
-  TextColumn get notes           => text().nullable()();
-  IntColumn  get syncStatus      => integer().withDefault(const Constant(0))();
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get serverId => integer().nullable()();
+  IntColumn get eventServerId => integer()();
+  TextColumn get occurrenceDate => text()();
+  TextColumn get status => text().withDefault(const Constant('upcoming'))();
+  TextColumn get notes => text().nullable()();
+  IntColumn get syncStatus => integer().withDefault(const Constant(0))();
   // coverage:ignore-end
 }
 
 class Tasks extends Table {
   // coverage:ignore-start
-  IntColumn  get id               => integer().autoIncrement()();
-  IntColumn  get serverId         => integer().nullable()();
-  TextColumn get title            => text()();
-  TextColumn get description      => text().nullable()();
-  TextColumn get status           => text().withDefault(const Constant('todo'))();
-  TextColumn get priority         => text().withDefault(const Constant('medium'))();
-  IntColumn  get assigneeServerId => integer().nullable()();
-  IntColumn  get categoryServerId => integer().nullable()();
-  TextColumn get dueDate          => text().nullable()();
-  IntColumn  get estimatedMinutes => integer().nullable()();
-  TextColumn get recurrence       => text().withDefault(const Constant('none'))();
-  IntColumn  get occurrenceServerId => integer().nullable()();
-  IntColumn  get order            => integer().withDefault(const Constant(0))();
-  IntColumn  get syncStatus       => integer().withDefault(const Constant(0))();
-  TextColumn get completedAt      => text().nullable()();
-  TextColumn get createdAt        => text()();
-  TextColumn get updatedAt        => text()();
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get serverId => integer().nullable()();
+  TextColumn get title => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get status => text().withDefault(const Constant('todo'))();
+  TextColumn get priority => text().withDefault(const Constant('medium'))();
+  IntColumn get assigneeServerId => integer().nullable()();
+  IntColumn get categoryServerId => integer().nullable()();
+  TextColumn get dueDate => text().nullable()();
+  IntColumn get estimatedMinutes => integer().nullable()();
+  TextColumn get recurrence => text().withDefault(const Constant('none'))();
+  IntColumn get occurrenceServerId => integer().nullable()();
+  IntColumn get order => integer().withDefault(const Constant(0))();
+  IntColumn get syncStatus => integer().withDefault(const Constant(0))();
+  TextColumn get completedAt => text().nullable()();
+  TextColumn get createdAt => text()();
+  TextColumn get updatedAt => text()();
   // coverage:ignore-end
 }
 
 class Subtasks extends Table {
   // coverage:ignore-start
-  IntColumn  get id            => integer().autoIncrement()();
-  IntColumn  get serverId      => integer().nullable()();
-  IntColumn  get taskLocalId   => integer()();
-  IntColumn  get taskServerId  => integer().nullable()();
-  TextColumn get title         => text()();
-  TextColumn get status        => text().withDefault(const Constant('todo'))();
-  TextColumn get dueDate       => text().nullable()();
-  IntColumn  get order         => integer().withDefault(const Constant(0))();
-  TextColumn get completedAt   => text().nullable()();
-  IntColumn  get syncStatus    => integer().withDefault(const Constant(0))();
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get serverId => integer().nullable()();
+  IntColumn get taskLocalId => integer()();
+  IntColumn get taskServerId => integer().nullable()();
+  TextColumn get title => text()();
+  TextColumn get status => text().withDefault(const Constant('todo'))();
+  TextColumn get dueDate => text().nullable()();
+  IntColumn get order => integer().withDefault(const Constant(0))();
+  TextColumn get completedAt => text().nullable()();
+  IntColumn get syncStatus => integer().withDefault(const Constant(0))();
   // coverage:ignore-end
 }
 
 class CreditCards extends Table {
   // coverage:ignore-start
-  IntColumn  get id                  => integer().autoIncrement()();
-  IntColumn  get serverId            => integer().nullable()();
-  TextColumn get name                => text()();
-  TextColumn get issuer              => text().nullable()();
-  TextColumn get lastFour            => text().nullable()();
-  IntColumn  get statementCloseDay   => integer().nullable()();
-  IntColumn  get gracePeriodDays     => integer().nullable()();
-  TextColumn get weekendShift        => text().nullable()();
-  IntColumn  get cycleDays           => integer().nullable()();
-  TextColumn get cycleReferenceDate  => text().nullable()();
-  IntColumn  get dueDaySameMonth     => integer().nullable()();
-  IntColumn  get dueDayNextMonth     => integer().nullable()();
-  IntColumn  get annualFeeMonth      => integer().nullable()();
-  BoolColumn get isActive            => boolean().withDefault(const Constant(true))();
-  IntColumn  get syncStatus          => integer().withDefault(const Constant(0))();
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get serverId => integer().nullable()();
+  TextColumn get name => text()();
+  TextColumn get issuer => text().nullable()();
+  TextColumn get lastFour => text().nullable()();
+  IntColumn get statementCloseDay => integer().nullable()();
+  IntColumn get gracePeriodDays => integer().nullable()();
+  TextColumn get weekendShift => text().nullable()();
+  IntColumn get cycleDays => integer().nullable()();
+  TextColumn get cycleReferenceDate => text().nullable()();
+  IntColumn get dueDaySameMonth => integer().nullable()();
+  IntColumn get dueDayNextMonth => integer().nullable()();
+  IntColumn get annualFeeMonth => integer().nullable()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  IntColumn get syncStatus => integer().withDefault(const Constant(0))();
   // coverage:ignore-end
 }
 
@@ -117,25 +117,22 @@ class CreditCards extends Table {
 
 class GroceryStores extends Table {
   // coverage:ignore-start
-  IntColumn  get id        => integer().autoIncrement()();
-  IntColumn  get serverId  => integer().nullable()();
-  TextColumn get name      => text()();
-  TextColumn get location  => text().nullable()();
-  BoolColumn get isActive  =>
-      boolean().withDefault(const Constant(true))();
-  IntColumn  get syncStatus =>
-      integer().withDefault(const Constant(0))();
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get serverId => integer().nullable()();
+  TextColumn get name => text()();
+  TextColumn get location => text().nullable()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  IntColumn get syncStatus => integer().withDefault(const Constant(0))();
   // coverage:ignore-end
 }
 
 class GroceryItems extends Table {
   // coverage:ignore-start
-  IntColumn  get id                   => integer().autoIncrement()();
-  IntColumn  get serverId             => integer().nullable()();
-  TextColumn get name                 => text()();
-  TextColumn get defaultUnit          =>
-      text().withDefault(const Constant('each'))();
-  IntColumn  get defaultStoreServerId => integer().nullable()();
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get serverId => integer().nullable()();
+  TextColumn get name => text()();
+  TextColumn get defaultUnit => text().withDefault(const Constant('each'))();
+  IntColumn get defaultStoreServerId => integer().nullable()();
   // coverage:ignore-end
 }
 
@@ -144,88 +141,82 @@ class GroceryItems extends Table {
 /// use the item id as the path parameter.
 class GroceryOnHand extends Table {
   // coverage:ignore-start
-  IntColumn  get id           => integer().autoIncrement()();
-  IntColumn  get itemServerId => integer()();
-  RealColumn get quantity     =>
-      real().withDefault(const Constant(0.0))();
-  TextColumn get unit         =>
-      text().withDefault(const Constant('each'))();
-  IntColumn  get syncStatus   =>
-      integer().withDefault(const Constant(0))();
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get itemServerId => integer()();
+  RealColumn get quantity => real().withDefault(const Constant(0.0))();
+  TextColumn get unit => text().withDefault(const Constant('each'))();
+  IntColumn get syncStatus => integer().withDefault(const Constant(0))();
   // coverage:ignore-end
 }
 
 class GroceryLists extends Table {
   // coverage:ignore-start
-  IntColumn  get id            => integer().autoIncrement()();
-  IntColumn  get serverId      => integer().nullable()();
-  TextColumn get name          => text()();
-  IntColumn  get storeServerId => integer().nullable()();
-  TextColumn get status        =>
-      text().withDefault(const Constant('draft'))();
-  TextColumn get shoppingDate  => text().nullable()();
-  IntColumn  get syncStatus    =>
-      integer().withDefault(const Constant(0))();
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get serverId => integer().nullable()();
+  TextColumn get name => text()();
+  IntColumn get storeServerId => integer().nullable()();
+  TextColumn get status => text().withDefault(const Constant('draft'))();
+  TextColumn get shoppingDate => text().nullable()();
+  IntColumn get syncStatus => integer().withDefault(const Constant(0))();
   // coverage:ignore-end
 }
 
 class GroceryListItems extends Table {
   // coverage:ignore-start
-  IntColumn  get id           => integer().autoIncrement()();
-  IntColumn  get serverId     => integer().nullable()();
-  IntColumn  get listLocalId  => integer()();
-  IntColumn  get listServerId => integer().nullable()();
-  IntColumn  get itemServerId => integer()();
-  RealColumn get quantity     =>
-      real().withDefault(const Constant(1.0))();
-  TextColumn get unit         =>
-      text().withDefault(const Constant('each'))();
-  RealColumn get price        => real().nullable()();
-  TextColumn get status       =>
-      text().withDefault(const Constant('needed'))();
-  TextColumn get notes        => text().nullable()();
-  IntColumn  get syncStatus   =>
-      integer().withDefault(const Constant(0))();
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get serverId => integer().nullable()();
+  IntColumn get listLocalId => integer()();
+  IntColumn get listServerId => integer().nullable()();
+  IntColumn get itemServerId => integer()();
+  RealColumn get quantity => real().withDefault(const Constant(1.0))();
+  TextColumn get unit => text().withDefault(const Constant('each'))();
+  RealColumn get price => real().nullable()();
+  TextColumn get status => text().withDefault(const Constant('needed'))();
+  TextColumn get notes => text().nullable()();
+  IntColumn get syncStatus => integer().withDefault(const Constant(0))();
   // coverage:ignore-end
 }
 
 class CreditCardTrackerCache extends Table {
   // coverage:ignore-start
-  IntColumn  get id              => integer().autoIncrement()();
-  IntColumn  get cardServerId    => integer()();
-  TextColumn get name            => text()();
-  TextColumn get issuer          => text().nullable()();
-  TextColumn get lastFour        => text().nullable()();
-  TextColumn get grace           => text()();
-  TextColumn get prevClose       => text()();
-  TextColumn get prevDue         => text()();
-  TextColumn get nextClose       => text()();
-  IntColumn  get nextCloseDays   => integer()();
-  TextColumn get nextDue         => text()();
-  IntColumn  get nextDueDays     => integer()();
-  TextColumn get annualFeeDate   => text().nullable()();
-  IntColumn  get annualFeeDays   => integer().nullable()();
-  BoolColumn get prevDueOverdue  => boolean().withDefault(const Constant(false))();
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get cardServerId => integer()();
+  TextColumn get name => text()();
+  TextColumn get issuer => text().nullable()();
+  TextColumn get lastFour => text().nullable()();
+  TextColumn get grace => text()();
+  TextColumn get prevClose => text()();
+  TextColumn get prevDue => text()();
+  TextColumn get nextClose => text()();
+  IntColumn get nextCloseDays => integer()();
+  TextColumn get nextDue => text()();
+  IntColumn get nextDueDays => integer()();
+  TextColumn get annualFeeDate => text().nullable()();
+  IntColumn get annualFeeDays => integer().nullable()();
+  BoolColumn get prevDueOverdue =>
+      boolean().withDefault(const Constant(false))();
   // coverage:ignore-end
 }
 
 // ── Database ─────────────────────────────────────────────────────────────────
 
-@DriftDatabase(tables: [
-  Categories,
-  Persons,
-  Events,
-  Occurrences,
-  Tasks,
-  Subtasks,
-  CreditCards,
-  CreditCardTrackerCache,
-  GroceryStores,
-  GroceryItems,
-  GroceryOnHand,
-  GroceryLists,
-  GroceryListItems,
-])
+@DriftDatabase(
+  tables: [
+    Categories,
+    Persons,
+    Events,
+    Occurrences,
+    Tasks,
+    Subtasks,
+    CreditCards,
+    CreditCardTrackerCache,
+    GroceryStores,
+    GroceryItems,
+    GroceryOnHand,
+    GroceryLists,
+    GroceryListItems,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection()); // coverage:ignore-line
   AppDatabase.forTesting(DatabaseConnection executor) : super(executor);
@@ -237,8 +228,17 @@ class AppDatabase extends _$AppDatabase {
   // Table names derived from Drift-generated TableInfo objects so they are
   // never user-controlled. The assert enforces the safe character set.
   List<TableInfo<Table, dynamic>> get _tablesWithServerId => [
-    categories, persons, events, occurrences, tasks, subtasks, creditCards,
-    groceryStores, groceryItems, groceryLists, groceryListItems,
+    categories,
+    persons,
+    events,
+    occurrences,
+    tasks,
+    subtasks,
+    creditCards,
+    groceryStores,
+    groceryItems,
+    groceryLists,
+    groceryListItems,
   ];
 
   @override
@@ -296,7 +296,10 @@ class AppDatabase extends _$AppDatabase {
   Future<void> _deduplicateByServerId() async {
     for (final t in _tablesWithServerId) {
       final name = t.actualTableName;
-      assert(RegExp(r'^[a-z_]+$').hasMatch(name), 'Unexpected table name: $name');
+      assert(
+        RegExp(r'^[a-z_]+$').hasMatch(name),
+        'Unexpected table name: $name',
+      );
       await customStatement(
         'DELETE FROM $name '
         'WHERE id NOT IN ('
@@ -310,7 +313,10 @@ class AppDatabase extends _$AppDatabase {
   Future<void> _createServerIdIndexes() async {
     for (final t in _tablesWithServerId) {
       final name = t.actualTableName;
-      assert(RegExp(r'^[a-z_]+$').hasMatch(name), 'Unexpected table name: $name');
+      assert(
+        RegExp(r'^[a-z_]+$').hasMatch(name),
+        'Unexpected table name: $name',
+      );
       await customStatement(
         'CREATE UNIQUE INDEX IF NOT EXISTS idx_${name}_server_id ON $name(server_id)',
       );
@@ -335,10 +341,9 @@ class AppDatabase extends _$AppDatabase {
 
   /// Returns [pendingUpdate] when transitioning from [synced]; preserves any
   /// other pending status so an already-queued mutation is not downgraded.
-  static int _nextSyncStatus(int current) =>
-      current == SyncStatus.synced.value
-          ? SyncStatus.pendingUpdate.value
-          : current;
+  static int _nextSyncStatus(int current) => current == SyncStatus.synced.value
+      ? SyncStatus.pendingUpdate.value
+      : current;
 
   // ── Category DAO ────────────────────────────────────────────────────────────
 
@@ -349,7 +354,11 @@ class AppDatabase extends _$AppDatabase {
   Future<void> upsertCategories(List<CategoriesCompanion> rows) async {
     await batch((b) {
       for (final row in rows) {
-        b.insert(categories, row, onConflict: DoUpdate((old) => row, target: [categories.serverId]));
+        b.insert(
+          categories,
+          row,
+          onConflict: DoUpdate((old) => row, target: [categories.serverId]),
+        );
       }
     });
   }
@@ -363,7 +372,11 @@ class AppDatabase extends _$AppDatabase {
   Future<void> upsertPersons(List<PersonsCompanion> rows) async {
     await batch((b) {
       for (final row in rows) {
-        b.insert(persons, row, onConflict: DoUpdate((old) => row, target: [persons.serverId]));
+        b.insert(
+          persons,
+          row,
+          onConflict: DoUpdate((old) => row, target: [persons.serverId]),
+        );
       }
     });
   }
@@ -377,7 +390,11 @@ class AppDatabase extends _$AppDatabase {
   Future<void> upsertEvents(List<EventsCompanion> rows) async {
     await batch((b) {
       for (final row in rows) {
-        b.insert(events, row, onConflict: DoUpdate((old) => row, target: [events.serverId]));
+        b.insert(
+          events,
+          row,
+          onConflict: DoUpdate((old) => row, target: [events.serverId]),
+        );
       }
     });
   }
@@ -397,24 +414,28 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<List<Occurrence>> getPendingOccurrences() {
-    return (select(occurrences)
-          ..where((o) => o.syncStatus.isNotValue(0)))
-        .get();
+    return (select(
+      occurrences,
+    )..where((o) => o.syncStatus.isNotValue(0))).get();
   }
 
   Future<void> upsertOccurrences(List<OccurrencesCompanion> rows) async {
     await batch((b) {
       for (final row in rows) {
-        b.insert(occurrences, row, onConflict: DoUpdate((old) => row, target: [occurrences.serverId]));
+        b.insert(
+          occurrences,
+          row,
+          onConflict: DoUpdate((old) => row, target: [occurrences.serverId]),
+        );
       }
     });
   }
 
   Future<void> updateOccurrenceStatus(int localId, String status) async {
     await transaction(() async {
-      final row = await (select(occurrences)
-            ..where((o) => o.id.equals(localId)))
-          .getSingleOrNull();
+      final row = await (select(
+        occurrences,
+      )..where((o) => o.id.equals(localId))).getSingleOrNull();
       if (row == null) return;
       final nextSync = _nextSyncStatus(row.syncStatus);
       await (update(occurrences)..where((o) => o.id.equals(localId))).write(
@@ -436,7 +457,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> markOccurrenceDeleted(int localId) async {
-    final occ = await (select(occurrences)..where((o) => o.id.equals(localId))).getSingleOrNull();
+    final occ = await (select(
+      occurrences,
+    )..where((o) => o.id.equals(localId))).getSingleOrNull();
     if (occ == null) return;
     if (occ.serverId == null) {
       await (delete(occurrences)..where((o) => o.id.equals(localId))).go();
@@ -474,7 +497,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> markTaskDeleted(int localId) async {
-    final task = await (select(tasks)..where((t) => t.id.equals(localId))).getSingleOrNull();
+    final task = await (select(
+      tasks,
+    )..where((t) => t.id.equals(localId))).getSingleOrNull();
     if (task == null) return;
     if (task.serverId == null) {
       await (delete(tasks)..where((t) => t.id.equals(localId))).go();
@@ -488,12 +513,14 @@ class AppDatabase extends _$AppDatabase {
   Future<void> markTaskSynced(int localId, int serverId) async {
     await transaction(() async {
       await (update(tasks)..where((t) => t.id.equals(localId))).write(
-        TasksCompanion(serverId: Value(serverId), syncStatus: Value(SyncStatus.synced.value)),
+        TasksCompanion(
+          serverId: Value(serverId),
+          syncStatus: Value(SyncStatus.synced.value),
+        ),
       );
       // Back-fill taskServerId on subtasks queued before this task was synced.
-      await (update(subtasks)..where((s) => s.taskLocalId.equals(localId))).write(
-        SubtasksCompanion(taskServerId: Value(serverId)),
-      );
+      await (update(subtasks)..where((s) => s.taskLocalId.equals(localId)))
+          .write(SubtasksCompanion(taskServerId: Value(serverId)));
     });
   }
 
@@ -503,14 +530,20 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteTaskLocal(int localId) async {
     await transaction(() async {
       await (delete(tasks)..where((t) => t.id.equals(localId))).go();
-      await (delete(subtasks)..where((s) => s.taskLocalId.equals(localId))).go();
+      await (delete(
+        subtasks,
+      )..where((s) => s.taskLocalId.equals(localId))).go();
     });
   }
 
   Future<void> upsertTasks(List<TasksCompanion> rows) async {
     await batch((b) {
       for (final row in rows) {
-        b.insert(tasks, row, onConflict: DoUpdate((old) => row, target: [tasks.serverId]));
+        b.insert(
+          tasks,
+          row,
+          onConflict: DoUpdate((old) => row, target: [tasks.serverId]),
+        );
       }
     });
   }
@@ -537,14 +570,17 @@ class AppDatabase extends _$AppDatabase {
     return (select(subtasks)..where((s) => s.syncStatus.isNotValue(0))).get();
   }
 
-  Future<int> insertSubtask(SubtasksCompanion row) => into(subtasks).insert(row);
+  Future<int> insertSubtask(SubtasksCompanion row) =>
+      into(subtasks).insert(row);
 
   Future<void> updateSubtask(int localId, SubtasksCompanion row) async {
     await (update(subtasks)..where((s) => s.id.equals(localId))).write(row);
   }
 
   Future<void> markSubtaskDeleted(int localId) async {
-    final sub = await (select(subtasks)..where((s) => s.id.equals(localId))).getSingleOrNull();
+    final sub = await (select(
+      subtasks,
+    )..where((s) => s.id.equals(localId))).getSingleOrNull();
     if (sub == null) return;
     if (sub.serverId == null) {
       await (delete(subtasks)..where((s) => s.id.equals(localId))).go();
@@ -557,7 +593,10 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> markSubtaskSynced(int localId, int serverId) async {
     await (update(subtasks)..where((s) => s.id.equals(localId))).write(
-      SubtasksCompanion(serverId: Value(serverId), syncStatus: Value(SyncStatus.synced.value)),
+      SubtasksCompanion(
+        serverId: Value(serverId),
+        syncStatus: Value(SyncStatus.synced.value),
+      ),
     );
   }
 
@@ -574,7 +613,11 @@ class AppDatabase extends _$AppDatabase {
   Future<void> upsertSubtasks(List<SubtasksCompanion> rows) async {
     await batch((b) {
       for (final row in rows) {
-        b.insert(subtasks, row, onConflict: DoUpdate((old) => row, target: [subtasks.serverId]));
+        b.insert(
+          subtasks,
+          row,
+          onConflict: DoUpdate((old) => row, target: [subtasks.serverId]),
+        );
       }
     });
   }
@@ -586,7 +629,9 @@ class AppDatabase extends _$AppDatabase {
   Future<List<CreditCard>> getCreditCards() => select(creditCards).get();
 
   Future<List<CreditCard>> getPendingCreditCards() {
-    return (select(creditCards)..where((c) => c.syncStatus.isNotValue(0))).get();
+    return (select(
+      creditCards,
+    )..where((c) => c.syncStatus.isNotValue(0))).get();
   }
 
   Future<int> insertCreditCard(CreditCardsCompanion row) =>
@@ -597,7 +642,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> markCreditCardDeleted(int localId) async {
-    final card = await (select(creditCards)..where((c) => c.id.equals(localId))).getSingleOrNull();
+    final card = await (select(
+      creditCards,
+    )..where((c) => c.id.equals(localId))).getSingleOrNull();
     if (card == null) return;
     if (card.serverId == null) {
       await (delete(creditCards)..where((c) => c.id.equals(localId))).go();
@@ -610,7 +657,10 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> markCreditCardSynced(int localId, int serverId) async {
     await (update(creditCards)..where((c) => c.id.equals(localId))).write(
-      CreditCardsCompanion(serverId: Value(serverId), syncStatus: Value(SyncStatus.synced.value)),
+      CreditCardsCompanion(
+        serverId: Value(serverId),
+        syncStatus: Value(SyncStatus.synced.value),
+      ),
     );
   }
 
@@ -621,7 +671,11 @@ class AppDatabase extends _$AppDatabase {
   Future<void> upsertCreditCards(List<CreditCardsCompanion> rows) async {
     await batch((b) {
       for (final row in rows) {
-        b.insert(creditCards, row, onConflict: DoUpdate((old) => row, target: [creditCards.serverId]));
+        b.insert(
+          creditCards,
+          row,
+          onConflict: DoUpdate((old) => row, target: [creditCards.serverId]),
+        );
       }
     });
   }
@@ -650,36 +704,29 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<GroceryStore>> watchGroceryStores() =>
       select(groceryStores).watch();
 
-  Future<void> upsertGroceryStores(
-    List<GroceryStoresCompanion> rows,
-  ) async {
+  Future<void> upsertGroceryStores(List<GroceryStoresCompanion> rows) async {
     await batch((b) {
       for (final row in rows) {
         b.insert(
           groceryStores,
           row,
-          onConflict: DoUpdate(
-            (old) => row,
-            target: [groceryStores.serverId],
-          ),
+          onConflict: DoUpdate((old) => row, target: [groceryStores.serverId]),
         );
       }
     });
   }
 
   Future<void> purgeGroceryStores(Set<int> keepServerIds) async {
-    await (delete(groceryStores)
-          ..where(
-            (s) =>
-                s.serverId.isNotNull() & s.serverId.isNotIn(keepServerIds),
-          ))
+    await (delete(groceryStores)..where(
+          (s) => s.serverId.isNotNull() & s.serverId.isNotIn(keepServerIds),
+        ))
         .go();
   }
 
   Future<List<GroceryStore>> getPendingGroceryStores() {
-    return (select(groceryStores)
-          ..where((s) => s.syncStatus.isNotValue(0)))
-        .get();
+    return (select(
+      groceryStores,
+    )..where((s) => s.syncStatus.isNotValue(0))).get();
   }
 
   Future<int> insertGroceryStore(GroceryStoresCompanion row) =>
@@ -695,9 +742,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> markGroceryStoreDeleted(int localId) async {
-    final store = await (select(groceryStores)
-          ..where((s) => s.id.equals(localId)))
-        .getSingleOrNull();
+    final store = await (select(
+      groceryStores,
+    )..where((s) => s.id.equals(localId))).getSingleOrNull();
     if (store == null) return;
     if (store.serverId == null) {
       await (delete(groceryStores)..where((s) => s.id.equals(localId))).go();
@@ -716,35 +763,28 @@ class AppDatabase extends _$AppDatabase {
 
   // ── Grocery Item DAO ────────────────────────────────────────────────────────
 
-  Stream<List<GroceryItem>> watchGroceryItems() =>
-      (select(groceryItems)..orderBy([(i) => OrderingTerm.asc(i.name)]))
-          .watch();
+  Stream<List<GroceryItem>> watchGroceryItems() => (select(
+    groceryItems,
+  )..orderBy([(i) => OrderingTerm.asc(i.name)])).watch();
 
   Future<List<GroceryItem>> getGroceryItems() => select(groceryItems).get();
 
-  Future<void> upsertGroceryItems(
-    List<GroceryItemsCompanion> rows,
-  ) async {
+  Future<void> upsertGroceryItems(List<GroceryItemsCompanion> rows) async {
     await batch((b) {
       for (final row in rows) {
         b.insert(
           groceryItems,
           row,
-          onConflict: DoUpdate(
-            (old) => row,
-            target: [groceryItems.serverId],
-          ),
+          onConflict: DoUpdate((old) => row, target: [groceryItems.serverId]),
         );
       }
     });
   }
 
   Future<void> purgeGroceryItems(Set<int> keepServerIds) async {
-    await (delete(groceryItems)
-          ..where(
-            (i) =>
-                i.serverId.isNotNull() & i.serverId.isNotIn(keepServerIds),
-          ))
+    await (delete(groceryItems)..where(
+          (i) => i.serverId.isNotNull() & i.serverId.isNotIn(keepServerIds),
+        ))
         .go();
   }
 
@@ -753,9 +793,7 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<GroceryOnHandData>> watchGroceryOnHand() =>
       select(groceryOnHand).watch();
 
-  Future<void> upsertGroceryOnHand(
-    List<GroceryOnHandCompanion> rows,
-  ) async {
+  Future<void> upsertGroceryOnHand(List<GroceryOnHandCompanion> rows) async {
     await batch((b) {
       for (final row in rows) {
         b.insert(
@@ -771,17 +809,15 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> purgeGroceryOnHand(Set<int> keepItemServerIds) async {
-    await (delete(groceryOnHand)
-          ..where(
-            (o) => o.itemServerId.isNotIn(keepItemServerIds),
-          ))
-        .go();
+    await (delete(
+      groceryOnHand,
+    )..where((o) => o.itemServerId.isNotIn(keepItemServerIds))).go();
   }
 
   Future<List<GroceryOnHandData>> getPendingGroceryOnHand() {
-    return (select(groceryOnHand)
-          ..where((o) => o.syncStatus.isNotValue(0)))
-        .get();
+    return (select(
+      groceryOnHand,
+    )..where((o) => o.syncStatus.isNotValue(0))).get();
   }
 
   Future<void> markGroceryOnHandSynced(int localId) async {
@@ -796,29 +832,24 @@ class AppDatabase extends _$AppDatabase {
 
   // ── Grocery List DAO ────────────────────────────────────────────────────────
 
-  Stream<List<GroceryList>> watchGroceryLists() =>
-      select(groceryLists).watch();
+  Stream<List<GroceryList>> watchGroceryLists() => select(groceryLists).watch();
 
-  Future<List<GroceryList>> getGroceryLists() =>
-      select(groceryLists).get();
+  Future<List<GroceryList>> getGroceryLists() => select(groceryLists).get();
 
   Future<List<GroceryList>> getPendingGroceryLists() {
-    return (select(groceryLists)
-          ..where((l) => l.syncStatus.isNotValue(0)))
-        .get();
+    return (select(
+      groceryLists,
+    )..where((l) => l.syncStatus.isNotValue(0))).get();
   }
 
   Future<int> insertGroceryList(GroceryListsCompanion row) =>
       into(groceryLists).insert(row);
 
-  Future<void> updateGroceryListStatus(
-    int localId,
-    String status,
-  ) async {
+  Future<void> updateGroceryListStatus(int localId, String status) async {
     await transaction(() async {
-      final row = await (select(groceryLists)
-            ..where((l) => l.id.equals(localId)))
-          .getSingleOrNull();
+      final row = await (select(
+        groceryLists,
+      )..where((l) => l.id.equals(localId))).getSingleOrNull();
       if (row == null) return;
       final nextSync = _nextSyncStatus(row.syncStatus);
       await (update(groceryLists)..where((l) => l.id.equals(localId))).write(
@@ -831,16 +862,14 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> markGroceryListDeleted(int localId) async {
-    final list = await (select(groceryLists)
-          ..where((l) => l.id.equals(localId)))
-        .getSingleOrNull();
+    final list = await (select(
+      groceryLists,
+    )..where((l) => l.id.equals(localId))).getSingleOrNull();
     if (list == null) return;
     if (list.serverId == null) {
       await deleteGroceryListLocal(localId);
     } else {
-      await (update(groceryLists)
-            ..where((l) => l.id.equals(localId)))
-          .write(
+      await (update(groceryLists)..where((l) => l.id.equals(localId))).write(
         GroceryListsCompanion(
           syncStatus: Value(SyncStatus.pendingDelete.value),
         ),
@@ -848,8 +877,9 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
-  Future<GroceryList?> getGroceryListById(int localId) =>
-      (select(groceryLists)..where((l) => l.id.equals(localId))).getSingleOrNull();
+  Future<GroceryList?> getGroceryListById(int localId) => (select(
+    groceryLists,
+  )..where((l) => l.id.equals(localId))).getSingleOrNull();
 
   Future<void> markGroceryListSynced(int localId, int serverId) async {
     await (update(groceryLists)..where((l) => l.id.equals(localId))).write(
@@ -868,24 +898,19 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteGroceryListLocal(int localId) async {
     await transaction(() async {
       await (delete(groceryLists)..where((l) => l.id.equals(localId))).go();
-      await (delete(groceryListItems)
-            ..where((i) => i.listLocalId.equals(localId)))
-          .go();
+      await (delete(
+        groceryListItems,
+      )..where((i) => i.listLocalId.equals(localId))).go();
     });
   }
 
-  Future<void> upsertGroceryLists(
-    List<GroceryListsCompanion> rows,
-  ) async {
+  Future<void> upsertGroceryLists(List<GroceryListsCompanion> rows) async {
     await batch((b) {
       for (final row in rows) {
         b.insert(
           groceryLists,
           row,
-          onConflict: DoUpdate(
-            (old) => row,
-            target: [groceryLists.serverId],
-          ),
+          onConflict: DoUpdate((old) => row, target: [groceryLists.serverId]),
         );
       }
     });
@@ -895,7 +920,9 @@ class AppDatabase extends _$AppDatabase {
     if (ids.isEmpty) return;
     await transaction(() async {
       await (delete(groceryLists)..where((l) => l.id.isIn(ids))).go();
-      await (delete(groceryListItems)..where((i) => i.listLocalId.isIn(ids))).go();
+      await (delete(
+        groceryListItems,
+      )..where((i) => i.listLocalId.isIn(ids))).go();
     });
   }
 
@@ -904,39 +931,34 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<GroceryListItem>> watchGroceryListItems() =>
       select(groceryListItems).watch();
 
-  Stream<List<GroceryListItem>> watchGroceryListItemsForList(
-    int listLocalId,
-  ) {
-    return (select(groceryListItems)
-          ..where((i) => i.listLocalId.equals(listLocalId)))
-        .watch();
+  Stream<List<GroceryListItem>> watchGroceryListItemsForList(int listLocalId) {
+    return (select(
+      groceryListItems,
+    )..where((i) => i.listLocalId.equals(listLocalId))).watch();
   }
 
   Future<List<GroceryListItem>> getGroceryListItems() =>
       select(groceryListItems).get();
 
   Future<List<GroceryListItem>> getPendingGroceryListItems() {
-    return (select(groceryListItems)
-          ..where((i) => i.syncStatus.isNotValue(0)))
-        .get();
+    return (select(
+      groceryListItems,
+    )..where((i) => i.syncStatus.isNotValue(0))).get();
   }
 
   Future<int> insertGroceryListItem(GroceryListItemsCompanion row) =>
       into(groceryListItems).insert(row);
 
-  Future<void> updateGroceryListItemStatus(
-    int localId,
-    String status,
-  ) async {
+  Future<void> updateGroceryListItemStatus(int localId, String status) async {
     await transaction(() async {
-      final row = await (select(groceryListItems)
-            ..where((i) => i.id.equals(localId)))
-          .getSingleOrNull();
+      final row = await (select(
+        groceryListItems,
+      )..where((i) => i.id.equals(localId))).getSingleOrNull();
       if (row == null) return;
       final nextSync = _nextSyncStatus(row.syncStatus);
-      await (update(groceryListItems)
-            ..where((i) => i.id.equals(localId)))
-          .write(
+      await (update(
+        groceryListItems,
+      )..where((i) => i.id.equals(localId))).write(
         GroceryListItemsCompanion(
           status: Value(status),
           syncStatus: Value(nextSync),
@@ -946,16 +968,16 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> markGroceryListItemDeleted(int localId) async {
-    final item = await (select(groceryListItems)
-          ..where((i) => i.id.equals(localId)))
-        .getSingleOrNull();
+    final item = await (select(
+      groceryListItems,
+    )..where((i) => i.id.equals(localId))).getSingleOrNull();
     if (item == null) return;
     if (item.serverId == null) {
       await deleteGroceryListItemLocal(localId);
     } else {
-      await (update(groceryListItems)
-            ..where((i) => i.id.equals(localId)))
-          .write(
+      await (update(
+        groceryListItems,
+      )..where((i) => i.id.equals(localId))).write(
         GroceryListItemsCompanion(
           syncStatus: Value(SyncStatus.pendingDelete.value),
         ),
@@ -963,13 +985,8 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
-  Future<void> markGroceryListItemSynced(
-    int localId,
-    int serverId,
-  ) async {
-    await (update(groceryListItems)
-          ..where((i) => i.id.equals(localId)))
-        .write(
+  Future<void> markGroceryListItemSynced(int localId, int serverId) async {
+    await (update(groceryListItems)..where((i) => i.id.equals(localId))).write(
       GroceryListItemsCompanion(
         serverId: Value(serverId),
         syncStatus: Value(SyncStatus.synced.value),
@@ -978,9 +995,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> deleteGroceryListItemLocal(int localId) async {
-    await (delete(groceryListItems)
-          ..where((i) => i.id.equals(localId)))
-        .go();
+    await (delete(groceryListItems)..where((i) => i.id.equals(localId))).go();
   }
 
   Future<void> upsertGroceryListItems(
@@ -1010,8 +1025,6 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteGroceryListItemsLocalBatch(List<int> ids) async {
     if (ids.isEmpty) return;
-    await (delete(groceryListItems)
-          ..where((i) => i.id.isIn(ids)))
-        .go();
+    await (delete(groceryListItems)..where((i) => i.id.isIn(ids))).go();
   }
 }

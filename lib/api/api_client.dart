@@ -5,7 +5,7 @@ import 'api_models.dart';
 
 class ApiClient {
   ApiClient(String baseUrl, {String apiKey = '', Dio? dio})
-      : _dio = dio ?? _buildDio(baseUrl, apiKey);
+    : _dio = dio ?? _buildDio(baseUrl, apiKey);
 
   final Dio _dio;
 
@@ -15,18 +15,20 @@ class ApiClient {
     // When no URL has been configured yet, use a local placeholder so Dio can
     // be constructed. Any request fired before the user sets a real URL will
     // fail with a connection error that surfaces as "Cannot reach backend".
-    final effectiveBase =
-        baseUrl.isNotEmpty ? '$baseUrl/api' : 'https://localhost/api';
-    final dio = Dio(BaseOptions(
-      baseUrl: effectiveBase,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30),
-      headers: headers,
-    ));
+    final effectiveBase = baseUrl.isNotEmpty
+        ? '$baseUrl/api'
+        : 'https://localhost/api';
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: effectiveBase,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 30),
+        headers: headers,
+      ),
+    );
     // Explicitly reject any certificate that fails standard validation.
     (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
-      return HttpClient()
-        ..badCertificateCallback = (cert, host, port) => false;
+      return HttpClient()..badCertificateCallback = (cert, host, port) => false;
     };
     return dio;
   }
@@ -77,34 +79,31 @@ class ApiClient {
     String path, {
     required Object? data,
     required T Function(Map<String, dynamic>) fromJson,
-  }) =>
-      _writeJson(
-        () => _dio.post<Map<String, dynamic>>(path, data: data),
-        path,
-        fromJson: fromJson,
-      );
+  }) => _writeJson(
+    () => _dio.post<Map<String, dynamic>>(path, data: data),
+    path,
+    fromJson: fromJson,
+  );
 
   Future<T> _putJson<T>(
     String path, {
     required Object? data,
     required T Function(Map<String, dynamic>) fromJson,
-  }) =>
-      _writeJson(
-        () => _dio.put<Map<String, dynamic>>(path, data: data),
-        path,
-        fromJson: fromJson,
-      );
+  }) => _writeJson(
+    () => _dio.put<Map<String, dynamic>>(path, data: data),
+    path,
+    fromJson: fromJson,
+  );
 
   Future<T> _patchJson<T>(
     String path, {
     required Object? data,
     required T Function(Map<String, dynamic>) fromJson,
-  }) =>
-      _writeJson(
-        () => _dio.patch<Map<String, dynamic>>(path, data: data),
-        path,
-        fromJson: fromJson,
-      );
+  }) => _writeJson(
+    () => _dio.patch<Map<String, dynamic>>(path, data: data),
+    path,
+    fromJson: fromJson,
+  );
 
   // ── Categories ────────────────────────────────────────────────────────────
 
@@ -146,12 +145,11 @@ class ApiClient {
   Future<void> generateAllOccurrences() =>
       _dio.post('/occurrences/generate-all');
 
-  Future<ApiTask> createTaskFromOccurrence(int occurrenceServerId) =>
-      _postJson(
-        '/occurrences/$occurrenceServerId/task',
-        data: {},
-        fromJson: ApiTask.fromJson,
-      );
+  Future<ApiTask> createTaskFromOccurrence(int occurrenceServerId) => _postJson(
+    '/occurrences/$occurrenceServerId/task',
+    data: {},
+    fromJson: ApiTask.fromJson,
+  );
 
   // ── Events ────────────────────────────────────────────────────────────────
 
@@ -160,12 +158,11 @@ class ApiClient {
 
   // ── Tasks ─────────────────────────────────────────────────────────────────
 
-  Future<List<ApiTask>> fetchTasks({int limit = 1000}) =>
-      _getList(
-        '/tasks',
-        queryParameters: {'limit': limit},
-        fromJson: ApiTask.fromJson,
-      );
+  Future<List<ApiTask>> fetchTasks({int limit = 1000}) => _getList(
+    '/tasks',
+    queryParameters: {'limit': limit},
+    fromJson: ApiTask.fromJson,
+  );
 
   Future<ApiTask> createTask(Map<String, dynamic> data) =>
       _postJson('/tasks', data: data, fromJson: ApiTask.fromJson);
@@ -180,31 +177,28 @@ class ApiClient {
   Future<ApiSubtask> createSubtask(
     int taskServerId,
     Map<String, dynamic> data,
-  ) =>
-      _postJson(
-        '/tasks/$taskServerId/subtasks',
-        data: data,
-        fromJson: ApiSubtask.fromJson,
-      );
+  ) => _postJson(
+    '/tasks/$taskServerId/subtasks',
+    data: data,
+    fromJson: ApiSubtask.fromJson,
+  );
 
   Future<void> patchSubtask(
     int taskServerId,
     int subtaskServerId,
     Map<String, dynamic> data,
-  ) =>
-      _dio.patch('/tasks/$taskServerId/subtasks/$subtaskServerId', data: data);
+  ) => _dio.patch('/tasks/$taskServerId/subtasks/$subtaskServerId', data: data);
 
   Future<void> deleteSubtask(int taskServerId, int subtaskServerId) =>
       _dio.delete('/tasks/$taskServerId/subtasks/$subtaskServerId');
 
   // ── Credit Cards ──────────────────────────────────────────────────────────
 
-  Future<List<ApiCreditCard>> fetchCreditCards({int limit = 500}) =>
-      _getList(
-        '/credit-cards',
-        queryParameters: {'limit': limit},
-        fromJson: ApiCreditCard.fromJson,
-      );
+  Future<List<ApiCreditCard>> fetchCreditCards({int limit = 500}) => _getList(
+    '/credit-cards',
+    queryParameters: {'limit': limit},
+    fromJson: ApiCreditCard.fromJson,
+  );
 
   Future<ApiCreditCard> createCreditCard(Map<String, dynamic> data) =>
       _postJson('/credit-cards', data: data, fromJson: ApiCreditCard.fromJson);
@@ -212,12 +206,11 @@ class ApiClient {
   Future<ApiCreditCard> updateCreditCard(
     int serverId,
     Map<String, dynamic> data,
-  ) =>
-      _putJson(
-        '/credit-cards/$serverId',
-        data: data,
-        fromJson: ApiCreditCard.fromJson,
-      );
+  ) => _putJson(
+    '/credit-cards/$serverId',
+    data: data,
+    fromJson: ApiCreditCard.fromJson,
+  );
 
   Future<void> deleteCreditCard(int serverId) =>
       _dio.delete('/credit-cards/$serverId');
@@ -240,13 +233,13 @@ class ApiClient {
 
   // ── Grocery Items ─────────────────────────────────────────────────────────
 
-  Future<List<ApiGroceryItem>> fetchGroceryItems({String? search}) =>
-      _getList(
-        '/grocery/items',
-        queryParameters:
-            search != null && search.isNotEmpty ? {'search': search} : null,
-        fromJson: ApiGroceryItem.fromJson,
-      );
+  Future<List<ApiGroceryItem>> fetchGroceryItems({String? search}) => _getList(
+    '/grocery/items',
+    queryParameters: search != null && search.isNotEmpty
+        ? {'search': search}
+        : null,
+    fromJson: ApiGroceryItem.fromJson,
+  );
 
   Future<ApiGroceryItem> createGroceryItem(Map<String, dynamic> data) =>
       _postJson(
@@ -275,12 +268,11 @@ class ApiClient {
 
   // ── Grocery Lists ─────────────────────────────────────────────────────────
 
-  Future<List<ApiGroceryList>> fetchGroceryLists({String? status}) =>
-      _getList(
-        '/grocery/lists',
-        queryParameters: status != null ? {'status': status} : null,
-        fromJson: ApiGroceryList.fromJson,
-      );
+  Future<List<ApiGroceryList>> fetchGroceryLists({String? status}) => _getList(
+    '/grocery/lists',
+    queryParameters: status != null ? {'status': status} : null,
+    fromJson: ApiGroceryList.fromJson,
+  );
 
   Future<ApiGroceryList> createGroceryList(Map<String, dynamic> data) =>
       _postJson(
@@ -292,12 +284,11 @@ class ApiClient {
   Future<ApiGroceryList> updateGroceryList(
     int serverId,
     Map<String, dynamic> data,
-  ) =>
-      _patchJson(
-        '/grocery/lists/$serverId',
-        data: data,
-        fromJson: ApiGroceryList.fromJson,
-      );
+  ) => _patchJson(
+    '/grocery/lists/$serverId',
+    data: data,
+    fromJson: ApiGroceryList.fromJson,
+  );
 
   Future<void> deleteGroceryList(int serverId) =>
       _dio.delete('/grocery/lists/$serverId');
@@ -307,23 +298,21 @@ class ApiClient {
   Future<ApiGroceryListItem> addGroceryListItem(
     int listServerId,
     Map<String, dynamic> data,
-  ) =>
-      _postJson(
-        '/grocery/lists/$listServerId/items',
-        data: data,
-        fromJson: ApiGroceryListItem.fromJson,
-      );
+  ) => _postJson(
+    '/grocery/lists/$listServerId/items',
+    data: data,
+    fromJson: ApiGroceryListItem.fromJson,
+  );
 
   Future<ApiGroceryListItem> updateGroceryListItem(
     int listServerId,
     int itemServerId,
     Map<String, dynamic> data,
-  ) =>
-      _patchJson(
-        '/grocery/lists/$listServerId/items/$itemServerId',
-        data: data,
-        fromJson: ApiGroceryListItem.fromJson,
-      );
+  ) => _patchJson(
+    '/grocery/lists/$listServerId/items/$itemServerId',
+    data: data,
+    fromJson: ApiGroceryListItem.fromJson,
+  );
 
   Future<void> removeGroceryListItem(int listServerId, int itemServerId) =>
       _dio.delete('/grocery/lists/$listServerId/items/$itemServerId');

@@ -41,7 +41,12 @@ void main() {
     });
 
     test('accepts numeric id as double', () {
-      final c = ApiCategory.fromJson({'id': 4.0, 'name': 'Y', 'color': '#fff', 'icon': '!'});
+      final c = ApiCategory.fromJson({
+        'id': 4.0,
+        'name': 'Y',
+        'color': '#fff',
+        'icon': '!',
+      });
       expect(c.id, 4);
     });
   });
@@ -57,7 +62,11 @@ void main() {
     });
 
     test('parses optional email', () {
-      final p = ApiPerson.fromJson({'id': 11, 'name': 'Bob', 'email': 'bob@example.com'});
+      final p = ApiPerson.fromJson({
+        'id': 11,
+        'name': 'Bob',
+        'email': 'bob@example.com',
+      });
       expect(p.email, 'bob@example.com');
     });
   });
@@ -65,16 +74,21 @@ void main() {
   // ── ApiEvent ─────────────────────────────────────────────────────────────────
 
   group('ApiEvent.fromJson', () {
-    final categoryJson = {'id': 1, 'name': 'Work', 'color': '#3b82f6', 'icon': '💼'};
+    final categoryJson = {
+      'id': 1,
+      'name': 'Work',
+      'color': '#3b82f6',
+      'icon': '💼',
+    };
 
     Map<String, dynamic> baseEvent() => {
-          'id': 100,
-          'title': 'Team meeting',
-          'category_id': 1,
-          'dtstart': '2026-05-01',
-          'is_active': true,
-          'category': categoryJson,
-        };
+      'id': 100,
+      'title': 'Team meeting',
+      'category_id': 1,
+      'dtstart': '2026-05-01',
+      'is_active': true,
+      'category': categoryJson,
+    };
 
     test('parses required fields with defaults', () {
       final e = ApiEvent.fromJson(baseEvent());
@@ -176,7 +190,12 @@ void main() {
           'category_id': 1,
           'dtstart': '2026-05-01',
           'is_active': true,
-          'category': {'id': 1, 'name': 'Work', 'color': '#3b82f6', 'icon': '💼'},
+          'category': {
+            'id': 1,
+            'name': 'Work',
+            'color': '#3b82f6',
+            'icon': '💼',
+          },
         },
       });
       expect(o.event, isNotNull);
@@ -210,7 +229,12 @@ void main() {
     });
 
     test('order defaults to 0 when missing', () {
-      final s = ApiSubtask.fromJson({'id': 3, 'task_id': 10, 'title': 'X', 'status': 'todo'});
+      final s = ApiSubtask.fromJson({
+        'id': 3,
+        'task_id': 10,
+        'title': 'X',
+        'status': 'todo',
+      });
       expect(s.order, 0);
     });
 
@@ -231,16 +255,16 @@ void main() {
 
   group('ApiTask.fromJson', () {
     Map<String, dynamic> baseTask() => {
-          'id': 500,
-          'title': 'Implement feature',
-          'status': 'todo',
-          'priority': 'medium',
-          'recurrence': 'none',
-          'order': 0,
-          'subtasks': [],
-          'created_at': '2026-01-01T00:00:00Z',
-          'updated_at': '2026-01-02T00:00:00Z',
-        };
+      'id': 500,
+      'title': 'Implement feature',
+      'status': 'todo',
+      'priority': 'medium',
+      'recurrence': 'none',
+      'order': 0,
+      'subtasks': [],
+      'created_at': '2026-01-01T00:00:00Z',
+      'updated_at': '2026-01-02T00:00:00Z',
+    };
 
     test('parses minimal task', () {
       final t = ApiTask.fromJson(baseTask());
@@ -278,8 +302,20 @@ void main() {
     test('parses subtasks list', () {
       final json = baseTask()
         ..['subtasks'] = [
-          {'id': 1, 'task_id': 500, 'title': 'Sub1', 'status': 'todo', 'order': 0},
-          {'id': 2, 'task_id': 500, 'title': 'Sub2', 'status': 'done', 'order': 1},
+          {
+            'id': 1,
+            'task_id': 500,
+            'title': 'Sub1',
+            'status': 'todo',
+            'order': 0,
+          },
+          {
+            'id': 2,
+            'task_id': 500,
+            'title': 'Sub2',
+            'status': 'done',
+            'order': 1,
+          },
         ];
       final t = ApiTask.fromJson(json);
       expect(t.subtasks.length, 2);
@@ -287,8 +323,7 @@ void main() {
     });
 
     test('parses nested assignee', () {
-      final json = baseTask()
-        ..['assignee'] = {'id': 7, 'name': 'Charlie'};
+      final json = baseTask()..['assignee'] = {'id': 7, 'name': 'Charlie'};
       final t = ApiTask.fromJson(json);
       expect(t.assignee!.name, 'Charlie');
     });
@@ -310,7 +345,12 @@ void main() {
 
     test('parses nested category', () {
       final json = baseTask()
-        ..['category'] = {'id': 1, 'name': 'Work', 'color': '#3b82f6', 'icon': '💼'};
+        ..['category'] = {
+          'id': 1,
+          'name': 'Work',
+          'color': '#3b82f6',
+          'icon': '💼',
+        };
       final t = ApiTask.fromJson(json);
       expect(t.category!.name, 'Work');
     });
@@ -325,7 +365,11 @@ void main() {
 
   group('ApiCreditCard.fromJson', () {
     test('parses minimal credit card', () {
-      final c = ApiCreditCard.fromJson({'id': 1, 'name': 'Visa', 'is_active': true});
+      final c = ApiCreditCard.fromJson({
+        'id': 1,
+        'name': 'Visa',
+        'is_active': true,
+      });
       expect(c.id, 1);
       expect(c.name, 'Visa');
       expect(c.isActive, true);
@@ -371,7 +415,11 @@ void main() {
 
   group('ApiStore.fromJson', () {
     test('parses required fields', () {
-      final s = ApiStore.fromJson({'id': 1, 'name': 'Walmart', 'is_active': true});
+      final s = ApiStore.fromJson({
+        'id': 1,
+        'name': 'Walmart',
+        'is_active': true,
+      });
       expect(s.id, 1);
       expect(s.name, 'Walmart');
       expect(s.isActive, true);
@@ -429,12 +477,22 @@ void main() {
 
   group('ApiOnHand.fromJson', () {
     test('parses quantity as num', () {
-      final o = ApiOnHand.fromJson({'id': 1, 'item_id': 10, 'quantity': 2.5, 'unit': 'lb'});
+      final o = ApiOnHand.fromJson({
+        'id': 1,
+        'item_id': 10,
+        'quantity': 2.5,
+        'unit': 'lb',
+      });
       expect(o.quantity, closeTo(2.5, 0.001));
     });
 
     test('parses quantity as decimal string', () {
-      final o = ApiOnHand.fromJson({'id': 2, 'item_id': 10, 'quantity': '1.750', 'unit': 'each'});
+      final o = ApiOnHand.fromJson({
+        'id': 2,
+        'item_id': 10,
+        'quantity': '1.750',
+        'unit': 'each',
+      });
       expect(o.quantity, closeTo(1.75, 0.001));
     });
 
@@ -470,7 +528,12 @@ void main() {
     });
 
     test('item is null when absent', () {
-      final o = ApiOnHand.fromJson({'id': 6, 'item_id': 10, 'quantity': 1, 'unit': 'each'});
+      final o = ApiOnHand.fromJson({
+        'id': 6,
+        'item_id': 10,
+        'quantity': 1,
+        'unit': 'each',
+      });
       expect(o.item, isNull);
     });
   });
@@ -499,23 +562,38 @@ void main() {
 
     test('price as num', () {
       final i = ApiGroceryListItem.fromJson({
-        'id': 2, 'list_id': 20, 'item_id': 10, 'quantity': 1, 'unit': 'each',
-        'status': 'needed', 'price': 3.99,
+        'id': 2,
+        'list_id': 20,
+        'item_id': 10,
+        'quantity': 1,
+        'unit': 'each',
+        'status': 'needed',
+        'price': 3.99,
       });
       expect(i.price, closeTo(3.99, 0.001));
     });
 
     test('price as string', () {
       final i = ApiGroceryListItem.fromJson({
-        'id': 3, 'list_id': 20, 'item_id': 10, 'quantity': 1, 'unit': 'each',
-        'status': 'needed', 'price': '4.500',
+        'id': 3,
+        'list_id': 20,
+        'item_id': 10,
+        'quantity': 1,
+        'unit': 'each',
+        'status': 'needed',
+        'price': '4.500',
       });
       expect(i.price, closeTo(4.5, 0.001));
     });
 
     test('price null when absent', () {
       final i = ApiGroceryListItem.fromJson({
-        'id': 4, 'list_id': 20, 'item_id': 10, 'quantity': 1, 'unit': 'each', 'status': 'needed',
+        'id': 4,
+        'list_id': 20,
+        'item_id': 10,
+        'quantity': 1,
+        'unit': 'each',
+        'status': 'needed',
       });
       expect(i.price, isNull);
     });
@@ -535,14 +613,22 @@ void main() {
 
     test('quantity defaults to 1.0 when missing', () {
       final i = ApiGroceryListItem.fromJson({
-        'id': 5, 'list_id': 20, 'item_id': 10, 'unit': 'each', 'status': 'needed',
+        'id': 5,
+        'list_id': 20,
+        'item_id': 10,
+        'unit': 'each',
+        'status': 'needed',
       });
       expect(i.quantity, closeTo(1.0, 0.001));
     });
 
     test('status defaults to needed when missing', () {
       final i = ApiGroceryListItem.fromJson({
-        'id': 6, 'list_id': 20, 'item_id': 10, 'quantity': 1, 'unit': 'each',
+        'id': 6,
+        'list_id': 20,
+        'item_id': 10,
+        'quantity': 1,
+        'unit': 'each',
       });
       expect(i.status, 'needed');
     });
@@ -587,7 +673,11 @@ void main() {
     });
 
     test('items default to empty when missing', () {
-      final list = ApiGroceryList.fromJson({'id': 3, 'name': 'X', 'status': 'draft'});
+      final list = ApiGroceryList.fromJson({
+        'id': 3,
+        'name': 'X',
+        'status': 'draft',
+      });
       expect(list.items, isEmpty);
     });
 
@@ -608,7 +698,14 @@ void main() {
         'name': 'Snacks',
         'status': 'active',
         'items': [
-          {'id': 1, 'list_id': 5, 'item_id': 10, 'quantity': 2, 'unit': 'each', 'status': 'needed'},
+          {
+            'id': 1,
+            'list_id': 5,
+            'item_id': 10,
+            'quantity': 2,
+            'unit': 'each',
+            'status': 'needed',
+          },
         ],
       });
       expect(list.items.length, 1);
@@ -658,7 +755,11 @@ void main() {
     });
 
     test('day counts default to 0 when missing', () {
-      final r = ApiTrackerRow.fromJson({'id': 3, 'name': 'Y', 'prev_due_overdue': false});
+      final r = ApiTrackerRow.fromJson({
+        'id': 3,
+        'name': 'Y',
+        'prev_due_overdue': false,
+      });
       expect(r.nextCloseDays, 0);
       expect(r.nextDueDays, 0);
     });

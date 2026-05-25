@@ -41,7 +41,10 @@ void main() {
     });
 
     test('phase error with no errorMessage is representable', () {
-      final result = SyncState().copyWith(phase: SyncPhase.error, errorMessage: 'oops');
+      final result = SyncState().copyWith(
+        phase: SyncPhase.error,
+        errorMessage: 'oops',
+      );
       expect(result.phase, SyncPhase.error);
       expect(result.errorMessage, 'oops');
     });

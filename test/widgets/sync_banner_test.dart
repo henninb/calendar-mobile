@@ -39,7 +39,9 @@ Widget _wrap({
 }) {
   return ProviderScope(
     overrides: [
-      isOnlineProvider.overrideWith(() => _StaticConnectivityNotifier(isOnline)),
+      isOnlineProvider.overrideWith(
+        () => _StaticConnectivityNotifier(isOnline),
+      ),
       forcedOfflineProvider.overrideWith(
         () => _StaticForcedOfflineNotifier(forcedOffline),
       ),
@@ -47,9 +49,7 @@ Widget _wrap({
     ],
     child: MaterialApp(
       theme: buildAppTheme(),
-      home: const Scaffold(
-        body: SyncBanner(),
-      ),
+      home: const Scaffold(body: SyncBanner()),
     ),
   );
 }

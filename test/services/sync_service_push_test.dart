@@ -16,10 +16,12 @@ class MockApiClient extends Mock implements ApiClient {}
 void _stubEmptyRefresh(MockApiClient api) {
   when(() => api.fetchCategories()).thenAnswer((_) async => []);
   when(() => api.fetchPersons()).thenAnswer((_) async => []);
-  when(() => api.fetchOccurrences(
-        startDate: any(named: 'startDate'),
-        endDate: any(named: 'endDate'),
-      )).thenAnswer((_) async => []);
+  when(
+    () => api.fetchOccurrences(
+      startDate: any(named: 'startDate'),
+      endDate: any(named: 'endDate'),
+    ),
+  ).thenAnswer((_) async => []);
   when(() => api.fetchTasks()).thenAnswer((_) async => []);
   when(() => api.fetchCreditCards()).thenAnswer((_) async => []);
   when(() => api.fetchTrackerRows()).thenAnswer((_) async => []);
@@ -46,15 +48,17 @@ void main() {
 
   group('pushPending — occurrences', () {
     test('pendingUpdate patches the API and marks synced', () async {
-      final id = await db.into(db.occurrences).insert(
-        const OccurrencesCompanion(
-          serverId: Value(10),
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-          status: Value('completed'),
-          syncStatus: Value(2),
-        ),
-      );
+      final id = await db
+          .into(db.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              serverId: Value(10),
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+              status: Value('completed'),
+              syncStatus: Value(2),
+            ),
+          );
 
       when(() => api.patchOccurrence(any(), any())).thenAnswer((_) async {});
 
@@ -63,19 +67,23 @@ void main() {
       expect(result.pushed, 1);
       expect(result.errors, isEmpty);
       verify(() => api.patchOccurrence(10, any())).called(1);
-      final row = await (db.select(db.occurrences)..where((o) => o.id.equals(id))).getSingle();
+      final row = await (db.select(
+        db.occurrences,
+      )..where((o) => o.id.equals(id))).getSingle();
       expect(row.syncStatus, SyncStatus.synced.value);
     });
 
     test('pendingDelete calls API delete and removes locally', () async {
-      final id = await db.into(db.occurrences).insert(
-        const OccurrencesCompanion(
-          serverId: Value(11),
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-          syncStatus: Value(3),
-        ),
-      );
+      final id = await db
+          .into(db.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              serverId: Value(11),
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+              syncStatus: Value(3),
+            ),
+          );
 
       when(() => api.deleteOccurrence(any())).thenAnswer((_) async {});
 
@@ -83,23 +91,33 @@ void main() {
 
       expect(result.pushed, 1);
       verify(() => api.deleteOccurrence(11)).called(1);
-      expect(await (db.select(db.occurrences)..where((o) => o.id.equals(id))).getSingleOrNull(), isNull);
-    });
-
-    test('pendingCreate (no serverId) returns false — occurrences are server-generated', () async {
-      await db.into(db.occurrences).insert(
-        const OccurrencesCompanion(
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-          syncStatus: Value(1),
-        ),
+      expect(
+        await (db.select(
+          db.occurrences,
+        )..where((o) => o.id.equals(id))).getSingleOrNull(),
+        isNull,
       );
-
-      final result = await syncService.pushPending();
-
-      expect(result.pushed, 0);
-      verifyNever(() => api.patchOccurrence(any(), any()));
     });
+
+    test(
+      'pendingCreate (no serverId) returns false — occurrences are server-generated',
+      () async {
+        await db
+            .into(db.occurrences)
+            .insert(
+              const OccurrencesCompanion(
+                eventServerId: Value(100),
+                occurrenceDate: Value('2026-05-01'),
+                syncStatus: Value(1),
+              ),
+            );
+
+        final result = await syncService.pushPending();
+
+        expect(result.pushed, 0);
+        verifyNever(() => api.patchOccurrence(any(), any()));
+      },
+    );
   });
 
   // ── Credit Cards ──────────────────────────────────────────────────────────
@@ -122,7 +140,9 @@ void main() {
       expect(result.pushed, 1);
       expect(result.errors, isEmpty);
       verify(() => api.createCreditCard(any())).called(1);
-      final card = await (db.select(db.creditCards)..where((c) => c.id.equals(localId))).getSingle();
+      final card = await (db.select(
+        db.creditCards,
+      )..where((c) => c.id.equals(localId))).getSingle();
       expect(card.serverId, 900);
       expect(card.syncStatus, SyncStatus.synced.value);
     });
@@ -136,13 +156,17 @@ void main() {
         ),
       );
 
-      when(() => api.updateCreditCard(any(), any())).thenAnswer((_) async => _apiCard);
+      when(
+        () => api.updateCreditCard(any(), any()),
+      ).thenAnswer((_) async => _apiCard);
 
       final result = await syncService.pushPending();
 
       expect(result.pushed, 1);
       verify(() => api.updateCreditCard(50, any())).called(1);
-      final card = await (db.select(db.creditCards)..where((c) => c.id.equals(localId))).getSingle();
+      final card = await (db.select(
+        db.creditCards,
+      )..where((c) => c.id.equals(localId))).getSingle();
       expect(card.syncStatus, SyncStatus.synced.value);
     });
 
@@ -175,7 +199,12 @@ void main() {
 
       expect(result.pushed, 1);
       verify(() => api.deleteCreditCard(51)).called(1);
-      expect(await (db.select(db.creditCards)..where((c) => c.id.equals(localId))).getSingleOrNull(), isNull);
+      expect(
+        await (db.select(
+          db.creditCards,
+        )..where((c) => c.id.equals(localId))).getSingleOrNull(),
+        isNull,
+      );
     });
 
     test('pendingDelete without serverId returns false', () async {
@@ -196,7 +225,12 @@ void main() {
   // ── Grocery On Hand ───────────────────────────────────────────────────────
 
   group('pushPending — grocery on hand', () {
-    const _apiOnHand = ApiOnHand(id: 200, itemId: 10, quantity: 2.0, unit: 'lb');
+    const _apiOnHand = ApiOnHand(
+      id: 200,
+      itemId: 10,
+      quantity: 2.0,
+      unit: 'lb',
+    );
 
     test('pendingCreate upserts and marks synced', () async {
       await db.upsertGroceryOnHand([
@@ -208,13 +242,17 @@ void main() {
       ]);
       final row = await (db.select(db.groceryOnHand)).getSingle();
 
-      when(() => api.upsertOnHand(any(), any())).thenAnswer((_) async => _apiOnHand);
+      when(
+        () => api.upsertOnHand(any(), any()),
+      ).thenAnswer((_) async => _apiOnHand);
 
       final result = await syncService.pushPending();
 
       expect(result.pushed, 1);
       verify(() => api.upsertOnHand(10, any())).called(1);
-      final updated = await (db.select(db.groceryOnHand)..where((o) => o.id.equals(row.id))).getSingle();
+      final updated = await (db.select(
+        db.groceryOnHand,
+      )..where((o) => o.id.equals(row.id))).getSingle();
       expect(updated.syncStatus, 0);
     });
 
@@ -227,7 +265,9 @@ void main() {
         ),
       ]);
 
-      when(() => api.upsertOnHand(any(), any())).thenAnswer((_) async => _apiOnHand);
+      when(
+        () => api.upsertOnHand(any(), any()),
+      ).thenAnswer((_) async => _apiOnHand);
 
       final result = await syncService.pushPending();
 
@@ -250,7 +290,12 @@ void main() {
 
       expect(result.pushed, 1);
       verify(() => api.deleteOnHand(12)).called(1);
-      expect(await (db.select(db.groceryOnHand)..where((o) => o.id.equals(row.id))).getSingleOrNull(), isNull);
+      expect(
+        await (db.select(
+          db.groceryOnHand,
+        )..where((o) => o.id.equals(row.id))).getSingleOrNull(),
+        isNull,
+      );
     });
   });
 
@@ -273,7 +318,9 @@ void main() {
 
       expect(result.pushed, 1);
       verify(() => api.createStore(any())).called(1);
-      final store = await (db.select(db.groceryStores)..where((s) => s.id.equals(localId))).getSingle();
+      final store = await (db.select(
+        db.groceryStores,
+      )..where((s) => s.id.equals(localId))).getSingle();
       expect(store.serverId, 300);
       expect(store.syncStatus, SyncStatus.synced.value);
     });
@@ -287,7 +334,9 @@ void main() {
         ),
       );
 
-      when(() => api.updateStore(any(), any())).thenAnswer((_) async => _apiStore);
+      when(
+        () => api.updateStore(any(), any()),
+      ).thenAnswer((_) async => _apiStore);
 
       final result = await syncService.pushPending();
 
@@ -297,7 +346,10 @@ void main() {
 
     test('pendingUpdate without serverId returns false', () async {
       await db.insertGroceryStore(
-        const GroceryStoresCompanion(name: Value('No Server'), syncStatus: Value(2)),
+        const GroceryStoresCompanion(
+          name: Value('No Server'),
+          syncStatus: Value(2),
+        ),
       );
 
       final result = await syncService.pushPending();
@@ -321,12 +373,20 @@ void main() {
 
       expect(result.pushed, 1);
       verify(() => api.deleteStore(56)).called(1);
-      expect(await (db.select(db.groceryStores)..where((s) => s.id.equals(localId))).getSingleOrNull(), isNull);
+      expect(
+        await (db.select(
+          db.groceryStores,
+        )..where((s) => s.id.equals(localId))).getSingleOrNull(),
+        isNull,
+      );
     });
 
     test('pendingDelete without serverId returns false', () async {
       await db.insertGroceryStore(
-        const GroceryStoresCompanion(name: Value('No Server'), syncStatus: Value(3)),
+        const GroceryStoresCompanion(
+          name: Value('No Server'),
+          syncStatus: Value(3),
+        ),
       );
 
       final result = await syncService.pushPending();
@@ -338,7 +398,12 @@ void main() {
   // ── Grocery Lists ─────────────────────────────────────────────────────────
 
   group('pushPending — grocery lists', () {
-    const _apiList = ApiGroceryList(id: 400, name: 'List', status: 'draft', items: []);
+    const _apiList = ApiGroceryList(
+      id: 400,
+      name: 'List',
+      status: 'draft',
+      items: [],
+    );
 
     test('pendingCreate calls createGroceryList and marks synced', () async {
       final localId = await db.insertGroceryList(
@@ -348,7 +413,9 @@ void main() {
         ),
       );
 
-      when(() => api.createGroceryList(any())).thenAnswer((_) async => _apiList);
+      when(
+        () => api.createGroceryList(any()),
+      ).thenAnswer((_) async => _apiList);
 
       final result = await syncService.pushPending();
 
@@ -368,7 +435,9 @@ void main() {
         ),
       );
 
-      when(() => api.updateGroceryList(any(), any())).thenAnswer((_) async => _apiList);
+      when(
+        () => api.updateGroceryList(any(), any()),
+      ).thenAnswer((_) async => _apiList);
 
       final result = await syncService.pushPending();
 
@@ -378,7 +447,10 @@ void main() {
 
     test('pendingUpdate without serverId returns false', () async {
       await db.insertGroceryList(
-        const GroceryListsCompanion(name: Value('No Server'), syncStatus: Value(2)),
+        const GroceryListsCompanion(
+          name: Value('No Server'),
+          syncStatus: Value(2),
+        ),
       );
 
       final result = await syncService.pushPending();
@@ -407,7 +479,10 @@ void main() {
 
     test('pendingDelete without serverId returns false', () async {
       await db.insertGroceryList(
-        const GroceryListsCompanion(name: Value('No Server'), syncStatus: Value(3)),
+        const GroceryListsCompanion(
+          name: Value('No Server'),
+          syncStatus: Value(3),
+        ),
       );
 
       final result = await syncService.pushPending();
@@ -450,13 +525,17 @@ void main() {
         ),
       );
 
-      when(() => api.addGroceryListItem(any(), any())).thenAnswer((_) async => _apiItem);
+      when(
+        () => api.addGroceryListItem(any(), any()),
+      ).thenAnswer((_) async => _apiItem);
 
       final result = await syncService.pushPending();
 
       expect(result.pushed, 1);
       verify(() => api.addGroceryListItem(60, any())).called(1);
-      final item = await (db.select(db.groceryListItems)..where((i) => i.id.equals(itemId))).getSingle();
+      final item = await (db.select(
+        db.groceryListItems,
+      )..where((i) => i.id.equals(itemId))).getSingle();
       expect(item.serverId, 500);
       expect(item.syncStatus, SyncStatus.synced.value);
     });
@@ -470,7 +549,9 @@ void main() {
         ),
       );
 
-      when(() => api.addGroceryListItem(any(), any())).thenAnswer((_) async => _apiItem);
+      when(
+        () => api.addGroceryListItem(any(), any()),
+      ).thenAnswer((_) async => _apiItem);
 
       final result = await syncService.pushPending();
 
@@ -478,26 +559,29 @@ void main() {
       verify(() => api.addGroceryListItem(60, any())).called(1);
     });
 
-    test('pendingCreate returns false when listServerId cannot be resolved', () async {
-      final orphanListId = await db.insertGroceryList(
-        const GroceryListsCompanion(
-          name: Value('Orphan'),
-          syncStatus: Value(0),
-        ),
-      );
-      await db.insertGroceryListItem(
-        GroceryListItemsCompanion(
-          listLocalId: Value(orphanListId),
-          itemServerId: const Value(10),
-          syncStatus: const Value(1),
-        ),
-      );
+    test(
+      'pendingCreate returns false when listServerId cannot be resolved',
+      () async {
+        final orphanListId = await db.insertGroceryList(
+          const GroceryListsCompanion(
+            name: Value('Orphan'),
+            syncStatus: Value(0),
+          ),
+        );
+        await db.insertGroceryListItem(
+          GroceryListItemsCompanion(
+            listLocalId: Value(orphanListId),
+            itemServerId: const Value(10),
+            syncStatus: const Value(1),
+          ),
+        );
 
-      final result = await syncService.pushPending();
+        final result = await syncService.pushPending();
 
-      expect(result.pushed, 0);
-      verifyNever(() => api.addGroceryListItem(any(), any()));
-    });
+        expect(result.pushed, 0);
+        verifyNever(() => api.addGroceryListItem(any(), any()));
+      },
+    );
 
     test('pendingUpdate with serverId calls updateGroceryListItem', () async {
       await db.upsertGroceryListItems([
@@ -510,8 +594,9 @@ void main() {
         ),
       ]);
 
-      when(() => api.updateGroceryListItem(any(), any(), any()))
-          .thenAnswer((_) async => _apiItem);
+      when(
+        () => api.updateGroceryListItem(any(), any(), any()),
+      ).thenAnswer((_) async => _apiItem);
 
       final result = await syncService.pushPending();
 
@@ -519,60 +604,82 @@ void main() {
       verify(() => api.updateGroceryListItem(60, 11, any())).called(1);
     });
 
-    test('pendingUpdate without serverId or listServerId returns false', () async {
-      final orphanListId = await db.insertGroceryList(
-        const GroceryListsCompanion(name: Value('No Server'), syncStatus: Value(0)),
-      );
-      await db.insertGroceryListItem(
-        GroceryListItemsCompanion(
-          listLocalId: Value(orphanListId),
-          itemServerId: const Value(10),
-          syncStatus: const Value(2),
-        ),
-      );
+    test(
+      'pendingUpdate without serverId or listServerId returns false',
+      () async {
+        final orphanListId = await db.insertGroceryList(
+          const GroceryListsCompanion(
+            name: Value('No Server'),
+            syncStatus: Value(0),
+          ),
+        );
+        await db.insertGroceryListItem(
+          GroceryListItemsCompanion(
+            listLocalId: Value(orphanListId),
+            itemServerId: const Value(10),
+            syncStatus: const Value(2),
+          ),
+        );
 
-      final result = await syncService.pushPending();
+        final result = await syncService.pushPending();
 
-      expect(result.pushed, 0);
-    });
+        expect(result.pushed, 0);
+      },
+    );
 
-    test('pendingDelete calls removeGroceryListItem and deletes locally', () async {
-      await db.upsertGroceryListItems([
-        GroceryListItemsCompanion(
-          listLocalId: Value(listLocalId),
-          listServerId: const Value(60),
-          itemServerId: const Value(12),
-          syncStatus: const Value(3),
-        ),
-      ]);
-      final item = await (db.select(db.groceryListItems)).getSingle();
+    test(
+      'pendingDelete calls removeGroceryListItem and deletes locally',
+      () async {
+        await db.upsertGroceryListItems([
+          GroceryListItemsCompanion(
+            listLocalId: Value(listLocalId),
+            listServerId: const Value(60),
+            itemServerId: const Value(12),
+            syncStatus: const Value(3),
+          ),
+        ]);
+        final item = await (db.select(db.groceryListItems)).getSingle();
 
-      when(() => api.removeGroceryListItem(any(), any())).thenAnswer((_) async {});
+        when(
+          () => api.removeGroceryListItem(any(), any()),
+        ).thenAnswer((_) async {});
 
-      final result = await syncService.pushPending();
+        final result = await syncService.pushPending();
 
-      expect(result.pushed, 1);
-      verify(() => api.removeGroceryListItem(60, 12)).called(1);
-      expect(await (db.select(db.groceryListItems)..where((i) => i.id.equals(item.id))).getSingleOrNull(), isNull);
-    });
+        expect(result.pushed, 1);
+        verify(() => api.removeGroceryListItem(60, 12)).called(1);
+        expect(
+          await (db.select(
+            db.groceryListItems,
+          )..where((i) => i.id.equals(item.id))).getSingleOrNull(),
+          isNull,
+        );
+      },
+    );
 
-    test('pendingDelete returns false when listServerId cannot be resolved', () async {
-      final orphanListId = await db.insertGroceryList(
-        const GroceryListsCompanion(name: Value('Orphan'), syncStatus: Value(0)),
-      );
-      await db.insertGroceryListItem(
-        GroceryListItemsCompanion(
-          listLocalId: Value(orphanListId),
-          itemServerId: const Value(10),
-          syncStatus: const Value(3),
-        ),
-      );
+    test(
+      'pendingDelete returns false when listServerId cannot be resolved',
+      () async {
+        final orphanListId = await db.insertGroceryList(
+          const GroceryListsCompanion(
+            name: Value('Orphan'),
+            syncStatus: Value(0),
+          ),
+        );
+        await db.insertGroceryListItem(
+          GroceryListItemsCompanion(
+            listLocalId: Value(orphanListId),
+            itemServerId: const Value(10),
+            syncStatus: const Value(3),
+          ),
+        );
 
-      final result = await syncService.pushPending();
+        final result = await syncService.pushPending();
 
-      expect(result.pushed, 0);
-      verifyNever(() => api.removeGroceryListItem(any(), any()));
-    });
+        expect(result.pushed, 0);
+        verifyNever(() => api.removeGroceryListItem(any(), any()));
+      },
+    );
   });
 
   // ── _pushLoop error handling ──────────────────────────────────────────────
@@ -607,14 +714,16 @@ void main() {
     });
 
     test('DioException non-404 adds to errors list', () async {
-      await db.into(db.occurrences).insert(
-        const OccurrencesCompanion(
-          serverId: Value(10),
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-          syncStatus: Value(2),
-        ),
-      );
+      await db
+          .into(db.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              serverId: Value(10),
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+              syncStatus: Value(2),
+            ),
+          );
 
       when(() => api.patchOccurrence(any(), any())).thenThrow(
         DioException(
@@ -634,14 +743,16 @@ void main() {
     });
 
     test('DioException with no response adds network error to list', () async {
-      await db.into(db.occurrences).insert(
-        const OccurrencesCompanion(
-          serverId: Value(10),
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-          syncStatus: Value(2),
-        ),
-      );
+      await db
+          .into(db.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              serverId: Value(10),
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+              syncStatus: Value(2),
+            ),
+          );
 
       when(() => api.patchOccurrence(any(), any())).thenThrow(
         DioException(
@@ -657,16 +768,20 @@ void main() {
     });
 
     test('unexpected exception adds error entry', () async {
-      await db.into(db.occurrences).insert(
-        const OccurrencesCompanion(
-          serverId: Value(10),
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-          syncStatus: Value(2),
-        ),
-      );
+      await db
+          .into(db.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              serverId: Value(10),
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+              syncStatus: Value(2),
+            ),
+          );
 
-      when(() => api.patchOccurrence(any(), any())).thenThrow(Exception('Boom'));
+      when(
+        () => api.patchOccurrence(any(), any()),
+      ).thenThrow(Exception('Boom'));
 
       final result = await syncService.pushPending();
 
@@ -676,14 +791,16 @@ void main() {
 
     test('DioException 404 with no on404 handler adds to errors', () async {
       // Occurrences push has on404: null, so a 404 goes into errors
-      await db.into(db.occurrences).insert(
-        const OccurrencesCompanion(
-          serverId: Value(10),
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-          syncStatus: Value(2),
-        ),
-      );
+      await db
+          .into(db.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              serverId: Value(10),
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+              syncStatus: Value(2),
+            ),
+          );
 
       when(() => api.patchOccurrence(any(), any())).thenThrow(
         DioException(
@@ -702,14 +819,16 @@ void main() {
     });
 
     test('DioException badCertificate adds TLS message', () async {
-      await db.into(db.occurrences).insert(
-        const OccurrencesCompanion(
-          serverId: Value(10),
-          eventServerId: Value(100),
-          occurrenceDate: Value('2026-05-01'),
-          syncStatus: Value(2),
-        ),
-      );
+      await db
+          .into(db.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              serverId: Value(10),
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+              syncStatus: Value(2),
+            ),
+          );
 
       when(() => api.patchOccurrence(any(), any())).thenThrow(
         DioException(
@@ -738,20 +857,29 @@ void main() {
         dtstart: '2026-05-01',
         priority: 'medium',
         isActive: true,
-        category: ApiCategory(id: 5, name: 'Work', color: '#ff0000', icon: '💼'),
+        category: ApiCategory(
+          id: 5,
+          name: 'Work',
+          color: '#ff0000',
+          icon: '💼',
+        ),
       );
-      when(() => api.fetchOccurrences(
-            startDate: any(named: 'startDate'),
-            endDate: any(named: 'endDate'),
-          )).thenAnswer((_) async => [
-            ApiOccurrence(
-              id: 10,
-              eventId: 1,
-              occurrenceDate: '2026-05-10',
-              status: 'upcoming',
-              event: event,
-            ),
-          ]);
+      when(
+        () => api.fetchOccurrences(
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          ApiOccurrence(
+            id: 10,
+            eventId: 1,
+            occurrenceDate: '2026-05-10',
+            status: 'upcoming',
+            event: event,
+          ),
+        ],
+      );
 
       await syncService.fullRefresh();
 
@@ -774,10 +902,12 @@ void main() {
       ]);
 
       // Server returns nothing for the window.
-      when(() => api.fetchOccurrences(
-            startDate: any(named: 'startDate'),
-            endDate: any(named: 'endDate'),
-          )).thenAnswer((_) async => []);
+      when(
+        () => api.fetchOccurrences(
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => []);
 
       await syncService.fullRefresh();
 
@@ -802,9 +932,11 @@ void main() {
       ]);
 
       // Server returns a different quantity for the same item.
-      when(() => api.fetchOnHand()).thenAnswer((_) async => [
-            const ApiOnHand(id: 1, itemId: 1, quantity: 1.0, unit: 'each'),
-          ]);
+      when(() => api.fetchOnHand()).thenAnswer(
+        (_) async => [
+          const ApiOnHand(id: 1, itemId: 1, quantity: 1.0, unit: 'each'),
+        ],
+      );
 
       await syncService.fullRefresh();
 
@@ -817,9 +949,11 @@ void main() {
     test('upserts non-pending rows from server', () async {
       _stubEmptyRefresh(api);
 
-      when(() => api.fetchOnHand()).thenAnswer((_) async => [
-            const ApiOnHand(id: 1, itemId: 10, quantity: 2.5, unit: 'lb'),
-          ]);
+      when(() => api.fetchOnHand()).thenAnswer(
+        (_) async => [
+          const ApiOnHand(id: 1, itemId: 10, quantity: 2.5, unit: 'lb'),
+        ],
+      );
 
       await syncService.fullRefresh();
 
@@ -837,9 +971,11 @@ void main() {
         const GroceryOnHandCompanion(itemServerId: Value(2)),
       ]);
 
-      when(() => api.fetchOnHand()).thenAnswer((_) async => [
-            const ApiOnHand(id: 1, itemId: 1, quantity: 1.0, unit: 'each'),
-          ]);
+      when(() => api.fetchOnHand()).thenAnswer(
+        (_) async => [
+          const ApiOnHand(id: 1, itemId: 1, quantity: 1.0, unit: 'each'),
+        ],
+      );
 
       await syncService.fullRefresh();
 
@@ -855,23 +991,25 @@ void main() {
     test('upserts list items from server response', () async {
       _stubEmptyRefresh(api);
 
-      when(() => api.fetchGroceryLists()).thenAnswer((_) async => [
-            ApiGroceryList(
-              id: 1,
-              name: 'My List',
-              status: 'draft',
-              items: [
-                const ApiGroceryListItem(
-                  id: 10,
-                  listId: 1,
-                  itemId: 5,
-                  quantity: 2.0,
-                  unit: 'each',
-                  status: 'needed',
-                ),
-              ],
-            ),
-          ]);
+      when(() => api.fetchGroceryLists()).thenAnswer(
+        (_) async => [
+          ApiGroceryList(
+            id: 1,
+            name: 'My List',
+            status: 'draft',
+            items: [
+              const ApiGroceryListItem(
+                id: 10,
+                listId: 1,
+                itemId: 5,
+                quantity: 2.0,
+                unit: 'each',
+                status: 'needed',
+              ),
+            ],
+          ),
+        ],
+      );
 
       await syncService.fullRefresh();
 
@@ -924,9 +1062,11 @@ void main() {
       ]);
 
       // Server returns list without items
-      when(() => api.fetchGroceryLists()).thenAnswer((_) async => [
-            const ApiGroceryList(id: 1, name: 'List', status: 'draft', items: []),
-          ]);
+      when(() => api.fetchGroceryLists()).thenAnswer(
+        (_) async => [
+          const ApiGroceryList(id: 1, name: 'List', status: 'draft', items: []),
+        ],
+      );
 
       await syncService.fullRefresh();
 
@@ -939,9 +1079,11 @@ void main() {
   group('fullRefresh — _refreshPersons', () {
     test('upserts persons returned by server', () async {
       _stubEmptyRefresh(api);
-      when(() => api.fetchPersons()).thenAnswer((_) async => [
-            const ApiPerson(id: 1, name: 'Alice', email: 'alice@example.com'),
-          ]);
+      when(() => api.fetchPersons()).thenAnswer(
+        (_) async => [
+          const ApiPerson(id: 1, name: 'Alice', email: 'alice@example.com'),
+        ],
+      );
 
       await syncService.fullRefresh();
 
@@ -958,24 +1100,26 @@ void main() {
   group('fullRefresh — _refreshCreditCardTracker', () {
     test('replaces tracker cache with server data', () async {
       _stubEmptyRefresh(api);
-      when(() => api.fetchTrackerRows()).thenAnswer((_) async => [
-            const ApiTrackerRow(
-              id: 1,
-              name: 'Visa',
-              issuer: 'BigBank',
-              lastFour: '1234',
-              grace: '2026-05-15',
-              prevClose: '2026-04-15',
-              prevDue: '2026-05-05',
-              nextClose: '2026-05-15',
-              nextCloseDays: 7,
-              nextDue: '2026-06-05',
-              nextDueDays: 28,
-              annualFeeDate: '2026-12-01',
-              annualFeeDays: 207,
-              prevDueOverdue: false,
-            ),
-          ]);
+      when(() => api.fetchTrackerRows()).thenAnswer(
+        (_) async => [
+          const ApiTrackerRow(
+            id: 1,
+            name: 'Visa',
+            issuer: 'BigBank',
+            lastFour: '1234',
+            grace: '2026-05-15',
+            prevClose: '2026-04-15',
+            prevDue: '2026-05-05',
+            nextClose: '2026-05-15',
+            nextCloseDays: 7,
+            nextDue: '2026-06-05',
+            nextDueDays: 28,
+            annualFeeDate: '2026-12-01',
+            annualFeeDays: 207,
+            prevDueOverdue: false,
+          ),
+        ],
+      );
 
       await syncService.fullRefresh();
 
@@ -991,9 +1135,16 @@ void main() {
   group('fullRefresh — _refreshGroceryStores', () {
     test('upserts stores returned by server', () async {
       _stubEmptyRefresh(api);
-      when(() => api.fetchStores()).thenAnswer((_) async => [
-            const ApiStore(id: 1, name: 'Whole Foods', location: 'Downtown', isActive: true),
-          ]);
+      when(() => api.fetchStores()).thenAnswer(
+        (_) async => [
+          const ApiStore(
+            id: 1,
+            name: 'Whole Foods',
+            location: 'Downtown',
+            isActive: true,
+          ),
+        ],
+      );
 
       await syncService.fullRefresh();
 
@@ -1009,11 +1160,16 @@ void main() {
   group('fullRefresh — _refreshGroceryItems', () {
     test('upserts grocery items returned by server', () async {
       _stubEmptyRefresh(api);
-      when(() => api.fetchGroceryItems()).thenAnswer((_) async => [
-            const ApiGroceryItem(
-              id: 1, name: 'Milk', defaultUnit: 'gallon', defaultStoreId: 10,
-            ),
-          ]);
+      when(() => api.fetchGroceryItems()).thenAnswer(
+        (_) async => [
+          const ApiGroceryItem(
+            id: 1,
+            name: 'Milk',
+            defaultUnit: 'gallon',
+            defaultStoreId: 10,
+          ),
+        ],
+      );
 
       await syncService.fullRefresh();
 
@@ -1029,19 +1185,29 @@ void main() {
   group('fullRefresh — subtask upsertion and purging', () {
     test('upserts subtasks embedded in task response', () async {
       _stubEmptyRefresh(api);
-      when(() => api.fetchTasks()).thenAnswer((_) async => [
-            ApiTask(
-              id: 10, title: 'Parent Task',
-              status: 'todo', priority: 'medium',
-              recurrence: 'none', order: 0,
-              createdAt: '2026-01-01', updatedAt: '2026-01-01',
-              subtasks: [
-                const ApiSubtask(
-                  id: 100, taskId: 10, title: 'Sub1', status: 'todo', order: 0,
-                ),
-              ],
-            ),
-          ]);
+      when(() => api.fetchTasks()).thenAnswer(
+        (_) async => [
+          ApiTask(
+            id: 10,
+            title: 'Parent Task',
+            status: 'todo',
+            priority: 'medium',
+            recurrence: 'none',
+            order: 0,
+            createdAt: '2026-01-01',
+            updatedAt: '2026-01-01',
+            subtasks: [
+              const ApiSubtask(
+                id: 100,
+                taskId: 10,
+                title: 'Sub1',
+                status: 'todo',
+                order: 0,
+              ),
+            ],
+          ),
+        ],
+      );
 
       await syncService.fullRefresh();
 
@@ -1057,32 +1223,42 @@ void main() {
       _stubEmptyRefresh(api);
 
       // Seed a synced task with a subtask locally.
-      final taskId = await db.insertTask(const TasksCompanion(
-        serverId: Value(10),
-        title: Value('Task'),
-        syncStatus: Value(0),
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
-      await db.insertSubtask(SubtasksCompanion(
-        serverId: const Value(200),
-        taskLocalId: Value(taskId),
-        taskServerId: const Value(10),
-        title: const Value('Orphan Sub'),
-        status: const Value('todo'),
-        syncStatus: const Value(0),
-      ));
+      final taskId = await db.insertTask(
+        const TasksCompanion(
+          serverId: Value(10),
+          title: Value('Task'),
+          syncStatus: Value(0),
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
+      await db.insertSubtask(
+        SubtasksCompanion(
+          serverId: const Value(200),
+          taskLocalId: Value(taskId),
+          taskServerId: const Value(10),
+          title: const Value('Orphan Sub'),
+          status: const Value('todo'),
+          syncStatus: const Value(0),
+        ),
+      );
 
       // Server returns task without that subtask.
-      when(() => api.fetchTasks()).thenAnswer((_) async => [
-            ApiTask(
-              id: 10, title: 'Task',
-              status: 'todo', priority: 'medium',
-              recurrence: 'none', order: 0,
-              createdAt: '2026-01-01', updatedAt: '2026-01-01',
-              subtasks: [],
-            ),
-          ]);
+      when(() => api.fetchTasks()).thenAnswer(
+        (_) async => [
+          ApiTask(
+            id: 10,
+            title: 'Task',
+            status: 'todo',
+            priority: 'medium',
+            recurrence: 'none',
+            order: 0,
+            createdAt: '2026-01-01',
+            updatedAt: '2026-01-01',
+            subtasks: [],
+          ),
+        ],
+      );
 
       await syncService.fullRefresh();
 
@@ -1095,24 +1271,34 @@ void main() {
 
   group('pushPending — subtask taskServerId resolved from DB', () {
     test('pendingCreate resolves taskServerId from DB when null', () async {
-      final taskId = await db.insertTask(const TasksCompanion(
-        serverId: Value(10),
-        title: Value('Parent'),
-        syncStatus: Value(0),
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
+      final taskId = await db.insertTask(
+        const TasksCompanion(
+          serverId: Value(10),
+          title: Value('Parent'),
+          syncStatus: Value(0),
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
 
-      await db.insertSubtask(SubtasksCompanion(
-        taskLocalId: Value(taskId),
-        // taskServerId intentionally null — should be resolved from DB
-        title: const Value('Sub via DB'),
-        status: const Value('todo'),
-        syncStatus: const Value(1), // pendingCreate
-      ));
+      await db.insertSubtask(
+        SubtasksCompanion(
+          taskLocalId: Value(taskId),
+          // taskServerId intentionally null — should be resolved from DB
+          title: const Value('Sub via DB'),
+          status: const Value('todo'),
+          syncStatus: const Value(1), // pendingCreate
+        ),
+      );
 
       when(() => api.createSubtask(any(), any())).thenAnswer(
-        (_) async => const ApiSubtask(id: 800, taskId: 10, title: 'Sub via DB', status: 'todo', order: 0),
+        (_) async => const ApiSubtask(
+          id: 800,
+          taskId: 10,
+          title: 'Sub via DB',
+          status: 'todo',
+          order: 0,
+        ),
       );
 
       final result = await syncService.pushPending();
@@ -1122,24 +1308,30 @@ void main() {
     });
 
     test('pendingUpdate resolves taskServerId from DB when null', () async {
-      final taskId = await db.insertTask(const TasksCompanion(
-        serverId: Value(10),
-        title: Value('Parent'),
-        syncStatus: Value(0),
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
+      final taskId = await db.insertTask(
+        const TasksCompanion(
+          serverId: Value(10),
+          title: Value('Parent'),
+          syncStatus: Value(0),
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
 
-      await db.insertSubtask(SubtasksCompanion(
-        serverId: const Value(701),
-        taskLocalId: Value(taskId),
-        // taskServerId intentionally null
-        title: const Value('Updated Sub'),
-        status: const Value('done'),
-        syncStatus: const Value(2), // pendingUpdate
-      ));
+      await db.insertSubtask(
+        SubtasksCompanion(
+          serverId: const Value(701),
+          taskLocalId: Value(taskId),
+          // taskServerId intentionally null
+          title: const Value('Updated Sub'),
+          status: const Value('done'),
+          syncStatus: const Value(2), // pendingUpdate
+        ),
+      );
 
-      when(() => api.patchSubtask(any(), any(), any())).thenAnswer((_) async {});
+      when(
+        () => api.patchSubtask(any(), any(), any()),
+      ).thenAnswer((_) async {});
 
       final result = await syncService.pushPending();
 
@@ -1148,22 +1340,26 @@ void main() {
     });
 
     test('pendingDelete resolves taskServerId from DB when null', () async {
-      final taskId = await db.insertTask(const TasksCompanion(
-        serverId: Value(10),
-        title: Value('Parent'),
-        syncStatus: Value(0),
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
+      final taskId = await db.insertTask(
+        const TasksCompanion(
+          serverId: Value(10),
+          title: Value('Parent'),
+          syncStatus: Value(0),
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
 
-      final subId = await db.insertSubtask(SubtasksCompanion(
-        serverId: const Value(702),
-        taskLocalId: Value(taskId),
-        // taskServerId intentionally null
-        title: const Value('Delete Sub'),
-        status: const Value('todo'),
-        syncStatus: const Value(3), // pendingDelete
-      ));
+      final subId = await db.insertSubtask(
+        SubtasksCompanion(
+          serverId: const Value(702),
+          taskLocalId: Value(taskId),
+          // taskServerId intentionally null
+          title: const Value('Delete Sub'),
+          status: const Value('todo'),
+          syncStatus: const Value(3), // pendingDelete
+        ),
+      );
 
       when(() => api.deleteSubtask(any(), any())).thenAnswer((_) async {});
 
@@ -1172,7 +1368,9 @@ void main() {
       expect(result.pushed, 1);
       verify(() => api.deleteSubtask(10, 702)).called(1);
       expect(
-        await (db.select(db.subtasks)..where((s) => s.id.equals(subId))).getSingleOrNull(),
+        await (db.select(
+          db.subtasks,
+        )..where((s) => s.id.equals(subId))).getSingleOrNull(),
         isNull,
       );
     });
@@ -1182,60 +1380,74 @@ void main() {
 
   group('pushPending — 404 on404 handlers', () {
     test('subtask 404 triggers on404 and removes locally', () async {
-      final taskId = await db.insertTask(const TasksCompanion(
-        serverId: Value(10),
-        title: Value('Task'),
-        syncStatus: Value(0),
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
-
-      final subId = await db.insertSubtask(SubtasksCompanion(
-        serverId: const Value(200),
-        taskLocalId: Value(taskId),
-        taskServerId: const Value(10),
-        title: const Value('Orphan Sub'),
-        status: const Value('done'),
-        syncStatus: const Value(2), // pendingUpdate
-      ));
-
-      when(() => api.patchSubtask(any(), any(), any())).thenThrow(DioException(
-        requestOptions: RequestOptions(path: '/subtasks/200'),
-        response: Response(
-          requestOptions: RequestOptions(path: '/subtasks/200'),
-          statusCode: 404,
+      final taskId = await db.insertTask(
+        const TasksCompanion(
+          serverId: Value(10),
+          title: Value('Task'),
+          syncStatus: Value(0),
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
         ),
-      ));
+      );
+
+      final subId = await db.insertSubtask(
+        SubtasksCompanion(
+          serverId: const Value(200),
+          taskLocalId: Value(taskId),
+          taskServerId: const Value(10),
+          title: const Value('Orphan Sub'),
+          status: const Value('done'),
+          syncStatus: const Value(2), // pendingUpdate
+        ),
+      );
+
+      when(() => api.patchSubtask(any(), any(), any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/subtasks/200'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/subtasks/200'),
+            statusCode: 404,
+          ),
+        ),
+      );
 
       final result = await syncService.pushPending();
 
       expect(result.errors, isEmpty);
       expect(
-        await (db.select(db.subtasks)..where((s) => s.id.equals(subId))).getSingleOrNull(),
+        await (db.select(
+          db.subtasks,
+        )..where((s) => s.id.equals(subId))).getSingleOrNull(),
         isNull,
       );
     });
 
     test('credit card 404 triggers on404 and removes locally', () async {
-      final localId = await db.insertCreditCard(const CreditCardsCompanion(
-        serverId: Value(50),
-        name: Value('Orphan Card'),
-        syncStatus: Value(2), // pendingUpdate
-      ));
-
-      when(() => api.updateCreditCard(any(), any())).thenThrow(DioException(
-        requestOptions: RequestOptions(path: '/cards/50'),
-        response: Response(
-          requestOptions: RequestOptions(path: '/cards/50'),
-          statusCode: 404,
+      final localId = await db.insertCreditCard(
+        const CreditCardsCompanion(
+          serverId: Value(50),
+          name: Value('Orphan Card'),
+          syncStatus: Value(2), // pendingUpdate
         ),
-      ));
+      );
+
+      when(() => api.updateCreditCard(any(), any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/cards/50'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/cards/50'),
+            statusCode: 404,
+          ),
+        ),
+      );
 
       final result = await syncService.pushPending();
 
       expect(result.errors, isEmpty);
       expect(
-        await (db.select(db.creditCards)..where((c) => c.id.equals(localId))).getSingleOrNull(),
+        await (db.select(
+          db.creditCards,
+        )..where((c) => c.id.equals(localId))).getSingleOrNull(),
         isNull,
       );
     });
@@ -1250,19 +1462,23 @@ void main() {
       ]);
       final row = await (db.select(db.groceryOnHand)).getSingle();
 
-      when(() => api.upsertOnHand(any(), any())).thenThrow(DioException(
-        requestOptions: RequestOptions(path: '/on-hand/99'),
-        response: Response(
+      when(() => api.upsertOnHand(any(), any())).thenThrow(
+        DioException(
           requestOptions: RequestOptions(path: '/on-hand/99'),
-          statusCode: 404,
+          response: Response(
+            requestOptions: RequestOptions(path: '/on-hand/99'),
+            statusCode: 404,
+          ),
         ),
-      ));
+      );
 
       final result = await syncService.pushPending();
 
       expect(result.errors, isEmpty);
       expect(
-        await (db.select(db.groceryOnHand)..where((o) => o.id.equals(row.id))).getSingleOrNull(),
+        await (db.select(
+          db.groceryOnHand,
+        )..where((o) => o.id.equals(row.id))).getSingleOrNull(),
         isNull,
       );
     });
@@ -1276,19 +1492,23 @@ void main() {
         ),
       );
 
-      when(() => api.updateStore(any(), any())).thenThrow(DioException(
-        requestOptions: RequestOptions(path: '/stores/55'),
-        response: Response(
+      when(() => api.updateStore(any(), any())).thenThrow(
+        DioException(
           requestOptions: RequestOptions(path: '/stores/55'),
-          statusCode: 404,
+          response: Response(
+            requestOptions: RequestOptions(path: '/stores/55'),
+            statusCode: 404,
+          ),
         ),
-      ));
+      );
 
       final result = await syncService.pushPending();
 
       expect(result.errors, isEmpty);
       expect(
-        await (db.select(db.groceryStores)..where((s) => s.id.equals(localId))).getSingleOrNull(),
+        await (db.select(
+          db.groceryStores,
+        )..where((s) => s.id.equals(localId))).getSingleOrNull(),
         isNull,
       );
     });
@@ -1302,13 +1522,15 @@ void main() {
         ),
       );
 
-      when(() => api.updateGroceryList(any(), any())).thenThrow(DioException(
-        requestOptions: RequestOptions(path: '/lists/60'),
-        response: Response(
+      when(() => api.updateGroceryList(any(), any())).thenThrow(
+        DioException(
           requestOptions: RequestOptions(path: '/lists/60'),
-          statusCode: 404,
+          response: Response(
+            requestOptions: RequestOptions(path: '/lists/60'),
+            statusCode: 404,
+          ),
         ),
-      ));
+      );
 
       final result = await syncService.pushPending();
 
@@ -1336,19 +1558,23 @@ void main() {
       ]);
       final item = await (db.select(db.groceryListItems)).getSingle();
 
-      when(() => api.updateGroceryListItem(any(), any(), any())).thenThrow(DioException(
-        requestOptions: RequestOptions(path: '/list-items/501'),
-        response: Response(
+      when(() => api.updateGroceryListItem(any(), any(), any())).thenThrow(
+        DioException(
           requestOptions: RequestOptions(path: '/list-items/501'),
-          statusCode: 404,
+          response: Response(
+            requestOptions: RequestOptions(path: '/list-items/501'),
+            statusCode: 404,
+          ),
         ),
-      ));
+      );
 
       final result = await syncService.pushPending();
 
       expect(result.errors, isEmpty);
       expect(
-        await (db.select(db.groceryListItems)..where((i) => i.id.equals(item.id))).getSingleOrNull(),
+        await (db.select(
+          db.groceryListItems,
+        )..where((i) => i.id.equals(item.id))).getSingleOrNull(),
         isNull,
       );
     });
@@ -1358,23 +1584,32 @@ void main() {
 
   group('pushPending — JSON serialiser optional fields', () {
     test('_taskToJson includes estimated_minutes when set', () async {
-      await db.insertTask(const TasksCompanion(
-        title: Value('Timed Task'),
-        estimatedMinutes: Value(30),
-        syncStatus: Value(1), // pendingCreate
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
+      await db.insertTask(
+        const TasksCompanion(
+          title: Value('Timed Task'),
+          estimatedMinutes: Value(30),
+          syncStatus: Value(1), // pendingCreate
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
 
       Map<String, dynamic>? capturedJson;
       when(() => api.createTask(any())).thenAnswer((inv) {
         capturedJson = inv.positionalArguments[0] as Map<String, dynamic>;
-        return Future.value(ApiTask(
-          id: 901, title: 'Timed Task',
-          status: 'todo', priority: 'medium',
-          recurrence: 'none', order: 0, subtasks: [],
-          createdAt: '2026-01-01', updatedAt: '2026-01-01',
-        ));
+        return Future.value(
+          ApiTask(
+            id: 901,
+            title: 'Timed Task',
+            status: 'todo',
+            priority: 'medium',
+            recurrence: 'none',
+            order: 0,
+            subtasks: [],
+            createdAt: '2026-01-01',
+            updatedAt: '2026-01-01',
+          ),
+        );
       });
 
       final result = await syncService.pushPending();
@@ -1383,42 +1618,55 @@ void main() {
       expect(capturedJson!['estimated_minutes'], 30);
     });
 
-    test('_cardToJson includes cycle_days and cycle_reference_date when set', () async {
-      await db.insertCreditCard(const CreditCardsCompanion(
-        name: Value('Cycle Card'),
-        cycleDays: Value(30),
-        cycleReferenceDate: Value('2026-01-01'),
-        syncStatus: Value(1), // pendingCreate
-      ));
+    test(
+      '_cardToJson includes cycle_days and cycle_reference_date when set',
+      () async {
+        await db.insertCreditCard(
+          const CreditCardsCompanion(
+            name: Value('Cycle Card'),
+            cycleDays: Value(30),
+            cycleReferenceDate: Value('2026-01-01'),
+            syncStatus: Value(1), // pendingCreate
+          ),
+        );
 
-      Map<String, dynamic>? capturedJson;
-      when(() => api.createCreditCard(any())).thenAnswer((inv) {
-        capturedJson = inv.positionalArguments[0] as Map<String, dynamic>;
-        return Future.value(const ApiCreditCard(id: 902, name: 'Cycle Card', isActive: true));
-      });
+        Map<String, dynamic>? capturedJson;
+        when(() => api.createCreditCard(any())).thenAnswer((inv) {
+          capturedJson = inv.positionalArguments[0] as Map<String, dynamic>;
+          return Future.value(
+            const ApiCreditCard(id: 902, name: 'Cycle Card', isActive: true),
+          );
+        });
 
-      final result = await syncService.pushPending();
+        final result = await syncService.pushPending();
 
-      expect(result.pushed, 1);
-      expect(capturedJson!['cycle_days'], 30);
-      expect(capturedJson!['cycle_reference_date'], '2026-01-01');
-    });
+        expect(result.pushed, 1);
+        expect(capturedJson!['cycle_days'], 30);
+        expect(capturedJson!['cycle_reference_date'], '2026-01-01');
+      },
+    );
 
     test('_dioErrorDetail returns validation error for HTTP 400', () async {
-      await db.into(db.occurrences).insert(const OccurrencesCompanion(
-        serverId: Value(10),
-        eventServerId: Value(100),
-        occurrenceDate: Value('2026-05-01'),
-        syncStatus: Value(2),
-      ));
+      await db
+          .into(db.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              serverId: Value(10),
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-01'),
+              syncStatus: Value(2),
+            ),
+          );
 
-      when(() => api.patchOccurrence(any(), any())).thenThrow(DioException(
-        requestOptions: RequestOptions(path: '/occ'),
-        response: Response(
+      when(() => api.patchOccurrence(any(), any())).thenThrow(
+        DioException(
           requestOptions: RequestOptions(path: '/occ'),
-          statusCode: 400,
+          response: Response(
+            requestOptions: RequestOptions(path: '/occ'),
+            statusCode: 400,
+          ),
         ),
-      ));
+      );
 
       final result = await syncService.pushPending();
 
@@ -1427,20 +1675,26 @@ void main() {
     });
 
     test('_dioErrorDetail returns validation error for HTTP 422', () async {
-      await db.into(db.occurrences).insert(const OccurrencesCompanion(
-        serverId: Value(11),
-        eventServerId: Value(100),
-        occurrenceDate: Value('2026-05-02'),
-        syncStatus: Value(2),
-      ));
+      await db
+          .into(db.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              serverId: Value(11),
+              eventServerId: Value(100),
+              occurrenceDate: Value('2026-05-02'),
+              syncStatus: Value(2),
+            ),
+          );
 
-      when(() => api.patchOccurrence(any(), any())).thenThrow(DioException(
-        requestOptions: RequestOptions(path: '/occ'),
-        response: Response(
+      when(() => api.patchOccurrence(any(), any())).thenThrow(
+        DioException(
           requestOptions: RequestOptions(path: '/occ'),
-          statusCode: 422,
+          response: Response(
+            requestOptions: RequestOptions(path: '/occ'),
+            statusCode: 422,
+          ),
         ),
-      ));
+      );
 
       final result = await syncService.pushPending();
 

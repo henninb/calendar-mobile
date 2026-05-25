@@ -10,7 +10,16 @@ class _FakeSecureStorage extends Fake implements FlutterSecureStorage {
   final _store = <String, String>{};
 
   @override
-  Future<void> write({required String key, required String? value, AppleOptions? iOptions, AndroidOptions? aOptions, LinuxOptions? lOptions, WebOptions? webOptions, AppleOptions? mOptions, WindowsOptions? wOptions}) async {
+  Future<void> write({
+    required String key,
+    required String? value,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
     if (value == null) {
       _store.remove(key);
     } else {
@@ -19,12 +28,28 @@ class _FakeSecureStorage extends Fake implements FlutterSecureStorage {
   }
 
   @override
-  Future<String?> read({required String key, AppleOptions? iOptions, AndroidOptions? aOptions, LinuxOptions? lOptions, WebOptions? webOptions, AppleOptions? mOptions, WindowsOptions? wOptions}) async {
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
     return _store[key];
   }
 
   @override
-  Future<void> delete({required String key, AppleOptions? iOptions, AndroidOptions? aOptions, LinuxOptions? lOptions, WebOptions? webOptions, AppleOptions? mOptions, WindowsOptions? wOptions}) async {
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
     _store.remove(key);
   }
 }
@@ -50,22 +75,34 @@ void main() {
     tearDown(() => container.dispose());
 
     test('rejects http:// URLs', () {
-      container.read(baseUrlProvider.notifier).set('http://insecure.example.com');
+      container
+          .read(baseUrlProvider.notifier)
+          .set('http://insecure.example.com');
       // State must not change — http is rejected
-      expect(container.read(baseUrlProvider), isNot('http://insecure.example.com'));
+      expect(
+        container.read(baseUrlProvider),
+        isNot('http://insecure.example.com'),
+      );
     });
 
     test('rejects empty string — prior valid URL is preserved', () {
-      container.read(baseUrlProvider.notifier).set('https://baseline.example.com');
+      container
+          .read(baseUrlProvider.notifier)
+          .set('https://baseline.example.com');
       container.read(baseUrlProvider.notifier).set('');
       expect(container.read(baseUrlProvider), 'https://baseline.example.com');
     });
 
-    test('rejects bare hostname without scheme — prior valid URL is preserved', () {
-      container.read(baseUrlProvider.notifier).set('https://baseline.example.com');
-      container.read(baseUrlProvider.notifier).set('example.com');
-      expect(container.read(baseUrlProvider), 'https://baseline.example.com');
-    });
+    test(
+      'rejects bare hostname without scheme — prior valid URL is preserved',
+      () {
+        container
+            .read(baseUrlProvider.notifier)
+            .set('https://baseline.example.com');
+        container.read(baseUrlProvider.notifier).set('example.com');
+        expect(container.read(baseUrlProvider), 'https://baseline.example.com');
+      },
+    );
 
     test('accepts https:// URL and persists it', () {
       const url = 'https://api.example.com';
@@ -81,7 +118,9 @@ void main() {
 
     test('successive valid sets update state', () {
       container.read(baseUrlProvider.notifier).set('https://first.example.com');
-      container.read(baseUrlProvider.notifier).set('https://second.example.com');
+      container
+          .read(baseUrlProvider.notifier)
+          .set('https://second.example.com');
       expect(container.read(baseUrlProvider), 'https://second.example.com');
     });
 

@@ -68,10 +68,7 @@ void main() {
         AppColors.primary,
       );
       expect(theme.snackBarTheme.backgroundColor, AppColors.darkSurface);
-      expect(
-        theme.snackBarTheme.contentTextStyle?.color,
-        Colors.white,
-      );
+      expect(theme.snackBarTheme.contentTextStyle?.color, Colors.white);
     });
 
     test('configures card and divider themes', () {
@@ -126,7 +123,10 @@ void main() {
     });
 
     test('configures snackbar and FAB colors', () {
-      expect(theme.floatingActionButtonTheme.backgroundColor, AppColors.primary);
+      expect(
+        theme.floatingActionButtonTheme.backgroundColor,
+        AppColors.primary,
+      );
       expect(theme.snackBarTheme.backgroundColor, AppColors.darkSurface);
     });
   });
@@ -227,7 +227,9 @@ void main() {
   });
 
   group('AppColors.of', () {
-    testWidgets('retrieves AppColors extension from nearest Theme', (tester) async {
+    testWidgets('retrieves AppColors extension from nearest Theme', (
+      tester,
+    ) async {
       AppColors? retrieved;
       await tester.pumpWidget(
         MaterialApp(
@@ -244,7 +246,9 @@ void main() {
       expect(retrieved!.background, AppColors.light.background);
     });
 
-    testWidgets('retrieves dark AppColors when dark theme is active', (tester) async {
+    testWidgets('retrieves dark AppColors when dark theme is active', (
+      tester,
+    ) async {
       AppColors? retrieved;
       await tester.pumpWidget(
         MaterialApp(

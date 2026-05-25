@@ -25,12 +25,36 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   int _tabIndex = 0;
 
   static const _tabs = [
-    _Tab(icon: Icons.check_circle_outline,    activeIcon: Icons.check_circle,    label: 'Tasks'),
-    _Tab(icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month,  label: 'Calendar'),
-    _Tab(icon: Icons.list_alt_outlined,       activeIcon: Icons.list_alt,        label: 'Upcoming'),
-    _Tab(icon: Icons.credit_card_outlined,    activeIcon: Icons.credit_card,     label: 'Cards'),
-    _Tab(icon: Icons.shopping_cart_outlined,  activeIcon: Icons.shopping_cart,   label: 'Grocery'),
-    _Tab(icon: Icons.settings_outlined,       activeIcon: Icons.settings,        label: 'Settings'),
+    _Tab(
+      icon: Icons.check_circle_outline,
+      activeIcon: Icons.check_circle,
+      label: 'Tasks',
+    ),
+    _Tab(
+      icon: Icons.calendar_month_outlined,
+      activeIcon: Icons.calendar_month,
+      label: 'Calendar',
+    ),
+    _Tab(
+      icon: Icons.list_alt_outlined,
+      activeIcon: Icons.list_alt,
+      label: 'Upcoming',
+    ),
+    _Tab(
+      icon: Icons.credit_card_outlined,
+      activeIcon: Icons.credit_card,
+      label: 'Cards',
+    ),
+    _Tab(
+      icon: Icons.shopping_cart_outlined,
+      activeIcon: Icons.shopping_cart,
+      label: 'Grocery',
+    ),
+    _Tab(
+      icon: Icons.settings_outlined,
+      activeIcon: Icons.settings,
+      label: 'Settings',
+    ),
   ];
 
   static const _titles = [
@@ -60,12 +84,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           children: [
             const Icon(Icons.calendar_month, size: 18, color: Colors.white70),
             const SizedBox(width: 8),
-            Flexible(child: Text(_titles[_tabIndex], overflow: TextOverflow.ellipsis)),
+            Flexible(
+              child: Text(_titles[_tabIndex], overflow: TextOverflow.ellipsis),
+            ),
           ],
         ),
         actions: [
-          if (_tabIndex == 0)
-            const _TaskSearchButton(),
+          if (_tabIndex == 0) const _TaskSearchButton(),
           if (_tabIndex == 1) ...[
             const _NewEventButton(),
             const _GenerateButton(),
@@ -84,11 +109,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         currentIndex: _tabIndex,
         onTap: (i) => setState(() => _tabIndex = i),
         items: _tabs
-            .map((t) => BottomNavigationBarItem(
-                  icon: Icon(t.icon),
-                  activeIcon: Icon(t.activeIcon),
-                  label: t.label,
-                ))
+            .map(
+              (t) => BottomNavigationBarItem(
+                icon: Icon(t.icon),
+                activeIcon: Icon(t.activeIcon),
+                label: t.label,
+              ),
+            )
             .toList(),
       ),
     );
@@ -143,7 +170,10 @@ class _GenerateButtonState extends ConsumerState<_GenerateButton> {
           ? const SizedBox(
               width: 14,
               height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white70,
+              ),
             )
           : const Icon(Icons.refresh_rounded, size: 16, color: Colors.white70),
       label: Text(
@@ -159,14 +189,18 @@ class _GenerateButtonState extends ConsumerState<_GenerateButton> {
       await ref.read(apiClientProvider).generateAllOccurrences();
       await ref.read(syncStateProvider.notifier).silentRefresh();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Occurrences generated')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Occurrences generated')));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not generate occurrences — check your connection')),
+          const SnackBar(
+            content: Text(
+              'Could not generate occurrences — check your connection',
+            ),
+          ),
         );
       }
     }
@@ -186,22 +220,24 @@ class _OfflineToggleButton extends ConsumerWidget {
       tooltip: forcedOffline
           ? 'Offline mode on — tap to re-enable sync'
           : isOnline
-              ? 'Connected — tap to force offline mode'
-              : 'No network connection',
+          ? 'Connected — tap to force offline mode'
+          : 'No network connection',
       icon: Icon(
         forcedOffline ? Icons.cloud_off_rounded : Icons.cloud_done_rounded,
         color: forcedOffline
             ? Colors.orangeAccent
             : isOnline
-                ? Colors.white70
-                : Colors.white38,
+            ? Colors.white70
+            : Colors.white38,
       ),
       onPressed: () {
         final next = !forcedOffline;
         ref.read(forcedOfflineProvider.notifier).toggle();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next ? 'Offline mode enabled' : 'Offline mode disabled'),
+            content: Text(
+              next ? 'Offline mode enabled' : 'Offline mode disabled',
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -221,10 +257,12 @@ class _SyncButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final syncState = ref.watch(syncStateProvider);
-    final isOnline  = ref.watch(isOnlineProvider);
+    final isOnline = ref.watch(isOnlineProvider);
     // Only pulling/pushing are active work — offline and error are terminal
     // states that should not keep the spinner running.
-    final busy = syncState.phase == SyncPhase.pulling || syncState.phase == SyncPhase.pushing;
+    final busy =
+        syncState.phase == SyncPhase.pulling ||
+        syncState.phase == SyncPhase.pushing;
 
     return IconButton(
       tooltip: busy ? 'Syncing…' : 'Sync now',
@@ -232,7 +270,10 @@ class _SyncButton extends ConsumerWidget {
           ? const SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white70,
+              ),
             )
           : Icon(
               Icons.sync_rounded,
@@ -246,7 +287,11 @@ class _SyncButton extends ConsumerWidget {
 }
 
 class _Tab {
-  const _Tab({required this.icon, required this.activeIcon, required this.label});
+  const _Tab({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
 
   final IconData icon;
   final IconData activeIcon;
@@ -327,7 +372,9 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
     final isRecurring = _rrule.isNotEmpty;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -344,26 +391,36 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                 decoration: const InputDecoration(labelText: 'Title *'),
                 maxLength: 255,
                 autofocus: true,
-                validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 10),
-              ref.watch(categoriesProvider).when(
-                loading: () => const SizedBox.shrink(),
-                error: (_, _) => const SizedBox.shrink(),
-                data: (cats) => DropdownButtonFormField<int?>(
-                  initialValue: _categoryServerId,
-                  decoration: const InputDecoration(labelText: 'Category *'),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('Select…')),
-                    ...cats.map((c) => DropdownMenuItem(
-                          value: c.serverId,
-                          child: Text('${c.icon} ${c.name}'),
-                        )),
-                  ],
-                  validator: (v) => v == null ? 'Required' : null,
-                  onChanged: (v) => setState(() => _categoryServerId = v),
-                ),
-              ),
+              ref
+                  .watch(categoriesProvider)
+                  .when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, _) => const SizedBox.shrink(),
+                    data: (cats) => DropdownButtonFormField<int?>(
+                      initialValue: _categoryServerId,
+                      decoration: const InputDecoration(
+                        labelText: 'Category *',
+                      ),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('Select…'),
+                        ),
+                        ...cats.map(
+                          (c) => DropdownMenuItem(
+                            value: c.serverId,
+                            child: Text('${c.icon} ${c.name}'),
+                          ),
+                        ),
+                      ],
+                      validator: (v) => v == null ? 'Required' : null,
+                      onChanged: (v) => setState(() => _categoryServerId = v),
+                    ),
+                  ),
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -372,21 +429,30 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                       onTap: () async {
                         final picked = await showDatePicker(
                           context: context,
-                          initialDate: DateTime.tryParse(_dtstart) ?? DateTime.now(),
+                          initialDate:
+                              DateTime.tryParse(_dtstart) ?? DateTime.now(),
                           firstDate: DateTime(2000),
                           lastDate: DateTime(2100),
                         );
                         if (picked != null) {
-                          setState(() => _dtstart = picked.toIso8601DateString());
+                          setState(
+                            () => _dtstart = picked.toIso8601DateString(),
+                          );
                         }
                       },
                       child: InputDecorator(
-                        decoration: const InputDecoration(labelText: 'Start Date *'),
+                        decoration: const InputDecoration(
+                          labelText: 'Start Date *',
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(_dtstart, style: AppText.body),
-                            Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.of(context).textMuted),
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 16,
+                              color: AppColors.of(context).textMuted,
+                            ),
                           ],
                         ),
                       ),
@@ -396,11 +462,14 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                   Expanded(
                     child: TextFormField(
                       initialValue: _durationDays.toString(),
-                      decoration: const InputDecoration(labelText: 'Duration (days)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Duration (days)',
+                      ),
                       keyboardType: TextInputType.number,
                       onChanged: (v) {
                         final n = int.tryParse(v);
-                        if (n != null && n >= 1) setState(() => _durationDays = n);
+                        if (n != null && n >= 1)
+                          setState(() => _durationDays = n);
                       },
                     ),
                   ),
@@ -411,7 +480,9 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                 initialValue: _rrule,
                 decoration: const InputDecoration(labelText: 'Recurrence'),
                 items: _rruleOptions
-                    .map((r) => DropdownMenuItem(value: r.$1, child: Text(r.$2)))
+                    .map(
+                      (r) => DropdownMenuItem(value: r.$1, child: Text(r.$2)),
+                    )
                     .toList(),
                 onChanged: (v) => setState(() {
                   _rrule = v ?? '';
@@ -425,7 +496,8 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                     final picked = await showDatePicker(
                       context: context,
                       initialDate: _dtendRule.isNotEmpty
-                          ? (DateTime.tryParse(_dtendRule) ?? DateTime.now().add(const Duration(days: 365)))
+                          ? (DateTime.tryParse(_dtendRule) ??
+                                DateTime.now().add(const Duration(days: 365)))
                           : DateTime.now().add(const Duration(days: 365)),
                       firstDate: DateTime(2000),
                       lastDate: DateTime(2100),
@@ -435,7 +507,9 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                     }
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'Repeat Until (optional)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Repeat Until (optional)',
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -447,7 +521,11 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                                 : AppColors.of(context).textPrimary,
                           ),
                         ),
-                        Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.of(context).textMuted),
+                        Icon(
+                          Icons.calendar_today_outlined,
+                          size: 16,
+                          color: AppColors.of(context).textMuted,
+                        ),
                       ],
                     ),
                   ),
@@ -464,7 +542,9 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
               TextFormField(
                 controller: _amountCtrl,
                 decoration: const InputDecoration(labelText: 'Amount (\$)'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -492,7 +572,7 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
     setState(() => _saving = true);
 
     final syncNotifier = ref.read(syncStateProvider.notifier);
-    final desc   = _descCtrl.text.trim();
+    final desc = _descCtrl.text.trim();
     final amount = _amountCtrl.text.trim();
     final payload = <String, dynamic>{
       'title': _titleCtrl.text.trim(),
@@ -512,12 +592,17 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
         await syncNotifier.silentRefresh();
       });
     } catch (e, st) {
-      dev.log('_EventFormSheet._save: $e', name: 'events', level: 900, stackTrace: st);
+      dev.log(
+        '_EventFormSheet._save: $e',
+        name: 'events',
+        level: 900,
+        stackTrace: st,
+      );
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create event — $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to create event — $e')));
       }
     }
   }

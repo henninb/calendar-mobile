@@ -25,16 +25,11 @@ class CategoryBadge extends StatelessWidget {
       ),
       child: Text(
         '${icon ?? ''} $name'.trim(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: c,
-        ),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c),
         overflow: TextOverflow.ellipsis,
       ),
     );
   }
-
 }
 
 Color parseCategoryColor(String hex) {
@@ -44,7 +39,11 @@ Color parseCategoryColor(String hex) {
       return Color(int.parse('FF$clean', radix: 16));
     }
   } catch (e) {
-    dev.log('parseCategoryColor: invalid hex "$hex": $e', name: 'ui', level: 900);
+    dev.log(
+      'parseCategoryColor: invalid hex "$hex": $e',
+      name: 'ui',
+      level: 900,
+    );
   }
   return const Color(0xFF3B82F6);
 }

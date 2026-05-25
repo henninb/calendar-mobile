@@ -24,7 +24,10 @@ void main() {
     });
 
     test('ignores time component', () {
-      expect(DateTime(2026, 5, 3, 23, 59, 59).toIso8601DateString(), '2026-05-03');
+      expect(
+        DateTime(2026, 5, 3, 23, 59, 59).toIso8601DateString(),
+        '2026-05-03',
+      );
     });
 
     test('result has exactly 10 characters (yyyy-MM-dd)', () {

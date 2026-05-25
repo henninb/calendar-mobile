@@ -22,31 +22,30 @@ void _mockChannel({
 }) {
   int vpnCallIndex = 0;
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-      .setMockMethodCallHandler(
-    const MethodChannel('wireguard_permission'),
-    (call) async {
-      if (call.method == 'isVpnActive') {
-        if (isVpnActive == null || vpnCallIndex >= isVpnActive.length) {
-          return false;
+      .setMockMethodCallHandler(const MethodChannel('wireguard_permission'), (
+        call,
+      ) async {
+        if (call.method == 'isVpnActive') {
+          if (isVpnActive == null || vpnCallIndex >= isVpnActive.length) {
+            return false;
+          }
+          return isVpnActive[vpnCallIndex++];
         }
-        return isVpnActive[vpnCallIndex++];
-      }
-      if (call.method == 'request') {
-        if (throwTimeout) throw TimeoutException('test timeout');
-        if (throwError) throw PlatformException(code: 'ERROR');
-        return requestResult;
-      }
-      return null;
-    },
-  );
+        if (call.method == 'request') {
+          if (throwTimeout) throw TimeoutException('test timeout');
+          if (throwError) throw PlatformException(code: 'ERROR');
+          return requestResult;
+        }
+        return null;
+      });
 }
 
 void _clearChannel() {
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
-    const MethodChannel('wireguard_permission'),
-    null,
-  );
+        const MethodChannel('wireguard_permission'),
+        null,
+      );
 }
 
 // Minimal widget host used by testWidgets cases.
@@ -96,9 +95,9 @@ void main() {
     test('returns null on any channel exception', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-        const MethodChannel('wireguard_permission'),
-        (_) async => throw PlatformException(code: 'ERR'),
-      );
+            const MethodChannel('wireguard_permission'),
+            (_) async => throw PlatformException(code: 'ERR'),
+          );
       final result = await isWireGuardActive(isAndroid: _onAndroid);
       expect(result, isNull);
     });
@@ -158,8 +157,9 @@ void main() {
   });
 
   group('toggleWireGuardTunnel — permission failures', () {
-    testWidgets('permission request timeout returns false and shows snackbar',
-        (tester) async {
+    testWidgets('permission request timeout returns false and shows snackbar', (
+      tester,
+    ) async {
       await tester.pumpWidget(const _Host(child: SizedBox.shrink()));
       final context = tester.element(find.byType(SizedBox));
 
@@ -173,12 +173,15 @@ void main() {
 
       expect(result, isFalse);
       await tester.pump();
-      expect(find.text('WireGuard permission request timed out — try again'),
-          findsOneWidget);
+      expect(
+        find.text('WireGuard permission request timed out — try again'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('permission channel error returns false and shows snackbar',
-        (tester) async {
+    testWidgets('permission channel error returns false and shows snackbar', (
+      tester,
+    ) async {
       _mockChannel(throwError: true);
 
       await tester.pumpWidget(const _Host(child: SizedBox.shrink()));
@@ -193,12 +196,15 @@ void main() {
 
       expect(result, isFalse);
       await tester.pump();
-      expect(find.textContaining('WireGuard permission check failed'),
-          findsOneWidget);
+      expect(
+        find.textContaining('WireGuard permission check failed'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('permission denied returns false and shows snackbar',
-        (tester) async {
+    testWidgets('permission denied returns false and shows snackbar', (
+      tester,
+    ) async {
       _mockChannel(requestResult: false);
 
       await tester.pumpWidget(const _Host(child: SizedBox.shrink()));
@@ -234,10 +240,14 @@ void main() {
           isAndroid: _onAndroid,
           vpnActiveCheck: () async {
             callCount++;
-            return callCount == 1 ? true : false; // pre-flight: UP; verify: DOWN
+            return callCount == 1
+                ? true
+                : false; // pre-flight: UP; verify: DOWN
           },
           verifyDelay: Duration.zero,
-          broadcastFn: () async { broadcastCalled = true; },
+          broadcastFn: () async {
+            broadcastCalled = true;
+          },
         );
 
         expect(result, isTrue);
@@ -270,33 +280,35 @@ void main() {
       },
     );
 
-    testWidgets(
-      'goOffline=false: VPN comes up after broadcast returns true',
-      (tester) async {
-        _mockChannel(requestResult: true);
+    testWidgets('goOffline=false: VPN comes up after broadcast returns true', (
+      tester,
+    ) async {
+      _mockChannel(requestResult: true);
 
-        await tester.pumpWidget(const _Host(child: SizedBox.shrink()));
-        final context = tester.element(find.byType(SizedBox));
+      await tester.pumpWidget(const _Host(child: SizedBox.shrink()));
+      final context = tester.element(find.byType(SizedBox));
 
-        // Pre-flight: VPN is DOWN; after broadcast it comes UP.
-        int callCount = 0;
-        final result = await toggleWireGuardTunnel(
-          goOffline: false,
-          context: context,
-          isAndroid: _onAndroid,
-          vpnActiveCheck: () async {
-            callCount++;
-            return callCount > 1; // first call: false (DOWN); second: true (UP)
-          },
-          verifyDelay: Duration.zero,
-          broadcastFn: () async {},
-        );
+      // Pre-flight: VPN is DOWN; after broadcast it comes UP.
+      int callCount = 0;
+      final result = await toggleWireGuardTunnel(
+        goOffline: false,
+        context: context,
+        isAndroid: _onAndroid,
+        vpnActiveCheck: () async {
+          callCount++;
+          return callCount > 1; // first call: false (DOWN); second: true (UP)
+        },
+        verifyDelay: Duration.zero,
+        broadcastFn: () async {},
+      );
 
-        expect(result, isTrue);
-        await tester.pump();
-        expect(find.textContaining('tunnel "$wgTunnelName" is up'), findsOneWidget);
-      },
-    );
+      expect(result, isTrue);
+      await tester.pump();
+      expect(
+        find.textContaining('tunnel "$wgTunnelName" is up'),
+        findsOneWidget,
+      );
+    });
 
     testWidgets(
       'goOffline=false: VPN does not come up returns false with snackbar',
@@ -321,27 +333,24 @@ void main() {
       },
     );
 
-    testWidgets(
-      'broadcast throws returns false with snackbar',
-      (tester) async {
-        _mockChannel(requestResult: true);
+    testWidgets('broadcast throws returns false with snackbar', (tester) async {
+      _mockChannel(requestResult: true);
 
-        await tester.pumpWidget(const _Host(child: SizedBox.shrink()));
-        final context = tester.element(find.byType(SizedBox));
+      await tester.pumpWidget(const _Host(child: SizedBox.shrink()));
+      final context = tester.element(find.byType(SizedBox));
 
-        final result = await toggleWireGuardTunnel(
-          goOffline: true,
-          context: context,
-          isAndroid: _onAndroid,
-          vpnActiveCheck: () async => true,
-          broadcastFn: () async => throw Exception('intent failed'),
-        );
+      final result = await toggleWireGuardTunnel(
+        goOffline: true,
+        context: context,
+        isAndroid: _onAndroid,
+        vpnActiveCheck: () async => true,
+        broadcastFn: () async => throw Exception('intent failed'),
+      );
 
-        expect(result, isFalse);
-        await tester.pump();
-        expect(find.textContaining('tunnel control failed'), findsOneWidget);
-      },
-    );
+      expect(result, isFalse);
+      await tester.pump();
+      expect(find.textContaining('tunnel control failed'), findsOneWidget);
+    });
   });
 
   group('wgTunnelName constant', () {

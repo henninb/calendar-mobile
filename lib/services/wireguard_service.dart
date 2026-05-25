@@ -4,14 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/constants.dart';
 
-const wgTunnelName  = 'k8';
-const _wgActionUp   = 'com.wireguard.android.action.SET_TUNNEL_UP';
+const wgTunnelName = 'k8';
+const _wgActionUp = 'com.wireguard.android.action.SET_TUNNEL_UP';
 const _wgActionDown = 'com.wireguard.android.action.SET_TUNNEL_DOWN';
-const _wgChannel    = MethodChannel('wireguard_permission');
+const _wgChannel = MethodChannel('wireguard_permission');
 
 Future<void> _openWireGuard() async {
   try {
-    await _wgChannel.invokeMethod<bool>('launchApp', {'package': 'com.wireguard.android'});
+    await _wgChannel.invokeMethod<bool>('launchApp', {
+      'package': 'com.wireguard.android',
+    });
   } catch (_) {
     // no-op if WireGuard is not installed
   }
@@ -21,9 +23,7 @@ Future<void> _openWireGuard() async {
 /// Returns null if the check could not complete (timeout / channel error).
 ///
 /// [isAndroid] overrides the platform check in tests.
-Future<bool?> isWireGuardActive({
-  bool Function()? isAndroid,
-}) async {
+Future<bool?> isWireGuardActive({bool Function()? isAndroid}) async {
   if (!(isAndroid?.call() ?? Platform.isAndroid)) return false;
   try {
     return await _wgChannel
@@ -66,17 +66,18 @@ Future<bool> toggleWireGuardTunnel({
   // A null result means the check failed — proceed rather than assume desired state.
   final checkVpn = vpnActiveCheck ?? () => isWireGuardActive();
   final alreadyActive = await checkVpn();
-  if (goOffline && alreadyActive == false) return true;   // confident: already DOWN
-  if (!goOffline && alreadyActive == true) return true;   // confident: already UP
+  if (goOffline && alreadyActive == false)
+    return true; // confident: already DOWN
+  if (!goOffline && alreadyActive == true) return true; // confident: already UP
 
   bool granted;
   try {
     granted = permissionRequester != null
         ? await permissionRequester()
         : (await _wgChannel
-                .invokeMethod<bool>('request')
-                .timeout(AppConstants.wgRequestTimeout)) ??
-            false;
+                  .invokeMethod<bool>('request')
+                  .timeout(AppConstants.wgRequestTimeout)) ??
+              false;
   } on TimeoutException {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -91,7 +92,9 @@ Future<bool> toggleWireGuardTunnel({
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('WireGuard permission check failed — ${e.toString().split('\n').first}'),
+          content: Text(
+            'WireGuard permission check failed — ${e.toString().split('\n').first}',
+          ),
           duration: const Duration(seconds: 4),
         ),
       );
@@ -118,10 +121,13 @@ Future<bool> toggleWireGuardTunnel({
     if (broadcastFn != null) {
       await broadcastFn();
     } else {
-      await _wgChannel.invokeMethod<bool>('sendTunnelBroadcast', <String, String>{
-        'action': goOffline ? _wgActionDown : _wgActionUp,
-        'tunnel': tunnelName,
-      });
+      await _wgChannel.invokeMethod<bool>(
+        'sendTunnelBroadcast',
+        <String, String>{
+          'action': goOffline ? _wgActionDown : _wgActionUp,
+          'tunnel': tunnelName,
+        },
+      );
     }
 
     // Poll until the tunnel reaches the desired state or the timeout expires.

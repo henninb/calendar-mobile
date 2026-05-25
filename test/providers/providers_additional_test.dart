@@ -34,29 +34,27 @@ ProviderContainer _makeOnlineContainer(
   SharedPreferences prefs,
   MockSyncService svc, {
   String baseUrl = 'https://example.com',
-}) =>
-    ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        syncServiceProvider.overrideWithValue(svc),
-        baseUrlProvider.overrideWith(() => _FakeBaseUrlNotifier(baseUrl)),
-        isOnlineProvider.overrideWith(() => _FakeConnectivityNotifier(true)),
-      ],
-    );
+}) => ProviderContainer(
+  overrides: [
+    sharedPreferencesProvider.overrideWithValue(prefs),
+    syncServiceProvider.overrideWithValue(svc),
+    baseUrlProvider.overrideWith(() => _FakeBaseUrlNotifier(baseUrl)),
+    isOnlineProvider.overrideWith(() => _FakeConnectivityNotifier(true)),
+  ],
+);
 
 ProviderContainer _makeOfflineContainer(
   SharedPreferences prefs,
   MockSyncService svc, {
   String baseUrl = 'https://example.com',
-}) =>
-    ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        syncServiceProvider.overrideWithValue(svc),
-        baseUrlProvider.overrideWith(() => _FakeBaseUrlNotifier(baseUrl)),
-        isOnlineProvider.overrideWith(() => _FakeConnectivityNotifier(false)),
-      ],
-    );
+}) => ProviderContainer(
+  overrides: [
+    sharedPreferencesProvider.overrideWithValue(prefs),
+    syncServiceProvider.overrideWithValue(svc),
+    baseUrlProvider.overrideWith(() => _FakeBaseUrlNotifier(baseUrl)),
+    isOnlineProvider.overrideWith(() => _FakeConnectivityNotifier(false)),
+  ],
+);
 
 void main() {
   // ── SyncNotifier - additional branch coverage ─────────────────────────────
@@ -72,8 +70,11 @@ void main() {
     });
 
     test('sync() sets error when baseUrl is empty', () async {
-      final container =
-          _makeOnlineContainer(prefs, mockSyncService, baseUrl: '');
+      final container = _makeOnlineContainer(
+        prefs,
+        mockSyncService,
+        baseUrl: '',
+      );
       addTearDown(container.dispose);
 
       await container.read(syncStateProvider.notifier).sync();
@@ -86,54 +87,59 @@ void main() {
       verifyNever(() => mockSyncService.pushPending());
     });
 
-    test('sync() returns early when already pushing (in-progress guard)',
-        () async {
-      final container = _makeOnlineContainer(prefs, mockSyncService);
-      addTearDown(container.dispose);
+    test(
+      'sync() returns early when already pushing (in-progress guard)',
+      () async {
+        final container = _makeOnlineContainer(prefs, mockSyncService);
+        addTearDown(container.dispose);
 
-      final blocker = Completer<SyncResult>();
-      when(() => mockSyncService.pushPending())
-          .thenAnswer((_) => blocker.future);
+        final blocker = Completer<SyncResult>();
+        when(
+          () => mockSyncService.pushPending(),
+        ).thenAnswer((_) => blocker.future);
 
-      // Start first sync without awaiting — it will sit in pushing state.
-      final firstFuture =
-          container.read(syncStateProvider.notifier).sync();
-      await Future.delayed(const Duration(milliseconds: 10));
-      expect(container.read(syncStateProvider).phase, SyncPhase.pushing);
+        // Start first sync without awaiting — it will sit in pushing state.
+        final firstFuture = container.read(syncStateProvider.notifier).sync();
+        await Future.delayed(const Duration(milliseconds: 10));
+        expect(container.read(syncStateProvider).phase, SyncPhase.pushing);
 
-      // Second call must be a no-op while pushing is in progress.
-      await container.read(syncStateProvider.notifier).sync();
-      expect(container.read(syncStateProvider).phase, SyncPhase.pushing);
+        // Second call must be a no-op while pushing is in progress.
+        await container.read(syncStateProvider.notifier).sync();
+        expect(container.read(syncStateProvider).phase, SyncPhase.pushing);
 
-      // Unblock and clean up.
-      blocker.complete(const SyncResult(pushed: 0, errors: []));
-      when(() => mockSyncService.fullRefresh()).thenAnswer((_) async {});
-      await firstFuture;
-    });
+        // Unblock and clean up.
+        blocker.complete(const SyncResult(pushed: 0, errors: []));
+        when(() => mockSyncService.fullRefresh()).thenAnswer((_) async {});
+        await firstFuture;
+      },
+    );
 
-    test('sync() returns early when already pulling (in-progress guard)',
-        () async {
-      final container = _makeOnlineContainer(prefs, mockSyncService);
-      addTearDown(container.dispose);
+    test(
+      'sync() returns early when already pulling (in-progress guard)',
+      () async {
+        final container = _makeOnlineContainer(prefs, mockSyncService);
+        addTearDown(container.dispose);
 
-      final blocker = Completer<void>();
-      when(() => mockSyncService.pushPending()).thenAnswer(
-          (_) async => const SyncResult(pushed: 0, errors: []));
-      when(() => mockSyncService.fullRefresh())
-          .thenAnswer((_) => blocker.future);
+        final blocker = Completer<void>();
+        when(
+          () => mockSyncService.pushPending(),
+        ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
+        when(
+          () => mockSyncService.fullRefresh(),
+        ).thenAnswer((_) => blocker.future);
 
-      final firstFuture =
-          container.read(syncStateProvider.notifier).sync();
-      await Future.delayed(const Duration(milliseconds: 10));
-      expect(container.read(syncStateProvider).phase, SyncPhase.pulling);
+        final firstFuture = container.read(syncStateProvider.notifier).sync();
+        await Future.delayed(const Duration(milliseconds: 10));
+        expect(container.read(syncStateProvider).phase, SyncPhase.pulling);
 
-      // Second call must be a no-op while pulling is in progress.
-      await container.read(syncStateProvider.notifier).sync();
-      expect(container.read(syncStateProvider).phase, SyncPhase.pulling);
+        // Second call must be a no-op while pulling is in progress.
+        await container.read(syncStateProvider.notifier).sync();
+        expect(container.read(syncStateProvider).phase, SyncPhase.pulling);
 
-      blocker.complete();
-      await firstFuture;
-    });
+        blocker.complete();
+        await firstFuture;
+      },
+    );
 
     test('silentRefresh() returns early when offline', () async {
       final container = _makeOfflineContainer(prefs, mockSyncService);
@@ -146,8 +152,11 @@ void main() {
     });
 
     test('silentRefresh() returns early when baseUrl is empty', () async {
-      final container =
-          _makeOnlineContainer(prefs, mockSyncService, baseUrl: '');
+      final container = _makeOnlineContainer(
+        prefs,
+        mockSyncService,
+        baseUrl: '',
+      );
       addTearDown(container.dispose);
 
       await container.read(syncStateProvider.notifier).silentRefresh();
@@ -161,13 +170,16 @@ void main() {
       addTearDown(container.dispose);
 
       final blocker = Completer<void>();
-      when(() => mockSyncService.pushPending()).thenAnswer(
-          (_) async => const SyncResult(pushed: 0, errors: []));
-      when(() => mockSyncService.fullRefresh())
-          .thenAnswer((_) => blocker.future);
+      when(
+        () => mockSyncService.pushPending(),
+      ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
+      when(
+        () => mockSyncService.fullRefresh(),
+      ).thenAnswer((_) => blocker.future);
 
-      final firstFuture =
-          container.read(syncStateProvider.notifier).silentRefresh();
+      final firstFuture = container
+          .read(syncStateProvider.notifier)
+          .silentRefresh();
       await Future.delayed(const Duration(milliseconds: 10));
       expect(container.read(syncStateProvider).phase, SyncPhase.pulling);
 
@@ -183,10 +195,12 @@ void main() {
       final container = _makeOnlineContainer(prefs, mockSyncService);
       addTearDown(container.dispose);
 
-      when(() => mockSyncService.pushPending()).thenAnswer(
-          (_) async => const SyncResult(pushed: 0, errors: []));
-      when(() => mockSyncService.fullRefresh())
-          .thenThrow(Exception('DB error'));
+      when(
+        () => mockSyncService.pushPending(),
+      ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
+      when(
+        () => mockSyncService.fullRefresh(),
+      ).thenThrow(Exception('DB error'));
 
       await container.read(syncStateProvider.notifier).silentRefresh();
 
@@ -209,10 +223,12 @@ void main() {
       final container = _makeOnlineContainer(prefs, mockSyncService);
       addTearDown(container.dispose);
 
-      when(() => mockSyncService.pushPending()).thenAnswer(
-          (_) async => const SyncResult(pushed: 0, errors: []));
-      when(() => mockSyncService.fullRefresh())
-          .thenThrow(Exception('Connection refused to host'));
+      when(
+        () => mockSyncService.pushPending(),
+      ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
+      when(
+        () => mockSyncService.fullRefresh(),
+      ).thenThrow(Exception('Connection refused to host'));
 
       await container.read(syncStateProvider.notifier).sync();
 
@@ -226,10 +242,12 @@ void main() {
       final container = _makeOnlineContainer(prefs, mockSyncService);
       addTearDown(container.dispose);
 
-      when(() => mockSyncService.pushPending()).thenAnswer(
-          (_) async => const SyncResult(pushed: 0, errors: []));
-      when(() => mockSyncService.fullRefresh())
-          .thenThrow(Exception('SocketException: network unreachable'));
+      when(
+        () => mockSyncService.pushPending(),
+      ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
+      when(
+        () => mockSyncService.fullRefresh(),
+      ).thenThrow(Exception('SocketException: network unreachable'));
 
       await container.read(syncStateProvider.notifier).sync();
 
@@ -243,10 +261,12 @@ void main() {
       final container = _makeOnlineContainer(prefs, mockSyncService);
       addTearDown(container.dispose);
 
-      when(() => mockSyncService.pushPending()).thenAnswer(
-          (_) async => const SyncResult(pushed: 0, errors: []));
-      when(() => mockSyncService.fullRefresh())
-          .thenThrow(Exception('Connection timed out after 30s'));
+      when(
+        () => mockSyncService.pushPending(),
+      ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
+      when(
+        () => mockSyncService.fullRefresh(),
+      ).thenThrow(Exception('Connection timed out after 30s'));
 
       await container.read(syncStateProvider.notifier).sync();
 
@@ -260,10 +280,12 @@ void main() {
       final container = _makeOnlineContainer(prefs, mockSyncService);
       addTearDown(container.dispose);
 
-      when(() => mockSyncService.pushPending()).thenAnswer(
-          (_) async => const SyncResult(pushed: 0, errors: []));
-      when(() => mockSyncService.fullRefresh())
-          .thenThrow(Exception('Server responded with status code of 401'));
+      when(
+        () => mockSyncService.pushPending(),
+      ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
+      when(
+        () => mockSyncService.fullRefresh(),
+      ).thenThrow(Exception('Server responded with status code of 401'));
 
       await container.read(syncStateProvider.notifier).sync();
 
@@ -277,10 +299,12 @@ void main() {
       final container = _makeOnlineContainer(prefs, mockSyncService);
       addTearDown(container.dispose);
 
-      when(() => mockSyncService.pushPending()).thenAnswer(
-          (_) async => const SyncResult(pushed: 0, errors: []));
-      when(() => mockSyncService.fullRefresh())
-          .thenThrow(Exception('Server responded with status code of 403'));
+      when(
+        () => mockSyncService.pushPending(),
+      ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
+      when(
+        () => mockSyncService.fullRefresh(),
+      ).thenThrow(Exception('Server responded with status code of 403'));
 
       await container.read(syncStateProvider.notifier).sync();
 
@@ -294,10 +318,12 @@ void main() {
       final container = _makeOnlineContainer(prefs, mockSyncService);
       addTearDown(container.dispose);
 
-      when(() => mockSyncService.pushPending()).thenAnswer(
-          (_) async => const SyncResult(pushed: 0, errors: []));
-      when(() => mockSyncService.fullRefresh())
-          .thenThrow(Exception('short error'));
+      when(
+        () => mockSyncService.pushPending(),
+      ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
+      when(
+        () => mockSyncService.fullRefresh(),
+      ).thenThrow(Exception('short error'));
 
       await container.read(syncStateProvider.notifier).sync();
 
@@ -312,10 +338,10 @@ void main() {
       addTearDown(container.dispose);
 
       final longMsg = 'E' * 150;
-      when(() => mockSyncService.pushPending()).thenAnswer(
-          (_) async => const SyncResult(pushed: 0, errors: []));
-      when(() => mockSyncService.fullRefresh())
-          .thenThrow(Exception(longMsg));
+      when(
+        () => mockSyncService.pushPending(),
+      ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
+      when(() => mockSyncService.fullRefresh()).thenThrow(Exception(longMsg));
 
       await container.read(syncStateProvider.notifier).sync();
 
@@ -328,8 +354,9 @@ void main() {
       final container = _makeOnlineContainer(prefs, mockSyncService);
       addTearDown(container.dispose);
 
-      when(() => mockSyncService.pushPending())
-          .thenThrow(Exception('Connection refused from push'));
+      when(
+        () => mockSyncService.pushPending(),
+      ).thenThrow(Exception('Connection refused from push'));
       when(() => mockSyncService.fullRefresh()).thenAnswer((_) async {});
 
       await container.read(syncStateProvider.notifier).sync();
@@ -347,37 +374,40 @@ void main() {
   // ── ConnectivityNotifier - _init error handling ───────────────────────────
 
   group('ConnectivityNotifier - _init error handling', () {
-    test('_init error is swallowed and optimistic state is preserved',
-        () async {
-      final mockConnectivity = MockConnectivity();
-      final ctrl =
-          StreamController<List<ConnectivityResult>>.broadcast();
+    test(
+      '_init error is swallowed and optimistic state is preserved',
+      () async {
+        final mockConnectivity = MockConnectivity();
+        final ctrl = StreamController<List<ConnectivityResult>>.broadcast();
 
-      when(() => mockConnectivity.onConnectivityChanged)
-          .thenAnswer((_) => ctrl.stream);
-      when(() => mockConnectivity.checkConnectivity())
-          .thenThrow(Exception('No connectivity plugin'));
+        when(
+          () => mockConnectivity.onConnectivityChanged,
+        ).thenAnswer((_) => ctrl.stream);
+        when(
+          () => mockConnectivity.checkConnectivity(),
+        ).thenThrow(Exception('No connectivity plugin'));
 
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
 
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          connectivityInstanceProvider.overrideWithValue(mockConnectivity),
-        ],
-      );
-      addTearDown(container.dispose);
-      addTearDown(ctrl.close);
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            connectivityInstanceProvider.overrideWithValue(mockConnectivity),
+          ],
+        );
+        addTearDown(container.dispose);
+        addTearDown(ctrl.close);
 
-      // Trigger build (and thereby _init).
-      container.read(isOnlineProvider);
-      await Future.delayed(const Duration(milliseconds: 50));
+        // Trigger build (and thereby _init).
+        container.read(isOnlineProvider);
+        await Future.delayed(const Duration(milliseconds: 50));
 
-      // The optimistic state (true, since forcedOffline defaults to false)
-      // must be preserved even though _init threw.
-      expect(container.read(isOnlineProvider), isTrue);
-    });
+        // The optimistic state (true, since forcedOffline defaults to false)
+        // must be preserved even though _init threw.
+        expect(container.read(isOnlineProvider), isTrue);
+      },
+    );
   });
 
   // ── Stream providers ──────────────────────────────────────────────────────
@@ -468,28 +498,32 @@ void main() {
       expect(value, isA<AsyncValue<List<GroceryListItem>>>());
     });
 
-    test('groceryListItemsForListProvider emits AsyncData for list id',
-        () async {
-      final value = container.read(groceryListItemsForListProvider(1));
-      expect(value, isA<AsyncValue<List<GroceryListItem>>>());
-    });
+    test(
+      'groceryListItemsForListProvider emits AsyncData for list id',
+      () async {
+        final value = container.read(groceryListItemsForListProvider(1));
+        expect(value, isA<AsyncValue<List<GroceryListItem>>>());
+      },
+    );
 
     test('connectivityProvider emits AsyncValue', () async {
       final mockConnectivity = MockConnectivity();
-      final ctrl =
-          StreamController<List<ConnectivityResult>>.broadcast();
+      final ctrl = StreamController<List<ConnectivityResult>>.broadcast();
       addTearDown(ctrl.close);
 
-      when(() => mockConnectivity.onConnectivityChanged)
-          .thenAnswer((_) => ctrl.stream);
-      when(() => mockConnectivity.checkConnectivity())
-          .thenAnswer((_) async => [ConnectivityResult.wifi]);
+      when(
+        () => mockConnectivity.onConnectivityChanged,
+      ).thenAnswer((_) => ctrl.stream);
+      when(
+        () => mockConnectivity.checkConnectivity(),
+      ).thenAnswer((_) async => [ConnectivityResult.wifi]);
 
       final c = ProviderContainer(
         overrides: [
           dbProvider.overrideWithValue(database),
           sharedPreferencesProvider.overrideWithValue(
-              await SharedPreferences.getInstance()),
+            await SharedPreferences.getInstance(),
+          ),
           connectivityInstanceProvider.overrideWithValue(mockConnectivity),
         ],
       );
@@ -646,10 +680,7 @@ void main() {
     test('secureStorageProvider throws when not overridden', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
-      expect(
-        () => container.read(secureStorageProvider),
-        throwsA(anything),
-      );
+      expect(() => container.read(secureStorageProvider), throwsA(anything));
     });
 
     test('apiKeyInitialValueProvider throws when not overridden', () {
@@ -665,20 +696,23 @@ void main() {
   // ── ApiClientNotifier.build() ─────────────────────────────────────────────
 
   group('ApiClientNotifier', () {
-    test('build() creates ApiClient from baseUrl and apiKey providers', () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          apiKeyInitialValueProvider.overrideWithValue('test-key'),
-        ],
-      );
-      addTearDown(container.dispose);
+    test(
+      'build() creates ApiClient from baseUrl and apiKey providers',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            apiKeyInitialValueProvider.overrideWithValue('test-key'),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final client = container.read(apiClientProvider);
-      expect(client, isNotNull);
-    });
+        final client = container.read(apiClientProvider);
+        expect(client, isNotNull);
+      },
+    );
 
     test('apiClientProvider updates baseUrl on listen', () async {
       SharedPreferences.setMockInitialValues({});
@@ -723,22 +757,26 @@ void main() {
   // ── silentRefresh push error branch ──────────────────────────────────────
 
   group('silentRefresh push error suppression', () {
-    test('silentRefresh() suppresses push errors and still completes', () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final mockSyncService = MockSyncService();
+    test(
+      'silentRefresh() suppresses push errors and still completes',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final mockSyncService = MockSyncService();
 
-      when(() => mockSyncService.pushPending())
-          .thenAnswer((_) async => const SyncResult(pushed: 1, errors: ['item 5 failed']));
-      when(() => mockSyncService.fullRefresh()).thenAnswer((_) async {});
+        when(() => mockSyncService.pushPending()).thenAnswer(
+          (_) async => const SyncResult(pushed: 1, errors: ['item 5 failed']),
+        );
+        when(() => mockSyncService.fullRefresh()).thenAnswer((_) async {});
 
-      final container = _makeOnlineContainer(prefs, mockSyncService);
-      addTearDown(container.dispose);
+        final container = _makeOnlineContainer(prefs, mockSyncService);
+        addTearDown(container.dispose);
 
-      await container.read(syncStateProvider.notifier).silentRefresh();
+        await container.read(syncStateProvider.notifier).silentRefresh();
 
-      expect(container.read(syncStateProvider).phase, SyncPhase.idle);
-    });
+        expect(container.read(syncStateProvider).phase, SyncPhase.idle);
+      },
+    );
   });
 
   // ── ConnectivityNotifier forcedOffline listener ───────────────────────────
@@ -748,10 +786,12 @@ void main() {
       final mockConnectivity = MockConnectivity();
       final ctrl = StreamController<List<ConnectivityResult>>.broadcast();
 
-      when(() => mockConnectivity.onConnectivityChanged)
-          .thenAnswer((_) => ctrl.stream);
-      when(() => mockConnectivity.checkConnectivity())
-          .thenAnswer((_) async => [ConnectivityResult.wifi]);
+      when(
+        () => mockConnectivity.onConnectivityChanged,
+      ).thenAnswer((_) => ctrl.stream);
+      when(
+        () => mockConnectivity.checkConnectivity(),
+      ).thenAnswer((_) async => [ConnectivityResult.wifi]);
 
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();

@@ -21,27 +21,14 @@ class GroceryScreen extends StatelessWidget {
         children: [
           TabBar(
             tabs: [
-              Tab(
-                icon: Icon(Icons.shopping_cart_outlined),
-                text: 'Lists',
-              ),
-              Tab(
-                icon: Icon(Icons.kitchen_outlined),
-                text: 'Pantry',
-              ),
-              Tab(
-                icon: Icon(Icons.store_outlined),
-                text: 'Stores',
-              ),
+              Tab(icon: Icon(Icons.shopping_cart_outlined), text: 'Lists'),
+              Tab(icon: Icon(Icons.kitchen_outlined), text: 'Pantry'),
+              Tab(icon: Icon(Icons.store_outlined), text: 'Stores'),
             ],
           ),
           Expanded(
             child: TabBarView(
-              children: [
-                _ListsTab(),
-                _OnHandTab(),
-                _StoresTab(),
-              ],
+              children: [_ListsTab(), _OnHandTab(), _StoresTab()],
             ),
           ),
         ],
@@ -71,8 +58,7 @@ class _ListsTabState extends ConsumerState<_ListsTab> {
       );
     }
     return _ListsOverview(
-      onListSelected: (id) =>
-          setState(() => _selectedListLocalId = id),
+      onListSelected: (id) => setState(() => _selectedListLocalId = id),
     );
   }
 }
@@ -102,9 +88,7 @@ class _ListsOverview extends ConsumerWidget {
             );
           }
           if (lists.isEmpty) {
-            return const Center(
-              child: Text('No grocery lists yet'),
-            );
+            return const Center(child: Text('No grocery lists yet'));
           }
           return ListView.builder(
             padding: const EdgeInsets.all(12),
@@ -117,8 +101,7 @@ class _ListsOverview extends ConsumerWidget {
             ),
           );
         },
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
       floatingActionButton: FloatingActionButton(
@@ -166,10 +149,10 @@ class _GroceryListCard extends StatelessWidget {
     final (total, done) = counts ?? (0, 0);
     final colors = AppColors.of(context);
     final color = switch (list.status) {
-      'draft'     => colors.skippedFg,
-      'active'    => colors.warningFg,
+      'draft' => colors.skippedFg,
+      'active' => colors.warningFg,
       'completed' => colors.completedFg,
-      _           => colors.skippedFg,
+      _ => colors.skippedFg,
     };
 
     return Card(
@@ -205,10 +188,7 @@ class _GroceryListCard extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      size: 18,
-                    ),
+                    icon: const Icon(Icons.delete_outline, size: 18),
                     onPressed: onDelete,
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
@@ -222,8 +202,9 @@ class _GroceryListCard extends StatelessWidget {
                     Expanded(
                       child: LinearProgressIndicator(
                         value: done / total,
-                        backgroundColor:
-                            colors.textMuted.withValues(alpha: 0.2),
+                        backgroundColor: colors.textMuted.withValues(
+                          alpha: 0.2,
+                        ),
                         minHeight: 4,
                       ),
                     ),
@@ -263,10 +244,7 @@ class _GroceryListCard extends StatelessWidget {
 // ── List Detail View ──────────────────────────────────────────────────────────
 
 class _ListDetailView extends ConsumerWidget {
-  const _ListDetailView({
-    required this.listLocalId,
-    required this.onBack,
-  });
+  const _ListDetailView({required this.listLocalId, required this.onBack});
 
   final int listLocalId;
   final VoidCallback onBack;
@@ -280,9 +258,8 @@ class _ListDetailView extends ConsumerWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final items = ref
-            .watch(groceryListItemsForListProvider(listLocalId))
-            .asData?.value ??
+    final items =
+        ref.watch(groceryListItemsForListProvider(listLocalId)).asData?.value ??
         [];
     final catalog = ref.watch(groceryItemsProvider).asData?.value ?? [];
     final catalogById = {
@@ -290,15 +267,15 @@ class _ListDetailView extends ConsumerWidget {
         if (c.serverId != null) c.serverId!: c,
     };
 
-    final needed =
-        items.where((i) => i.status == 'needed').toList();
-    final purchased =
-        items.where((i) => i.status == 'purchased').toList();
+    final needed = items.where((i) => i.status == 'needed').toList();
+    final purchased = items.where((i) => i.status == 'purchased').toList();
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: _DetailHeader(list: list, onBack: onBack)),
+          SliverToBoxAdapter(
+            child: _DetailHeader(list: list, onBack: onBack),
+          ),
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (ctx, i) => _ListItemRow(
@@ -316,10 +293,9 @@ class _ListDetailView extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                 child: Text(
                   'Purchased',
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelMedium
-                      ?.copyWith(color: AppColors.of(context).textMuted),
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: AppColors.of(context).textMuted,
+                  ),
                 ),
               ),
             ),
@@ -340,8 +316,7 @@ class _ListDetailView extends ConsumerWidget {
       ),
       floatingActionButton: list.status != 'completed'
           ? FloatingActionButton(
-              onPressed: () =>
-                  _showAddItemSheet(context, ref, list, catalog),
+              onPressed: () => _showAddItemSheet(context, ref, list, catalog),
               child: const Icon(Icons.add_shopping_cart_outlined),
             )
           : null,
@@ -349,8 +324,7 @@ class _ListDetailView extends ConsumerWidget {
   }
 
   Future<void> _toggle(WidgetRef ref, GroceryListItem item) async {
-    final next =
-        item.status == 'needed' ? 'purchased' : 'needed';
+    final next = item.status == 'needed' ? 'purchased' : 'needed';
     await ref.read(dbProvider).updateGroceryListItemStatus(item.id, next);
     ref.read(syncStateProvider.notifier).syncIfOnline();
   }
@@ -366,18 +340,13 @@ class _ListDetailView extends ConsumerWidget {
     GroceryList list,
     List<GroceryItem> catalog,
   ) {
-    final inList = ref
-            .read(groceryListItemsForListProvider(listLocalId))
-            .asData?.value ??
-
+    final inList =
+        ref.read(groceryListItemsForListProvider(listLocalId)).asData?.value ??
         [];
-    final inListServerIds =
-        inList.map((i) => i.itemServerId).toSet();
+    final inListServerIds = inList.map((i) => i.itemServerId).toSet();
     final available = catalog
         .where(
-          (c) =>
-              c.serverId != null &&
-              !inListServerIds.contains(c.serverId),
+          (c) => c.serverId != null && !inListServerIds.contains(c.serverId),
         )
         .toList();
 
@@ -404,17 +373,13 @@ class _DetailHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final canAdvance = list.status != 'completed';
-    final advanceLabel =
-        list.status == 'draft' ? 'Start' : 'Complete';
+    final advanceLabel = list.status == 'draft' ? 'Start' : 'Complete';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 8, 8, 4),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: onBack,
-          ),
+          IconButton(icon: const Icon(Icons.arrow_back), onPressed: onBack),
           Expanded(
             child: Text(
               list.name,
@@ -433,8 +398,7 @@ class _DetailHeader extends ConsumerWidget {
   }
 
   Future<void> _advance(WidgetRef ref) async {
-    final next =
-        list.status == 'draft' ? 'active' : 'completed';
+    final next = list.status == 'draft' ? 'active' : 'completed';
     await ref.read(dbProvider).updateGroceryListStatus(list.id, next);
     ref.read(syncStateProvider.notifier).syncIfOnline();
   }
@@ -472,9 +436,7 @@ class _ListItemRow extends StatelessWidget {
         title: Text(
           name,
           style: faded
-              ? const TextStyle(
-                  decoration: TextDecoration.lineThrough,
-                )
+              ? const TextStyle(decoration: TextDecoration.lineThrough)
               : null,
         ),
         subtitle: qty.isNotEmpty ? Text(qty) : null,
@@ -487,7 +449,6 @@ class _ListItemRow extends StatelessWidget {
       ),
     );
   }
-
 }
 
 // ── Create List Sheet ─────────────────────────────────────────────────────────
@@ -496,8 +457,7 @@ class _CreateListSheet extends ConsumerStatefulWidget {
   const _CreateListSheet();
 
   @override
-  ConsumerState<_CreateListSheet> createState() =>
-      _CreateListSheetState();
+  ConsumerState<_CreateListSheet> createState() => _CreateListSheetState();
 }
 
 class _CreateListSheetState extends ConsumerState<_CreateListSheet> {
@@ -513,10 +473,8 @@ class _CreateListSheetState extends ConsumerState<_CreateListSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final stores =
-        ref.watch(groceryStoresProvider).asData?.value ?? [];
-    final canSave =
-        _nameCtrl.text.trim().isNotEmpty && !_saving;
+    final stores = ref.watch(groceryStoresProvider).asData?.value ?? [];
+    final canSave = _nameCtrl.text.trim().isNotEmpty && !_saving;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -551,8 +509,10 @@ class _CreateListSheetState extends ConsumerState<_CreateListSheet> {
               decoration: const InputDecoration(
                 labelText: 'Store (optional)',
                 border: OutlineInputBorder(),
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<int?>(
@@ -570,8 +530,7 @@ class _CreateListSheetState extends ConsumerState<_CreateListSheet> {
                       ),
                     ),
                   ],
-                  onChanged: (v) =>
-                      setState(() => _storeServerId = v),
+                  onChanged: (v) => setState(() => _storeServerId = v),
                 ),
               ),
             ),
@@ -583,9 +542,7 @@ class _CreateListSheetState extends ConsumerState<_CreateListSheet> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Text('Create'),
           ),
@@ -599,7 +556,9 @@ class _CreateListSheetState extends ConsumerState<_CreateListSheet> {
     if (name.isEmpty) return;
     setState(() => _saving = true);
     try {
-      await ref.read(dbProvider).insertGroceryList(
+      await ref
+          .read(dbProvider)
+          .insertGroceryList(
             GroceryListsCompanion(
               name: Value(name),
               status: const Value('draft'),
@@ -610,11 +569,18 @@ class _CreateListSheetState extends ConsumerState<_CreateListSheet> {
       ref.read(syncStateProvider.notifier).syncIfOnline();
       if (mounted) Navigator.of(context).pop();
     } catch (e, st) {
-      dev.log('_CreateListSheet._save: $e', name: 'grocery', level: 900, stackTrace: st);
+      dev.log(
+        '_CreateListSheet._save: $e',
+        name: 'grocery',
+        level: 900,
+        stackTrace: st,
+      );
       if (mounted) {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to create list. Please try again.')),
+          const SnackBar(
+            content: Text('Failed to create list. Please try again.'),
+          ),
         );
       }
     }
@@ -624,10 +590,7 @@ class _CreateListSheetState extends ConsumerState<_CreateListSheet> {
 // ── Add Item Sheet ────────────────────────────────────────────────────────────
 
 class _AddItemSheet extends ConsumerStatefulWidget {
-  const _AddItemSheet({
-    required this.list,
-    required this.items,
-  });
+  const _AddItemSheet({required this.list, required this.items});
 
   final GroceryList list;
   final List<GroceryItem> items;
@@ -645,9 +608,7 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
   @override
   void initState() {
     super.initState();
-    _unit = widget.items.isNotEmpty
-        ? widget.items.first.defaultUnit
-        : 'each';
+    _unit = widget.items.isNotEmpty ? widget.items.first.defaultUnit : 'each';
   }
 
   @override
@@ -671,16 +632,16 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
           ),
           const SizedBox(height: 16),
           if (widget.items.isEmpty)
-            const Text(
-              'No catalog items available. Add items via the web app.',
-            )
+            const Text('No catalog items available. Add items via the web app.')
           else ...[
             InputDecorator(
               decoration: const InputDecoration(
                 labelText: 'Item *',
                 border: OutlineInputBorder(),
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<GroceryItem>(
@@ -689,10 +650,7 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
                   hint: const Text('Select item'),
                   items: widget.items
                       .map(
-                        (i) => DropdownMenuItem(
-                          value: i,
-                          child: Text(i.name),
-                        ),
+                        (i) => DropdownMenuItem(value: i, child: Text(i.name)),
                       )
                       .toList(),
                   onChanged: (v) {
@@ -740,19 +698,16 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                    value: _unit,
-                    isExpanded: true,
-                    items: GroceryConstants.units
-                        .map(
-                          (u) => DropdownMenuItem(
-                            value: u,
-                            child: Text(u),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) {
-                      if (v != null) setState(() => _unit = v);
-                    },
+                        value: _unit,
+                        isExpanded: true,
+                        items: GroceryConstants.units
+                            .map(
+                              (u) => DropdownMenuItem(value: u, child: Text(u)),
+                            )
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) setState(() => _unit = v);
+                        },
                       ),
                     ),
                   ),
@@ -766,9 +721,7 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Add'),
             ),
@@ -783,7 +736,9 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
     if (item?.serverId == null) return;
     setState(() => _saving = true);
     try {
-      await ref.read(dbProvider).insertGroceryListItem(
+      await ref
+          .read(dbProvider)
+          .insertGroceryListItem(
             GroceryListItemsCompanion(
               listLocalId: Value(widget.list.id),
               listServerId: Value(widget.list.serverId),
@@ -797,11 +752,18 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
       ref.read(syncStateProvider.notifier).syncIfOnline();
       if (mounted) Navigator.of(context).pop();
     } catch (e, st) {
-      dev.log('_AddItemSheet._save: $e', name: 'grocery', level: 900, stackTrace: st);
+      dev.log(
+        '_AddItemSheet._save: $e',
+        name: 'grocery',
+        level: 900,
+        stackTrace: st,
+      );
       if (mounted) {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to add item. Please try again.')),
+          const SnackBar(
+            content: Text('Failed to add item. Please try again.'),
+          ),
         );
       }
     }
@@ -816,7 +778,9 @@ String _fmtListQty(double qty, String unit) {
     if (qty == qty.roundToDouble()) return qty == 1.0 ? '' : '× ${qty.toInt()}';
     return '× $qty';
   }
-  final n = qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString();
+  final n = qty == qty.roundToDouble()
+      ? qty.toInt().toString()
+      : qty.toString();
   return '$n $unit';
 }
 
@@ -844,19 +808,15 @@ class _OnHandTabState extends ConsumerState<_OnHandTab> {
   Widget build(BuildContext context) {
     final items = ref.watch(groceryItemsProvider).asData?.value ?? [];
     final onHand = ref.watch(groceryOnHandProvider).asData?.value ?? [];
-    final onHandByItem = {
-      for (final o in onHand) o.itemServerId: o,
-    };
+    final onHandByItem = {for (final o in onHand) o.itemServerId: o};
 
     final visible = _filter.isEmpty
         ? items
         : items
-            .where(
-              (i) => i.name.toLowerCase().contains(
-                    _filter.toLowerCase(),
-                  ),
-            )
-            .toList();
+              .where(
+                (i) => i.name.toLowerCase().contains(_filter.toLowerCase()),
+              )
+              .toList();
 
     return Column(
       children: [
@@ -895,7 +855,9 @@ class _OnHandTabState extends ConsumerState<_OnHandTab> {
                             )
                           : Text(
                               '—',
-                              style: TextStyle(color: AppColors.of(context).textMuted),
+                              style: TextStyle(
+                                color: AppColors.of(context).textMuted,
+                              ),
                             ),
                       dense: true,
                     );
@@ -905,7 +867,6 @@ class _OnHandTabState extends ConsumerState<_OnHandTab> {
       ],
     );
   }
-
 }
 
 // ── Stores Tab ────────────────────────────────────────────────────────────────
@@ -930,15 +891,12 @@ class _StoresTab extends ConsumerWidget {
               return ListTile(
                 leading: const Icon(Icons.store_outlined),
                 title: Text(store.name),
-                subtitle: store.location != null
-                    ? Text(store.location!)
-                    : null,
+                subtitle: store.location != null ? Text(store.location!) : null,
               );
             },
           );
         },
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
       floatingActionButton: FloatingActionButton(
@@ -967,8 +925,7 @@ class _CreateStoreSheet extends ConsumerStatefulWidget {
   const _CreateStoreSheet();
 
   @override
-  ConsumerState<_CreateStoreSheet> createState() =>
-      _CreateStoreSheetState();
+  ConsumerState<_CreateStoreSheet> createState() => _CreateStoreSheetState();
 }
 
 class _CreateStoreSheetState extends ConsumerState<_CreateStoreSheet> {
@@ -985,8 +942,7 @@ class _CreateStoreSheetState extends ConsumerState<_CreateStoreSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final canSave =
-        _nameCtrl.text.trim().isNotEmpty && !_saving;
+    final canSave = _nameCtrl.text.trim().isNotEmpty && !_saving;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -999,10 +955,7 @@ class _CreateStoreSheetState extends ConsumerState<_CreateStoreSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'New Store',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('New Store', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 16),
           TextField(
             controller: _nameCtrl,
@@ -1046,7 +999,9 @@ class _CreateStoreSheetState extends ConsumerState<_CreateStoreSheet> {
     setState(() => _saving = true);
     final location = _locationCtrl.text.trim();
     try {
-      await ref.read(dbProvider).insertGroceryStore(
+      await ref
+          .read(dbProvider)
+          .insertGroceryStore(
             GroceryStoresCompanion(
               name: Value(name),
               location: Value(location.isNotEmpty ? location : null),
@@ -1057,11 +1012,18 @@ class _CreateStoreSheetState extends ConsumerState<_CreateStoreSheet> {
       ref.read(syncStateProvider.notifier).syncIfOnline();
       if (mounted) Navigator.of(context).pop();
     } catch (e, st) {
-      dev.log('_CreateStoreSheet._save: $e', name: 'grocery', level: 900, stackTrace: st);
+      dev.log(
+        '_CreateStoreSheet._save: $e',
+        name: 'grocery',
+        level: 900,
+        stackTrace: st,
+      );
       if (mounted) {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to create store. Please try again.')),
+          const SnackBar(
+            content: Text('Failed to create store. Please try again.'),
+          ),
         );
       }
     }

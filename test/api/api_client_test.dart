@@ -24,10 +24,13 @@ void main() {
       expect(c, isNotNull);
     });
 
-    test('default constructor with empty baseUrl uses localhost placeholder', () {
-      final c = ApiClient('', apiKey: '');
-      expect(c, isNotNull);
-    });
+    test(
+      'default constructor with empty baseUrl uses localhost placeholder',
+      () {
+        final c = ApiClient('', apiKey: '');
+        expect(c, isNotNull);
+      },
+    );
 
     test('updateBaseUrl updates dio options', () {
       client.updateBaseUrl('https://new-api.com');
@@ -41,7 +44,10 @@ void main() {
     });
 
     test('updateBaseUrl throws on invalid URL', () {
-      expect(() => client.updateBaseUrl('http://insecure.com'), throwsArgumentError);
+      expect(
+        () => client.updateBaseUrl('http://insecure.com'),
+        throwsArgumentError,
+      );
       expect(() => client.updateBaseUrl('not-a-url'), throwsArgumentError);
     });
 
@@ -83,7 +89,10 @@ void main() {
         },
       );
 
-      await client.fetchOccurrences(startDate: '2026-05-01', status: 'upcoming');
+      await client.fetchOccurrences(
+        startDate: '2026-05-01',
+        status: 'upcoming',
+      );
     });
 
     test('fetchOccurrences includes endDate and categoryId params', () async {
@@ -126,7 +135,11 @@ void main() {
         },
       ];
 
-      dioAdapter.onGet('/tasks', (server) => server.reply(200, payload), queryParameters: {'limit': 1000});
+      dioAdapter.onGet(
+        '/tasks',
+        (server) => server.reply(200, payload),
+        queryParameters: {'limit': 1000},
+      );
 
       final result = await client.fetchTasks();
       expect(result.length, 1);
@@ -169,12 +182,7 @@ void main() {
     });
 
     test('upsertOnHand uses PUT', () async {
-      final payload = {
-        'id': 1,
-        'item_id': 10,
-        'quantity': 5,
-        'unit': 'kg',
-      };
+      final payload = {'id': 1, 'item_id': 10, 'quantity': 5, 'unit': 'kg'};
 
       dioAdapter.onPut(
         '/grocery/on-hand/10',
@@ -187,7 +195,10 @@ void main() {
     });
 
     test('deleteOnHand sends DELETE', () async {
-      dioAdapter.onDelete('/grocery/on-hand/10', (server) => server.reply(204, null));
+      dioAdapter.onDelete(
+        '/grocery/on-hand/10',
+        (server) => server.reply(204, null),
+      );
       await client.deleteOnHand(10);
     });
   });
@@ -200,7 +211,11 @@ void main() {
     });
 
     test('_writeJson throws FormatException on null body', () async {
-      dioAdapter.onPost('/tasks', (server) => server.reply(201, null), data: {});
+      dioAdapter.onPost(
+        '/tasks',
+        (server) => server.reply(201, null),
+        data: {},
+      );
       expect(() => client.createTask({}), throwsA(isA<FormatException>()));
     });
   });
@@ -221,7 +236,11 @@ void main() {
       dioAdapter.onPost(
         '/events',
         (server) => server.reply(201, payload),
-        data: {'title': 'Test Event', 'category_id': 1, 'dtstart': '2026-05-01'},
+        data: {
+          'title': 'Test Event',
+          'category_id': 1,
+          'dtstart': '2026-05-01',
+        },
       );
 
       final result = await client.createEvent({
@@ -268,17 +287,28 @@ void main() {
     });
 
     test('deleteOccurrence', () async {
-      dioAdapter.onDelete('/occurrences/1', (server) => server.reply(204, null));
+      dioAdapter.onDelete(
+        '/occurrences/1',
+        (server) => server.reply(204, null),
+      );
       await client.deleteOccurrence(1);
     });
 
     test('generateAllOccurrences', () async {
-      dioAdapter.onPost('/occurrences/generate-all', (server) => server.reply(200, null), data: null);
+      dioAdapter.onPost(
+        '/occurrences/generate-all',
+        (server) => server.reply(200, null),
+        data: null,
+      );
       await client.generateAllOccurrences();
     });
 
     test('patchTask', () async {
-      dioAdapter.onPatch('/tasks/1', (server) => server.reply(200, null), data: {});
+      dioAdapter.onPatch(
+        '/tasks/1',
+        (server) => server.reply(200, null),
+        data: {},
+      );
       await client.patchTask(1, {});
     });
 
@@ -288,43 +318,80 @@ void main() {
     });
 
     test('createSubtask', () async {
-      dioAdapter.onPost('/tasks/1/subtasks', (server) => server.reply(200, {'id': 1, 'task_id': 1, 'title': 'S', 'status': 'todo', 'order': 0}), data: {});
+      dioAdapter.onPost(
+        '/tasks/1/subtasks',
+        (server) => server.reply(200, {
+          'id': 1,
+          'task_id': 1,
+          'title': 'S',
+          'status': 'todo',
+          'order': 0,
+        }),
+        data: {},
+      );
       await client.createSubtask(1, {});
     });
 
     test('patchSubtask', () async {
-      dioAdapter.onPatch('/tasks/1/subtasks/2', (server) => server.reply(200, null), data: {});
+      dioAdapter.onPatch(
+        '/tasks/1/subtasks/2',
+        (server) => server.reply(200, null),
+        data: {},
+      );
       await client.patchSubtask(1, 2, {});
     });
 
     test('deleteSubtask', () async {
-      dioAdapter.onDelete('/tasks/1/subtasks/2', (server) => server.reply(204, null));
+      dioAdapter.onDelete(
+        '/tasks/1/subtasks/2',
+        (server) => server.reply(204, null),
+      );
       await client.deleteSubtask(1, 2);
     });
 
     test('fetchCreditCards', () async {
-      dioAdapter.onGet('/credit-cards', (server) => server.reply(200, []), queryParameters: {'limit': 500});
+      dioAdapter.onGet(
+        '/credit-cards',
+        (server) => server.reply(200, []),
+        queryParameters: {'limit': 500},
+      );
       await client.fetchCreditCards();
     });
 
     test('createCreditCard', () async {
-      dioAdapter.onPost('/credit-cards', (server) => server.reply(201, {'id': 5, 'name': 'Visa', 'is_active': true}), data: {'name': 'Visa'});
+      dioAdapter.onPost(
+        '/credit-cards',
+        (server) =>
+            server.reply(201, {'id': 5, 'name': 'Visa', 'is_active': true}),
+        data: {'name': 'Visa'},
+      );
       final result = await client.createCreditCard({'name': 'Visa'});
       expect(result.id, 5);
     });
 
     test('updateCreditCard', () async {
-      dioAdapter.onPut('/credit-cards/1', (server) => server.reply(200, {'id': 1, 'name': 'V', 'is_active': true}), data: {});
+      dioAdapter.onPut(
+        '/credit-cards/1',
+        (server) =>
+            server.reply(200, {'id': 1, 'name': 'V', 'is_active': true}),
+        data: {},
+      );
       await client.updateCreditCard(1, {});
     });
 
     test('deleteCreditCard', () async {
-      dioAdapter.onDelete('/credit-cards/1', (server) => server.reply(204, null));
+      dioAdapter.onDelete(
+        '/credit-cards/1',
+        (server) => server.reply(204, null),
+      );
       await client.deleteCreditCard(1);
     });
 
     test('fetchTrackerRows', () async {
-      dioAdapter.onGet('/credit-cards/tracker', (server) => server.reply(200, []));
+      dioAdapter.onGet(
+        '/credit-cards/tracker',
+        (server) => server.reply(200, []),
+      );
       await client.fetchTrackerRows();
     });
 
@@ -334,12 +401,22 @@ void main() {
     });
 
     test('createStore', () async {
-      dioAdapter.onPost('/stores', (server) => server.reply(200, {'id': 1, 'name': 'S', 'is_active': true}), data: {});
+      dioAdapter.onPost(
+        '/stores',
+        (server) =>
+            server.reply(200, {'id': 1, 'name': 'S', 'is_active': true}),
+        data: {},
+      );
       await client.createStore({});
     });
 
     test('updateStore', () async {
-      dioAdapter.onPatch('/stores/1', (server) => server.reply(200, {'id': 1, 'name': 'S', 'is_active': true}), data: {});
+      dioAdapter.onPatch(
+        '/stores/1',
+        (server) =>
+            server.reply(200, {'id': 1, 'name': 'S', 'is_active': true}),
+        data: {},
+      );
       await client.updateStore(1, {});
     });
 
@@ -349,12 +426,20 @@ void main() {
     });
 
     test('createGroceryItem', () async {
-      dioAdapter.onPost('/grocery/items', (server) => server.reply(200, {'id': 1, 'name': 'I', 'default_unit': 'each'}), data: {});
+      dioAdapter.onPost(
+        '/grocery/items',
+        (server) =>
+            server.reply(200, {'id': 1, 'name': 'I', 'default_unit': 'each'}),
+        data: {},
+      );
       await client.createGroceryItem({});
     });
 
     test('deleteGroceryItem', () async {
-      dioAdapter.onDelete('/grocery/items/1', (server) => server.reply(204, null));
+      dioAdapter.onDelete(
+        '/grocery/items/1',
+        (server) => server.reply(204, null),
+      );
       await client.deleteGroceryItem(1);
     });
 
@@ -364,37 +449,87 @@ void main() {
     });
 
     test('fetchGroceryLists', () async {
-      dioAdapter.onGet('/grocery/lists', (server) => server.reply(200, []), queryParameters: {'status': 'active'});
+      dioAdapter.onGet(
+        '/grocery/lists',
+        (server) => server.reply(200, []),
+        queryParameters: {'status': 'active'},
+      );
       await client.fetchGroceryLists(status: 'active');
     });
 
     test('createGroceryList', () async {
-      dioAdapter.onPost('/grocery/lists', (server) => server.reply(200, {'id': 1, 'name': 'L', 'status': 'draft', 'items': []}), data: {});
+      dioAdapter.onPost(
+        '/grocery/lists',
+        (server) => server.reply(200, {
+          'id': 1,
+          'name': 'L',
+          'status': 'draft',
+          'items': [],
+        }),
+        data: {},
+      );
       await client.createGroceryList({});
     });
 
     test('updateGroceryList', () async {
-      dioAdapter.onPatch('/grocery/lists/1', (server) => server.reply(200, {'id': 1, 'name': 'L', 'status': 'draft', 'items': []}), data: {});
+      dioAdapter.onPatch(
+        '/grocery/lists/1',
+        (server) => server.reply(200, {
+          'id': 1,
+          'name': 'L',
+          'status': 'draft',
+          'items': [],
+        }),
+        data: {},
+      );
       await client.updateGroceryList(1, {});
     });
 
     test('deleteGroceryList', () async {
-      dioAdapter.onDelete('/grocery/lists/1', (server) => server.reply(204, null));
+      dioAdapter.onDelete(
+        '/grocery/lists/1',
+        (server) => server.reply(204, null),
+      );
       await client.deleteGroceryList(1);
     });
 
     test('addGroceryListItem', () async {
-      dioAdapter.onPost('/grocery/lists/1/items', (server) => server.reply(200, {'id': 1, 'list_id': 1, 'item_id': 1, 'quantity': 1, 'unit': 'each', 'status': 'needed'}), data: {});
+      dioAdapter.onPost(
+        '/grocery/lists/1/items',
+        (server) => server.reply(200, {
+          'id': 1,
+          'list_id': 1,
+          'item_id': 1,
+          'quantity': 1,
+          'unit': 'each',
+          'status': 'needed',
+        }),
+        data: {},
+      );
       await client.addGroceryListItem(1, {});
     });
 
     test('updateGroceryListItem', () async {
-      dioAdapter.onPatch('/grocery/lists/1/items/2', (server) => server.reply(200, {'id': 2, 'list_id': 1, 'item_id': 1, 'quantity': 1, 'unit': 'each', 'status': 'needed'}), data: {});
+      dioAdapter.onPatch(
+        '/grocery/lists/1/items/2',
+        (server) => server.reply(200, {
+          'id': 2,
+          'list_id': 1,
+          'item_id': 1,
+          'quantity': 1,
+          'unit': 'each',
+          'status': 'needed',
+        }),
+        data: {},
+      );
       await client.updateGroceryListItem(1, 2, {});
     });
 
     test('removeGroceryListItem', () async {
-      dioAdapter.onDelete('/grocery/lists/1/items/2', (server) => server.reply(204, null));
+      dioAdapter.onDelete(
+        '/grocery/lists/1/items/2',
+        (server) => server.reply(204, null),
+      );
       await client.removeGroceryListItem(1, 2);
     });
   });

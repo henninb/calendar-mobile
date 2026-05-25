@@ -16,10 +16,15 @@ void main() {
 
   setUp(() async {
     mockConnectivity = MockConnectivity();
-    connectivityController = StreamController<List<ConnectivityResult>>.broadcast();
-    
-    when(() => mockConnectivity.onConnectivityChanged).thenAnswer((_) => connectivityController.stream);
-    when(() => mockConnectivity.checkConnectivity()).thenAnswer((_) async => [ConnectivityResult.wifi]);
+    connectivityController =
+        StreamController<List<ConnectivityResult>>.broadcast();
+
+    when(
+      () => mockConnectivity.onConnectivityChanged,
+    ).thenAnswer((_) => connectivityController.stream);
+    when(
+      () => mockConnectivity.checkConnectivity(),
+    ).thenAnswer((_) async => [ConnectivityResult.wifi]);
 
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
@@ -44,7 +49,9 @@ void main() {
   });
 
   test('state updates when connectivity changes', () async {
-    container.read(isOnlineProvider); // trigger _init() so it subscribes before stream emits
+    container.read(
+      isOnlineProvider,
+    ); // trigger _init() so it subscribes before stream emits
     await Future.delayed(const Duration(milliseconds: 50));
 
     connectivityController.add([ConnectivityResult.none]);
@@ -58,7 +65,7 @@ void main() {
 
   test('state is False when forcedOffline is True', () async {
     await Future.delayed(const Duration(milliseconds: 50));
-    
+
     container.read(forcedOfflineProvider.notifier).toggle(); // set to true
     expect(container.read(isOnlineProvider), isFalse);
 

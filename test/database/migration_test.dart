@@ -23,10 +23,7 @@ void main() {
       addTearDown(db.close);
 
       await db.upsertCategories([
-        const CategoriesCompanion(
-          serverId: Value(1),
-          name: Value('Test'),
-        ),
+        const CategoriesCompanion(serverId: Value(1), name: Value('Test')),
       ]);
 
       final cats = await db.getAllCategories();
@@ -40,19 +37,21 @@ void main() {
 
       // Insert with pendingCreate (1) and call updateOccurrenceStatus —
       // _nextSyncStatus should keep pendingCreate, not downgrade to pendingUpdate.
-      final id = await db.into(db.occurrences).insert(
-        const OccurrencesCompanion(
-          eventServerId: Value(99),
-          occurrenceDate: Value('2026-01-01'),
-          syncStatus: Value(1), // pendingCreate
-        ),
-      );
+      final id = await db
+          .into(db.occurrences)
+          .insert(
+            const OccurrencesCompanion(
+              eventServerId: Value(99),
+              occurrenceDate: Value('2026-01-01'),
+              syncStatus: Value(1), // pendingCreate
+            ),
+          );
 
       await db.updateOccurrenceStatus(id, 'completed');
 
-      final row = await (db.select(db.occurrences)
-            ..where((o) => o.id.equals(id)))
-          .getSingle();
+      final row = await (db.select(
+        db.occurrences,
+      )..where((o) => o.id.equals(id))).getSingle();
       expect(row.syncStatus, 1); // still pendingCreate
     });
   });

@@ -28,8 +28,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _urlCtrl    = TextEditingController(text: ref.read(baseUrlProvider));
-    _keyCtrl    = TextEditingController(text: ref.read(apiKeyProvider));
+    _urlCtrl = TextEditingController(text: ref.read(baseUrlProvider));
+    _keyCtrl = TextEditingController(text: ref.read(apiKeyProvider));
     _tunnelCtrl = TextEditingController(text: ref.read(wgTunnelNameProvider));
   }
 
@@ -43,12 +43,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final syncState     = ref.watch(syncStateProvider);
-    final isOnline      = ref.watch(isOnlineProvider);
+    final syncState = ref.watch(syncStateProvider);
+    final isOnline = ref.watch(isOnlineProvider);
     final forcedOffline = ref.watch(forcedOfflineProvider);
-    final connectivity  = ref.watch(connectivityProvider);
-    final themeMode     = ref.watch(themeModeProvider);
-    final colors        = AppColors.of(context);
+    final connectivity = ref.watch(connectivityProvider);
+    final themeMode = ref.watch(themeModeProvider);
+    final colors = AppColors.of(context);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -99,7 +99,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 labelText: 'Base URL',
                 hintText: 'https://your-backend.example.com',
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.save_outlined, color: AppColors.primary),
+                  icon: const Icon(
+                    Icons.save_outlined,
+                    color: AppColors.primary,
+                  ),
                   onPressed: _saveUrl,
                 ),
               ),
@@ -114,7 +117,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 labelText: 'API Key',
                 hintText: 'Leave empty if backend has no key set',
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.save_outlined, color: AppColors.primary),
+                  icon: const Icon(
+                    Icons.save_outlined,
+                    color: AppColors.primary,
+                  ),
                   onPressed: _saveKey,
                 ),
               ),
@@ -141,8 +147,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     color: isOnline
                         ? AppColors.btnGreen
                         : forcedOffline
-                            ? AppColors.ccSoon
-                            : AppColors.btnRed,
+                        ? AppColors.ccSoon
+                        : AppColors.btnRed,
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -150,21 +156,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   isOnline
                       ? 'Online'
                       : forcedOffline
-                          ? 'Offline mode (sync paused)'
-                          : 'Offline',
+                      ? 'Offline mode (sync paused)'
+                      : 'Offline',
                   style: AppText.small.copyWith(
                     color: isOnline
                         ? colors.completedFg
                         : forcedOffline
-                            ? AppColors.ccSoon
-                            : colors.overdueFg,
+                        ? AppColors.ccSoon
+                        : colors.overdueFg,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(width: 12),
                 if (!isOnline && !forcedOffline)
                   Text(
-                    connectivity.value?.map((r) => r.name).join(', ') ?? 'checking…',
+                    connectivity.value?.map((r) => r.name).join(', ') ??
+                        'checking…',
                     style: AppText.small,
                   ),
               ],
@@ -179,9 +186,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   label: const Text('Open WireGuard'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colors.overdueFg,
-                    side: BorderSide(color: colors.overdueFg.withValues(alpha: 0.6)),
+                    side: BorderSide(
+                      color: colors.overdueFg.withValues(alpha: 0.6),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    textStyle: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -192,9 +204,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               decoration: InputDecoration(
                 labelText: 'WireGuard Tunnel Name',
                 hintText: 'e.g. k8',
-                helperText: 'Must match the tunnel name exactly in the WireGuard app (case-sensitive)',
+                helperText:
+                    'Must match the tunnel name exactly in the WireGuard app (case-sensitive)',
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.save_outlined, color: AppColors.primary),
+                  icon: const Icon(
+                    Icons.save_outlined,
+                    color: AppColors.primary,
+                  ),
                   onPressed: _saveTunnelName,
                 ),
               ),
@@ -228,12 +244,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, size: 13, color: colors.textSecondary),
+                  Icon(
+                    Icons.info_outline,
+                    size: 13,
+                    color: colors.textSecondary,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       'Requires WireGuard → Settings → "Allow remote control apps" to be enabled.',
-                      style: AppText.small.copyWith(color: colors.textSecondary),
+                      style: AppText.small.copyWith(
+                        color: colors.textSecondary,
+                      ),
                     ),
                   ),
                 ],
@@ -267,7 +289,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       if (syncState.errorMessage != null)
                         Text(
                           syncState.errorMessage!,
-                          style: AppText.small.copyWith(color: colors.overdueFg),
+                          style: AppText.small.copyWith(
+                            color: colors.overdueFg,
+                          ),
                         ),
                     ],
                   ),
@@ -282,8 +306,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -299,7 +329,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             _ActionRow(
               label: 'Refresh all data from server',
-              description: 'Pulls the latest occurrences, tasks, and credit cards.',
+              description:
+                  'Pulls the latest occurrences, tasks, and credit cards.',
               buttonLabel: 'Refresh',
               buttonColor: AppColors.btnBlue,
               enabled: isOnline,
@@ -316,14 +347,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             _InfoRow(
               label: 'App',
-              value: ref.watch(packageInfoProvider).when(
-                data: (info) => 'Calendar Mobile v${info.version}+${info.buildNumber}',
-                loading: () => 'Calendar Mobile',
-                error: (err, st) => 'Calendar Mobile',
-              ),
+              value: ref
+                  .watch(packageInfoProvider)
+                  .when(
+                    data: (info) =>
+                        'Calendar Mobile v${info.version}+${info.buildNumber}',
+                    loading: () => 'Calendar Mobile',
+                    error: (err, st) => 'Calendar Mobile',
+                  ),
             ),
             _InfoRow(label: 'Backend', value: ref.watch(baseUrlProvider)),
-            _InfoRow(label: 'Offline support', value: 'Full CRUD with sync queue'),
+            _InfoRow(
+              label: 'Offline support',
+              value: 'Full CRUD with sync queue',
+            ),
           ],
         ),
       ],
@@ -339,7 +376,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } else {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please open WireGuard manually to establish a VPN connection')),
+          const SnackBar(
+            content: Text(
+              'Please open WireGuard manually to establish a VPN connection',
+            ),
+          ),
         );
       }
       return;
@@ -348,7 +389,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final launched = await canLaunchUrl(uri) && await launchUrl(uri);
     if (!launched && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('WireGuard not found — please install or open it manually')),
+        const SnackBar(
+          content: Text(
+            'WireGuard not found — please install or open it manually',
+          ),
+        ),
       );
     }
   }
@@ -379,12 +424,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   static String _phaseLabel(SyncPhase p) => switch (p) {
-        SyncPhase.idle    => 'Idle',
-        SyncPhase.pushing => 'Pushing changes…',
-        SyncPhase.pulling => 'Pulling data…',
-        SyncPhase.offline => 'Offline — sync suppressed',
-        SyncPhase.error   => 'Error',
-      };
+    SyncPhase.idle => 'Idle',
+    SyncPhase.pushing => 'Pushing changes…',
+    SyncPhase.pulling => 'Pulling data…',
+    SyncPhase.offline => 'Offline — sync suppressed',
+    SyncPhase.error => 'Error',
+  };
 }
 
 class _Section extends StatelessWidget {
@@ -449,7 +494,10 @@ class _ActionRow extends StatelessWidget {
             backgroundColor: buttonColor,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            textStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
             elevation: 0,
           ),
           child: Text(buttonLabel),
@@ -472,10 +520,7 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 120,
-            child: Text(label, style: AppText.label),
-          ),
+          SizedBox(width: 120, child: Text(label, style: AppText.label)),
           Expanded(child: Text(value, style: AppText.small)),
         ],
       ),

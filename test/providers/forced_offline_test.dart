@@ -9,24 +9,52 @@ class _FakeSecureStorage extends Fake implements FlutterSecureStorage {
   final _store = <String, String>{};
 
   @override
-  Future<void> write({required String key, required String? value, AppleOptions? iOptions, AndroidOptions? aOptions, LinuxOptions? lOptions, WebOptions? webOptions, AppleOptions? mOptions, WindowsOptions? wOptions}) async {
-    if (value == null) _store.remove(key); else _store[key] = value;
+  Future<void> write({
+    required String key,
+    required String? value,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (value == null)
+      _store.remove(key);
+    else
+      _store[key] = value;
   }
 
   @override
-  Future<String?> read({required String key, AppleOptions? iOptions, AndroidOptions? aOptions, LinuxOptions? lOptions, WebOptions? webOptions, AppleOptions? mOptions, WindowsOptions? wOptions}) async => _store[key];
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async => _store[key];
 
   @override
-  Future<void> delete({required String key, AppleOptions? iOptions, AndroidOptions? aOptions, LinuxOptions? lOptions, WebOptions? webOptions, AppleOptions? mOptions, WindowsOptions? wOptions}) async => _store.remove(key);
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async => _store.remove(key);
 }
 
 ProviderContainer _makeContainer(SharedPreferences prefs) => ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        secureStorageProvider.overrideWithValue(_FakeSecureStorage()),
-        apiKeyInitialValueProvider.overrideWithValue(''),
-      ],
-    );
+  overrides: [
+    sharedPreferencesProvider.overrideWithValue(prefs),
+    secureStorageProvider.overrideWithValue(_FakeSecureStorage()),
+    apiKeyInitialValueProvider.overrideWithValue(''),
+  ],
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -128,12 +156,16 @@ void main() {
     tearDown(() => container.dispose());
 
     test('returns true for valid https URL', () {
-      final ok = container.read(baseUrlProvider.notifier).set('https://api.example.com');
+      final ok = container
+          .read(baseUrlProvider.notifier)
+          .set('https://api.example.com');
       expect(ok, true);
     });
 
     test('returns false for http URL', () {
-      final ok = container.read(baseUrlProvider.notifier).set('http://api.example.com');
+      final ok = container
+          .read(baseUrlProvider.notifier)
+          .set('http://api.example.com');
       expect(ok, false);
     });
 
@@ -148,12 +180,16 @@ void main() {
     });
 
     test('returns false for ftp scheme', () {
-      final ok = container.read(baseUrlProvider.notifier).set('ftp://files.example.com');
+      final ok = container
+          .read(baseUrlProvider.notifier)
+          .set('ftp://files.example.com');
       expect(ok, false);
     });
 
     test('trims leading and trailing whitespace', () {
-      container.read(baseUrlProvider.notifier).set('  https://trimmed.example.com  ');
+      container
+          .read(baseUrlProvider.notifier)
+          .set('  https://trimmed.example.com  ');
       expect(container.read(baseUrlProvider), 'https://trimmed.example.com');
     });
   });

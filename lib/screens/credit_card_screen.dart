@@ -18,12 +18,20 @@ class CreditCardScreen extends ConsumerWidget {
 
     return trackerAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => const Center(child: Text('Failed to load credit cards — try refreshing')),
+      error: (e, _) => const Center(
+        child: Text('Failed to load credit cards — try refreshing'),
+      ),
       data: (rows) {
         if (rows.isEmpty) {
           return Scaffold(
             backgroundColor: bg,
-            body: const Center(child: Text('No credit cards cached.\nPull to refresh when online.', textAlign: TextAlign.center, style: AppText.small)),
+            body: const Center(
+              child: Text(
+                'No credit cards cached.\nPull to refresh when online.',
+                textAlign: TextAlign.center,
+                style: AppText.small,
+              ),
+            ),
             floatingActionButton: FloatingActionButton(
               onPressed: () => _showCardForm(context, ref, null),
               child: const Icon(Icons.add),
@@ -48,7 +56,11 @@ class CreditCardScreen extends ConsumerWidget {
     );
   }
 
-  void _showCardForm(BuildContext context, WidgetRef ref, CreditCard? existing) {
+  void _showCardForm(
+    BuildContext context,
+    WidgetRef ref,
+    CreditCard? existing,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -73,8 +85,8 @@ class _TrackerCard extends StatelessWidget {
     final dueBgColor = row.nextDueDays <= 3
         ? colors.overdueBg
         : row.nextDueDays <= 7
-            ? colors.warningBg
-            : colors.surface;
+        ? colors.warningBg
+        : colors.surface;
 
     return Card(
       child: Padding(
@@ -91,7 +103,9 @@ class _TrackerCard extends StatelessWidget {
                     children: [
                       Text(
                         row.name,
-                        style: AppText.body.copyWith(fontWeight: FontWeight.w700),
+                        style: AppText.body.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       if (row.issuer != null)
                         Text(row.issuer!, style: AppText.small),
@@ -100,7 +114,10 @@ class _TrackerCard extends StatelessWidget {
                 ),
                 if (row.lastFour != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: colors.tableHeader,
                       borderRadius: BorderRadius.circular(4),
@@ -117,9 +134,23 @@ class _TrackerCard extends StatelessWidget {
             Table(
               children: [
                 _tableRow('Grace', row.grace, 'Prev Close', row.prevClose),
-                const TableRow(children: [SizedBox(height: 6), SizedBox(height: 6), SizedBox(height: 6), SizedBox(height: 6)]),
+                const TableRow(
+                  children: [
+                    SizedBox(height: 6),
+                    SizedBox(height: 6),
+                    SizedBox(height: 6),
+                    SizedBox(height: 6),
+                  ],
+                ),
                 _tableRow('Prev Due', row.prevDue, 'Next Close', row.nextClose),
-                const TableRow(children: [SizedBox(height: 6), SizedBox(height: 6), SizedBox(height: 6), SizedBox(height: 6)]),
+                const TableRow(
+                  children: [
+                    SizedBox(height: 6),
+                    SizedBox(height: 6),
+                    SizedBox(height: 6),
+                    SizedBox(height: 6),
+                  ],
+                ),
               ],
             ),
             // Next Due — highlighted
@@ -130,7 +161,9 @@ class _TrackerCard extends StatelessWidget {
                 color: dueBgColor,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: row.nextDueDays <= 3 ? colors.overdueFg : colors.divider,
+                  color: row.nextDueDays <= 3
+                      ? colors.overdueFg
+                      : colors.divider,
                   width: row.nextDueDays <= 3 ? 1 : 0.5,
                 ),
               ),
@@ -147,8 +180,8 @@ class _TrackerCard extends StatelessWidget {
                           color: row.nextDueDays <= 3
                               ? AppColors.ccOverdue
                               : row.nextDueDays <= 7
-                                  ? AppColors.ccSoon
-                                  : colors.textPrimary,
+                              ? AppColors.ccSoon
+                              : colors.textPrimary,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -200,11 +233,14 @@ class _DaysChip extends StatelessWidget {
     final (bg, fg) = days <= 3
         ? (colors.overdueBg, AppColors.ccOverdue)
         : days <= 7
-            ? (colors.warningBg, AppColors.ccSoon)
-            : (colors.upcomingBg, colors.upcomingFg);
+        ? (colors.warningBg, AppColors.ccSoon)
+        : (colors.upcomingBg, colors.upcomingFg);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(4),
+      ),
       child: Text(
         '${days}d',
         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: fg),
@@ -236,11 +272,15 @@ class _CardFormState extends ConsumerState<_CardForm> {
   void initState() {
     super.initState();
     final e = widget.existing;
-    _name      = TextEditingController(text: e?.name ?? '');
-    _issuer    = TextEditingController(text: e?.issuer ?? '');
-    _lastFour  = TextEditingController(text: e?.lastFour ?? '');
-    _closeDay  = TextEditingController(text: e?.statementCloseDay?.toString() ?? '');
-    _graceDays = TextEditingController(text: e?.gracePeriodDays?.toString() ?? '');
+    _name = TextEditingController(text: e?.name ?? '');
+    _issuer = TextEditingController(text: e?.issuer ?? '');
+    _lastFour = TextEditingController(text: e?.lastFour ?? '');
+    _closeDay = TextEditingController(
+      text: e?.statementCloseDay?.toString() ?? '',
+    );
+    _graceDays = TextEditingController(
+      text: e?.gracePeriodDays?.toString() ?? '',
+    );
   }
 
   @override
@@ -257,7 +297,9 @@ class _CardFormState extends ConsumerState<_CardForm> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
-        left: 20, right: 20, top: 20,
+        left: 20,
+        right: 20,
+        top: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       child: Form(
@@ -275,50 +317,77 @@ class _CardFormState extends ConsumerState<_CardForm> {
               controller: _name,
               decoration: const InputDecoration(labelText: 'Card name *'),
               maxLength: 100,
-              validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 10),
-            Row(children: [
-              Expanded(child: TextFormField(controller: _issuer, decoration: const InputDecoration(labelText: 'Issuer'), maxLength: 100)),
-              const SizedBox(width: 10),
-              Expanded(child: TextFormField(
-                controller: _lastFour,
-                decoration: const InputDecoration(labelText: 'Last 4 digits'),
-                keyboardType: TextInputType.number,
-                maxLength: 4,
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return null; // optional
-                  if (!RegExp(r'^\d{4}$').hasMatch(v.trim())) return 'Must be exactly 4 digits';
-                  return null;
-                },
-              )),
-            ]),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _issuer,
+                    decoration: const InputDecoration(labelText: 'Issuer'),
+                    maxLength: 100,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _lastFour,
+                    decoration: const InputDecoration(
+                      labelText: 'Last 4 digits',
+                    ),
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty)
+                        return null; // optional
+                      if (!RegExp(r'^\d{4}$').hasMatch(v.trim()))
+                        return 'Must be exactly 4 digits';
+                      return null;
+                    },
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 10),
-            Row(children: [
-              Expanded(child: TextFormField(
-                controller: _closeDay,
-                decoration: const InputDecoration(labelText: 'Statement close day'),
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return null; // optional
-                  final n = int.tryParse(v.trim());
-                  if (n == null || n < 1 || n > 31) return 'Must be 1–31';
-                  return null;
-                },
-              )),
-              const SizedBox(width: 10),
-              Expanded(child: TextFormField(
-                controller: _graceDays,
-                decoration: const InputDecoration(labelText: 'Grace period (days)'),
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return null; // optional
-                  final n = int.tryParse(v.trim());
-                  if (n == null || n < 0) return 'Must be 0 or more';
-                  return null;
-                },
-              )),
-            ]),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _closeDay,
+                    decoration: const InputDecoration(
+                      labelText: 'Statement close day',
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty)
+                        return null; // optional
+                      final n = int.tryParse(v.trim());
+                      if (n == null || n < 1 || n > 31) return 'Must be 1–31';
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _graceDays,
+                    decoration: const InputDecoration(
+                      labelText: 'Grace period (days)',
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty)
+                        return null; // optional
+                      final n = int.tryParse(v.trim());
+                      if (n == null || n < 0) return 'Must be 0 or more';
+                      return null;
+                    },
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -344,21 +413,31 @@ class _CardFormState extends ConsumerState<_CardForm> {
     final syncNotifier = ref.read(syncStateProvider.notifier);
     try {
       if (widget.existing == null) {
-        await db.insertCreditCard(CreditCardsCompanion(
-          name: Value(_name.text.trim()),
-          issuer: Value(_issuer.text.trim().isEmpty ? null : _issuer.text.trim()),
-          lastFour: Value(_lastFour.text.trim().isEmpty ? null : _lastFour.text.trim()),
-          statementCloseDay: Value(int.tryParse(_closeDay.text)),
-          gracePeriodDays: Value(int.tryParse(_graceDays.text)),
-          syncStatus: Value(SyncStatus.pendingCreate.value),
-        ));
+        await db.insertCreditCard(
+          CreditCardsCompanion(
+            name: Value(_name.text.trim()),
+            issuer: Value(
+              _issuer.text.trim().isEmpty ? null : _issuer.text.trim(),
+            ),
+            lastFour: Value(
+              _lastFour.text.trim().isEmpty ? null : _lastFour.text.trim(),
+            ),
+            statementCloseDay: Value(int.tryParse(_closeDay.text)),
+            gracePeriodDays: Value(int.tryParse(_graceDays.text)),
+            syncStatus: Value(SyncStatus.pendingCreate.value),
+          ),
+        );
       } else {
         await db.updateCreditCard(
           widget.existing!.id,
           CreditCardsCompanion(
             name: Value(_name.text.trim()),
-            issuer: Value(_issuer.text.trim().isEmpty ? null : _issuer.text.trim()),
-            lastFour: Value(_lastFour.text.trim().isEmpty ? null : _lastFour.text.trim()),
+            issuer: Value(
+              _issuer.text.trim().isEmpty ? null : _issuer.text.trim(),
+            ),
+            lastFour: Value(
+              _lastFour.text.trim().isEmpty ? null : _lastFour.text.trim(),
+            ),
             statementCloseDay: Value(int.tryParse(_closeDay.text)),
             gracePeriodDays: Value(int.tryParse(_graceDays.text)),
             syncStatus: Value(SyncStatus.pendingUpdate.value),
@@ -369,10 +448,17 @@ class _CardFormState extends ConsumerState<_CardForm> {
       Navigator.pop(context);
       syncNotifier.syncIfOnline();
     } catch (e, st) {
-      dev.log('_CardFormState._save: $e', name: 'credit_cards', level: 900, stackTrace: st);
+      dev.log(
+        '_CardFormState._save: $e',
+        name: 'credit_cards',
+        level: 900,
+        stackTrace: st,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save card. Please try again.')),
+          const SnackBar(
+            content: Text('Failed to save card. Please try again.'),
+          ),
         );
       }
     }

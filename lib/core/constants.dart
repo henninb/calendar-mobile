@@ -1,52 +1,63 @@
 import 'dart:developer' as dev;
 
 abstract final class AppConstants {
-
   // Supply at build time: flutter build apk --dart-define=DEFAULT_BASE_URL=https://...
   // Intentionally empty when not provided so no personal domain is baked into source.
   static const String defaultBaseUrl = String.fromEnvironment(
     'DEFAULT_BASE_URL',
     defaultValue: '',
   );
-  static const String prefBaseUrl       = 'base_url';
-  static const String prefApiKey        = 'api_key';
-  static const String prefSyncDays      = 'gcal_sync_days';
-  static const String prefSyncForce     = 'gcal_sync_force';
+  static const String prefBaseUrl = 'base_url';
+  static const String prefApiKey = 'api_key';
+  static const String prefSyncDays = 'gcal_sync_days';
+  static const String prefSyncForce = 'gcal_sync_force';
   static const String prefForcedOffline = 'forced_offline';
-  static const String prefWgTunnelName  = 'wg_tunnel_name';
+  static const String prefWgTunnelName = 'wg_tunnel_name';
   static const String defaultWgTunnelName = 'k8';
-  static const int    defaultSyncDays = 365;
+  static const int defaultSyncDays = 365;
 
-  static const Duration syncDebounce    = Duration(seconds: 3);
-  static const Duration connectCheck    = Duration(seconds: 5);
-  static const Duration periodicSync    = Duration(minutes: 5);
-  static const Duration wgCheckTimeout   = Duration(seconds: 3);
+  static const Duration syncDebounce = Duration(seconds: 3);
+  static const Duration connectCheck = Duration(seconds: 5);
+  static const Duration periodicSync = Duration(minutes: 5);
+  static const Duration wgCheckTimeout = Duration(seconds: 3);
   static const Duration wgRequestTimeout = Duration(seconds: 15);
-  static const Duration wgVerifyDelay   = Duration(milliseconds: 750);
+  static const Duration wgVerifyDelay = Duration(milliseconds: 750);
   static const Duration wgVerifyTimeout = Duration(seconds: 8);
 
-  static const int occurrencePastMonths   = 1;
+  static const int occurrencePastMonths = 1;
   static const int occurrenceFutureMonths = 3;
 }
 
 abstract final class TaskStatus {
-  static const String todo       = 'todo';
+  static const String todo = 'todo';
   static const String inProgress = 'in_progress';
-  static const String done       = 'done';
-  static const String cancelled  = 'cancelled';
+  static const String done = 'done';
+  static const String cancelled = 'cancelled';
 }
 
 abstract final class OccurrenceStatus {
-  static const String upcoming  = 'upcoming';
+  static const String upcoming = 'upcoming';
   static const String completed = 'completed';
-  static const String skipped   = 'skipped';
-  static const String overdue   = 'overdue';
+  static const String skipped = 'skipped';
+  static const String overdue = 'overdue';
 }
 
 abstract final class GroceryConstants {
   static const List<String> units = [
-    'each', 'lb', 'oz', 'fl_oz', 'g', 'kg', 'liter', 'ml',
-    'bunch', 'bag', 'box', 'can', 'jar', 'pack',
+    'each',
+    'lb',
+    'oz',
+    'fl_oz',
+    'g',
+    'kg',
+    'liter',
+    'ml',
+    'bunch',
+    'bag',
+    'box',
+    'can',
+    'jar',
+    'pack',
   ];
 }
 
@@ -81,6 +92,7 @@ enum SyncStatus {
   /// Synced records become [pendingUpdate]; any already-pending status is
   /// preserved so a [pendingCreate] is never downgraded to [pendingUpdate]
   /// (which would cause the push to be skipped due to a missing serverId).
-  static int next(int current) =>
-      current == SyncStatus.synced.value ? SyncStatus.pendingUpdate.value : current;
+  static int next(int current) => current == SyncStatus.synced.value
+      ? SyncStatus.pendingUpdate.value
+      : current;
 }

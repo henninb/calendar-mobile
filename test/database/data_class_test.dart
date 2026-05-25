@@ -88,10 +88,7 @@ void main() {
 
   group('CategoriesCompanion', () {
     test('copyWith replaces specified fields', () {
-      const c = CategoriesCompanion(
-        serverId: Value(1),
-        name: Value('Old'),
-      );
+      const c = CategoriesCompanion(serverId: Value(1), name: Value('Old'));
       final copy = c.copyWith(name: const Value('New'));
       expect(copy.name.value, 'New');
       expect(copy.serverId, c.serverId);
@@ -136,7 +133,12 @@ void main() {
     });
 
     test('==', () {
-      const other = Person(id: 2, serverId: 20, name: 'Alice', email: 'alice@example.com');
+      const other = Person(
+        id: 2,
+        serverId: 20,
+        name: 'Alice',
+        email: 'alice@example.com',
+      );
       expect(person, equals(other));
     });
 
@@ -153,8 +155,9 @@ void main() {
 
   group('PersonsCompanion', () {
     test('copyWith', () {
-      final c = const PersonsCompanion(name: Value('Old'))
-          .copyWith(name: const Value('New'));
+      final c = const PersonsCompanion(
+        name: Value('Old'),
+      ).copyWith(name: const Value('New'));
       expect(c.name.value, 'New');
     });
 
@@ -226,8 +229,9 @@ void main() {
 
   group('EventsCompanion', () {
     test('copyWith', () {
-      final c = const EventsCompanion(title: Value('Old'))
-          .copyWith(title: const Value('New'));
+      final c = const EventsCompanion(
+        title: Value('Old'),
+      ).copyWith(title: const Value('New'));
       expect(c.title.value, 'New');
     });
 
@@ -282,8 +286,9 @@ void main() {
 
   group('OccurrencesCompanion', () {
     test('copyWith', () {
-      final c = const OccurrencesCompanion(status: Value('upcoming'))
-          .copyWith(status: const Value('skipped'));
+      final c = const OccurrencesCompanion(
+        status: Value('upcoming'),
+      ).copyWith(status: const Value('skipped'));
       expect(c.status.value, 'skipped');
     });
 
@@ -351,8 +356,9 @@ void main() {
 
   group('TasksCompanion', () {
     test('copyWith', () {
-      final c = const TasksCompanion(title: Value('Old'))
-          .copyWith(title: const Value('New'));
+      final c = const TasksCompanion(
+        title: Value('Old'),
+      ).copyWith(title: const Value('New'));
       expect(c.title.value, 'New');
     });
 
@@ -410,8 +416,10 @@ void main() {
 
   group('SubtasksCompanion', () {
     test('copyWith', () {
-      final c = SubtasksCompanion(taskLocalId: const Value(1), title: const Value('Old'))
-          .copyWith(title: const Value('New'));
+      final c = SubtasksCompanion(
+        taskLocalId: const Value(1),
+        title: const Value('Old'),
+      ).copyWith(title: const Value('New'));
       expect(c.title.value, 'New');
     });
 
@@ -470,8 +478,9 @@ void main() {
 
   group('CreditCardsCompanion', () {
     test('copyWith', () {
-      final c = const CreditCardsCompanion(name: Value('Old'))
-          .copyWith(name: const Value('New'));
+      final c = const CreditCardsCompanion(
+        name: Value('Old'),
+      ).copyWith(name: const Value('New'));
       expect(c.name.value, 'New');
     });
 
@@ -585,8 +594,9 @@ void main() {
 
   group('GroceryStoresCompanion', () {
     test('copyWith', () {
-      final c = const GroceryStoresCompanion(name: Value('Old'))
-          .copyWith(name: const Value('New'));
+      final c = const GroceryStoresCompanion(
+        name: Value('Old'),
+      ).copyWith(name: const Value('New'));
       expect(c.name.value, 'New');
     });
 
@@ -635,8 +645,9 @@ void main() {
 
   group('GroceryItemsCompanion', () {
     test('copyWith', () {
-      final c = const GroceryItemsCompanion(name: Value('Old'))
-          .copyWith(name: const Value('New'));
+      final c = const GroceryItemsCompanion(
+        name: Value('Old'),
+      ).copyWith(name: const Value('New'));
       expect(c.name.value, 'New');
     });
 
@@ -685,9 +696,10 @@ void main() {
 
   group('GroceryOnHandCompanion', () {
     test('copyWith', () {
-      final c =
-          GroceryOnHandCompanion(itemServerId: const Value(1), quantity: const Value(1.0))
-              .copyWith(quantity: const Value(2.0));
+      final c = GroceryOnHandCompanion(
+        itemServerId: const Value(1),
+        quantity: const Value(1.0),
+      ).copyWith(quantity: const Value(2.0));
       expect(c.quantity.value, 2.0);
     });
 
@@ -738,8 +750,9 @@ void main() {
 
   group('GroceryListsCompanion', () {
     test('copyWith', () {
-      final c = const GroceryListsCompanion(name: Value('Old'))
-          .copyWith(name: const Value('New'));
+      final c = const GroceryListsCompanion(
+        name: Value('Old'),
+      ).copyWith(name: const Value('New'));
       expect(c.name.value, 'New');
     });
 
@@ -817,8 +830,12 @@ void main() {
   group('DataClass toColumns', () {
     test('Category.toColumns(false) includes nullable fields', () {
       const cat = Category(
-        id: 1, serverId: 10, name: 'Work',
-        color: '#ff0000', icon: '💼', description: 'desc',
+        id: 1,
+        serverId: 10,
+        name: 'Work',
+        color: '#ff0000',
+        icon: '💼',
+        description: 'desc',
       );
       final cols = cat.toColumns(false);
       expect(cols.containsKey('id'), isTrue);
@@ -848,10 +865,18 @@ void main() {
 
     test('Event.toColumns(false) includes all optional fields', () {
       const e = Event(
-        id: 1, serverId: 2, title: 'Mtg', categoryServerId: 5,
-        rrule: 'FREQ=WEEKLY', dtstart: '2026-05-01', priority: 'high',
-        description: 'desc', isActive: true,
-        amount: '9.99', location: 'Office', durationDays: 2,
+        id: 1,
+        serverId: 2,
+        title: 'Mtg',
+        categoryServerId: 5,
+        rrule: 'FREQ=WEEKLY',
+        dtstart: '2026-05-01',
+        priority: 'high',
+        description: 'desc',
+        isActive: true,
+        amount: '9.99',
+        location: 'Office',
+        durationDays: 2,
       );
       final cols = e.toColumns(false);
       expect(cols.containsKey('server_id'), isTrue);
@@ -863,8 +888,12 @@ void main() {
 
     test('Event.toColumns(true) omits null optional fields', () {
       const e = Event(
-        id: 1, title: 'Mtg', categoryServerId: 5,
-        dtstart: '2026-05-01', priority: 'medium', isActive: true,
+        id: 1,
+        title: 'Mtg',
+        categoryServerId: 5,
+        dtstart: '2026-05-01',
+        priority: 'medium',
+        isActive: true,
         durationDays: 1,
       );
       final cols = e.toColumns(true);
@@ -875,9 +904,13 @@ void main() {
 
     test('Occurrence.toColumns(false) includes notes', () {
       const o = Occurrence(
-        id: 1, serverId: 2, eventServerId: 10,
-        occurrenceDate: '2026-05-01', status: 'upcoming',
-        notes: 'Bring laptop', syncStatus: 0,
+        id: 1,
+        serverId: 2,
+        eventServerId: 10,
+        occurrenceDate: '2026-05-01',
+        status: 'upcoming',
+        notes: 'Bring laptop',
+        syncStatus: 0,
       );
       final cols = o.toColumns(false);
       expect(cols.containsKey('server_id'), isTrue);
@@ -887,8 +920,11 @@ void main() {
 
     test('Occurrence.toColumns(true) omits null notes', () {
       const o = Occurrence(
-        id: 1, eventServerId: 10,
-        occurrenceDate: '2026-05-01', status: 'upcoming', syncStatus: 0,
+        id: 1,
+        eventServerId: 10,
+        occurrenceDate: '2026-05-01',
+        status: 'upcoming',
+        syncStatus: 0,
       );
       final cols = o.toColumns(true);
       expect(cols.containsKey('notes'), isFalse);
@@ -896,13 +932,23 @@ void main() {
 
     test('Task.toColumns(false) includes all optional fields', () {
       const t = Task(
-        id: 1, serverId: 2, title: 'T', description: 'D',
-        status: 'todo', priority: 'high',
-        assigneeServerId: 3, categoryServerId: 4,
-        dueDate: '2026-05-20', estimatedMinutes: 30,
-        recurrence: 'none', occurrenceServerId: 5,
-        order: 0, syncStatus: 0, completedAt: '2026-05-21',
-        createdAt: '2026-01-01', updatedAt: '2026-01-02',
+        id: 1,
+        serverId: 2,
+        title: 'T',
+        description: 'D',
+        status: 'todo',
+        priority: 'high',
+        assigneeServerId: 3,
+        categoryServerId: 4,
+        dueDate: '2026-05-20',
+        estimatedMinutes: 30,
+        recurrence: 'none',
+        occurrenceServerId: 5,
+        order: 0,
+        syncStatus: 0,
+        completedAt: '2026-05-21',
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-02',
       );
       final cols = t.toColumns(false);
       expect(cols.containsKey('server_id'), isTrue);
@@ -916,9 +962,15 @@ void main() {
 
     test('Task.toColumns(true) omits null optional fields', () {
       const t = Task(
-        id: 1, title: 'T', status: 'todo', priority: 'medium',
-        recurrence: 'none', order: 0, syncStatus: 0,
-        createdAt: '2026-01-01', updatedAt: '2026-01-01',
+        id: 1,
+        title: 'T',
+        status: 'todo',
+        priority: 'medium',
+        recurrence: 'none',
+        order: 0,
+        syncStatus: 0,
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01',
       );
       final cols = t.toColumns(true);
       expect(cols.containsKey('server_id'), isFalse);
@@ -927,9 +979,16 @@ void main() {
 
     test('Subtask.toColumns(false) includes optional fields', () {
       const s = Subtask(
-        id: 1, serverId: 2, taskLocalId: 5, taskServerId: 50,
-        title: 'Sub', status: 'todo', dueDate: '2026-05-20',
-        order: 0, completedAt: '2026-05-21', syncStatus: 0,
+        id: 1,
+        serverId: 2,
+        taskLocalId: 5,
+        taskServerId: 50,
+        title: 'Sub',
+        status: 'todo',
+        dueDate: '2026-05-20',
+        order: 0,
+        completedAt: '2026-05-21',
+        syncStatus: 0,
       );
       final cols = s.toColumns(false);
       expect(cols.containsKey('server_id'), isTrue);
@@ -939,8 +998,12 @@ void main() {
 
     test('Subtask.toColumns(true) omits null optional fields', () {
       const s = Subtask(
-        id: 1, taskLocalId: 5, title: 'Sub', status: 'todo',
-        order: 0, syncStatus: 0,
+        id: 1,
+        taskLocalId: 5,
+        title: 'Sub',
+        status: 'todo',
+        order: 0,
+        syncStatus: 0,
       );
       final cols = s.toColumns(true);
       expect(cols.containsKey('server_id'), isFalse);
@@ -949,12 +1012,21 @@ void main() {
 
     test('CreditCard.toColumns(false) includes all optional fields', () {
       const c = CreditCard(
-        id: 1, serverId: 2, name: 'Visa', issuer: 'Bank',
-        lastFour: '4321', statementCloseDay: 15, gracePeriodDays: 25,
-        weekendShift: 'before', cycleDays: 30,
-        cycleReferenceDate: '2026-01-01', dueDaySameMonth: null,
-        dueDayNextMonth: 5, annualFeeMonth: 1,
-        isActive: true, syncStatus: 0,
+        id: 1,
+        serverId: 2,
+        name: 'Visa',
+        issuer: 'Bank',
+        lastFour: '4321',
+        statementCloseDay: 15,
+        gracePeriodDays: 25,
+        weekendShift: 'before',
+        cycleDays: 30,
+        cycleReferenceDate: '2026-01-01',
+        dueDaySameMonth: null,
+        dueDayNextMonth: 5,
+        annualFeeMonth: 1,
+        isActive: true,
+        syncStatus: 0,
       );
       final cols = c.toColumns(false);
       expect(cols.containsKey('server_id'), isTrue);
@@ -972,12 +1044,20 @@ void main() {
 
     test('CreditCardTrackerCacheData.toColumns(false) includes all fields', () {
       const r = CreditCardTrackerCacheData(
-        id: 1, cardServerId: 10, name: 'Card', issuer: 'Bank',
-        lastFour: '1234', grace: '2026-05-15',
-        prevClose: '2026-04-15', prevDue: '2026-05-05',
-        nextClose: '2026-05-15', nextCloseDays: 7,
-        nextDue: '2026-06-05', nextDueDays: 28,
-        annualFeeDate: '2026-12-01', annualFeeDays: 207,
+        id: 1,
+        cardServerId: 10,
+        name: 'Card',
+        issuer: 'Bank',
+        lastFour: '1234',
+        grace: '2026-05-15',
+        prevClose: '2026-04-15',
+        prevDue: '2026-05-05',
+        nextClose: '2026-05-15',
+        nextCloseDays: 7,
+        nextDue: '2026-06-05',
+        nextDueDays: 28,
+        annualFeeDate: '2026-12-01',
+        annualFeeDays: 207,
         prevDueOverdue: false,
       );
       final cols = r.toColumns(false);
@@ -986,22 +1066,36 @@ void main() {
       expect(cols.containsKey('annual_fee_date'), isTrue);
     });
 
-    test('CreditCardTrackerCacheData.toColumns(true) omits null nullable fields', () {
-      const r = CreditCardTrackerCacheData(
-        id: 1, cardServerId: 10, name: 'Card',
-        grace: '2026-05-15', prevClose: '2026-04-15', prevDue: '2026-05-05',
-        nextClose: '2026-05-15', nextCloseDays: 7,
-        nextDue: '2026-06-05', nextDueDays: 28, prevDueOverdue: false,
-      );
-      final cols = r.toColumns(true);
-      expect(cols.containsKey('issuer'), isFalse);
-      expect(cols.containsKey('annual_fee_date'), isFalse);
-    });
+    test(
+      'CreditCardTrackerCacheData.toColumns(true) omits null nullable fields',
+      () {
+        const r = CreditCardTrackerCacheData(
+          id: 1,
+          cardServerId: 10,
+          name: 'Card',
+          grace: '2026-05-15',
+          prevClose: '2026-04-15',
+          prevDue: '2026-05-05',
+          nextClose: '2026-05-15',
+          nextCloseDays: 7,
+          nextDue: '2026-06-05',
+          nextDueDays: 28,
+          prevDueOverdue: false,
+        );
+        final cols = r.toColumns(true);
+        expect(cols.containsKey('issuer'), isFalse);
+        expect(cols.containsKey('annual_fee_date'), isFalse);
+      },
+    );
 
     test('GroceryStore.toColumns(false) includes location', () {
       const s = GroceryStore(
-        id: 1, serverId: 2, name: 'Market',
-        location: 'Downtown', isActive: true, syncStatus: 0,
+        id: 1,
+        serverId: 2,
+        name: 'Market',
+        location: 'Downtown',
+        isActive: true,
+        syncStatus: 0,
       );
       final cols = s.toColumns(false);
       expect(cols.containsKey('server_id'), isTrue);
@@ -1009,15 +1103,23 @@ void main() {
     });
 
     test('GroceryStore.toColumns(true) omits null location', () {
-      const s = GroceryStore(id: 1, name: 'Market', isActive: true, syncStatus: 0);
+      const s = GroceryStore(
+        id: 1,
+        name: 'Market',
+        isActive: true,
+        syncStatus: 0,
+      );
       final cols = s.toColumns(true);
       expect(cols.containsKey('location'), isFalse);
     });
 
     test('GroceryItem.toColumns(false) includes defaultStoreServerId', () {
       const i = GroceryItem(
-        id: 1, serverId: 2, name: 'Milk',
-        defaultUnit: 'gallon', defaultStoreServerId: 5,
+        id: 1,
+        serverId: 2,
+        name: 'Milk',
+        defaultUnit: 'gallon',
+        defaultStoreServerId: 5,
       );
       final cols = i.toColumns(false);
       expect(cols.containsKey('server_id'), isTrue);
@@ -1032,7 +1134,11 @@ void main() {
 
     test('GroceryOnHandData.toColumns includes all fields', () {
       const o = GroceryOnHandData(
-        id: 1, itemServerId: 10, quantity: 2.5, unit: 'lb', syncStatus: 0,
+        id: 1,
+        itemServerId: 10,
+        quantity: 2.5,
+        unit: 'lb',
+        syncStatus: 0,
       );
       final cols = o.toColumns(false);
       expect(cols.containsKey('item_server_id'), isTrue);
@@ -1040,28 +1146,52 @@ void main() {
       expect(cols.containsKey('unit'), isTrue);
     });
 
-    test('GroceryList.toColumns(false) includes storeServerId and shoppingDate', () {
-      const l = GroceryList(
-        id: 1, serverId: 2, name: 'Shop', storeServerId: 5,
-        status: 'draft', shoppingDate: '2026-05-20', syncStatus: 0,
-      );
-      final cols = l.toColumns(false);
-      expect(cols.containsKey('store_server_id'), isTrue);
-      expect(cols.containsKey('shopping_date'), isTrue);
-    });
+    test(
+      'GroceryList.toColumns(false) includes storeServerId and shoppingDate',
+      () {
+        const l = GroceryList(
+          id: 1,
+          serverId: 2,
+          name: 'Shop',
+          storeServerId: 5,
+          status: 'draft',
+          shoppingDate: '2026-05-20',
+          syncStatus: 0,
+        );
+        final cols = l.toColumns(false);
+        expect(cols.containsKey('store_server_id'), isTrue);
+        expect(cols.containsKey('shopping_date'), isTrue);
+      },
+    );
 
-    test('GroceryList.toColumns(true) omits null storeServerId and shoppingDate', () {
-      const l = GroceryList(id: 1, name: 'Shop', status: 'draft', syncStatus: 0);
-      final cols = l.toColumns(true);
-      expect(cols.containsKey('store_server_id'), isFalse);
-      expect(cols.containsKey('shopping_date'), isFalse);
-    });
+    test(
+      'GroceryList.toColumns(true) omits null storeServerId and shoppingDate',
+      () {
+        const l = GroceryList(
+          id: 1,
+          name: 'Shop',
+          status: 'draft',
+          syncStatus: 0,
+        );
+        final cols = l.toColumns(true);
+        expect(cols.containsKey('store_server_id'), isFalse);
+        expect(cols.containsKey('shopping_date'), isFalse);
+      },
+    );
 
     test('GroceryListItem.toColumns(false) includes price and notes', () {
       const i = GroceryListItem(
-        id: 1, serverId: 2, listLocalId: 5, listServerId: 50,
-        itemServerId: 10, quantity: 2.0, unit: 'each',
-        price: 4.99, status: 'needed', notes: 'Organic', syncStatus: 0,
+        id: 1,
+        serverId: 2,
+        listLocalId: 5,
+        listServerId: 50,
+        itemServerId: 10,
+        quantity: 2.0,
+        unit: 'each',
+        price: 4.99,
+        status: 'needed',
+        notes: 'Organic',
+        syncStatus: 0,
       );
       final cols = i.toColumns(false);
       expect(cols.containsKey('server_id'), isTrue);
@@ -1071,8 +1201,13 @@ void main() {
 
     test('GroceryListItem.toColumns(true) omits null price and notes', () {
       const i = GroceryListItem(
-        id: 1, listLocalId: 5, itemServerId: 10,
-        quantity: 1.0, unit: 'each', status: 'needed', syncStatus: 0,
+        id: 1,
+        listLocalId: 5,
+        itemServerId: 10,
+        quantity: 1.0,
+        unit: 'each',
+        status: 'needed',
+        syncStatus: 0,
       );
       final cols = i.toColumns(true);
       expect(cols.containsKey('price'), isFalse);
@@ -1226,9 +1361,7 @@ void main() {
     });
 
     test('CreditCardsCompanion.custom creates an insertable', () {
-      final ins = CreditCardsCompanion.custom(
-        name: const Constant('Visa'),
-      );
+      final ins = CreditCardsCompanion.custom(name: const Constant('Visa'));
       expect(ins, isNotNull);
     });
 
@@ -1290,9 +1423,7 @@ void main() {
     });
 
     test('GroceryStoresCompanion.custom creates an insertable', () {
-      final ins = GroceryStoresCompanion.custom(
-        name: const Constant('Market'),
-      );
+      final ins = GroceryStoresCompanion.custom(name: const Constant('Market'));
       expect(ins, isNotNull);
     });
 
@@ -1309,9 +1440,7 @@ void main() {
     });
 
     test('GroceryItemsCompanion.custom creates an insertable', () {
-      final ins = GroceryItemsCompanion.custom(
-        name: const Constant('Milk'),
-      );
+      final ins = GroceryItemsCompanion.custom(name: const Constant('Milk'));
       expect(ins, isNotNull);
     });
 
@@ -1345,9 +1474,7 @@ void main() {
     });
 
     test('GroceryListsCompanion.custom creates an insertable', () {
-      final ins = GroceryListsCompanion.custom(
-        name: const Constant('List'),
-      );
+      final ins = GroceryListsCompanion.custom(name: const Constant('List'));
       expect(ins, isNotNull);
     });
 
@@ -1395,8 +1522,12 @@ void main() {
   group('copyWithCompanion with all fields', () {
     test('Category.copyWithCompanion with all fields present', () {
       const cat = Category(
-        id: 1, serverId: 10, name: 'Work',
-        color: '#ff0000', icon: '💼', description: 'Old',
+        id: 1,
+        serverId: 10,
+        name: 'Work',
+        color: '#ff0000',
+        icon: '💼',
+        description: 'Old',
       );
       final companion = const CategoriesCompanion(
         id: Value(2),
@@ -1428,10 +1559,18 @@ void main() {
 
     test('Event.copyWithCompanion with all optional fields present', () {
       const e = Event(
-        id: 1, serverId: 10, title: 'Old', categoryServerId: 5,
-        rrule: 'OLD', dtstart: '2026-01-01', priority: 'low',
-        description: 'old desc', isActive: false,
-        amount: '1.00', location: 'Home', durationDays: 1,
+        id: 1,
+        serverId: 10,
+        title: 'Old',
+        categoryServerId: 5,
+        rrule: 'OLD',
+        dtstart: '2026-01-01',
+        priority: 'low',
+        description: 'old desc',
+        isActive: false,
+        amount: '1.00',
+        location: 'Home',
+        durationDays: 1,
       );
       final companion = const EventsCompanion(
         id: Value(2),
@@ -1458,9 +1597,13 @@ void main() {
 
     test('Occurrence.copyWithCompanion with all fields present', () {
       const o = Occurrence(
-        id: 1, serverId: 10, eventServerId: 100,
-        occurrenceDate: '2026-01-01', status: 'old',
-        notes: 'old note', syncStatus: 0,
+        id: 1,
+        serverId: 10,
+        eventServerId: 100,
+        occurrenceDate: '2026-01-01',
+        status: 'old',
+        notes: 'old note',
+        syncStatus: 0,
       );
       final companion = const OccurrencesCompanion(
         id: Value(2),
@@ -1478,13 +1621,23 @@ void main() {
 
     test('Task.copyWithCompanion with all optional fields present', () {
       const t = Task(
-        id: 1, serverId: 10, title: 'Old', description: 'Old desc',
-        status: 'todo', priority: 'low',
-        assigneeServerId: 1, categoryServerId: 1,
-        dueDate: '2026-01-01', estimatedMinutes: 30,
-        recurrence: 'none', occurrenceServerId: 1,
-        order: 0, syncStatus: 0, completedAt: null,
-        createdAt: '2026-01-01', updatedAt: '2026-01-01',
+        id: 1,
+        serverId: 10,
+        title: 'Old',
+        description: 'Old desc',
+        status: 'todo',
+        priority: 'low',
+        assigneeServerId: 1,
+        categoryServerId: 1,
+        dueDate: '2026-01-01',
+        estimatedMinutes: 30,
+        recurrence: 'none',
+        occurrenceServerId: 1,
+        order: 0,
+        syncStatus: 0,
+        completedAt: null,
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01',
       );
       final companion = const TasksCompanion(
         id: Value(2),
@@ -1513,10 +1666,16 @@ void main() {
 
     test('Subtask.copyWithCompanion with all fields present', () {
       const s = Subtask(
-        id: 1, serverId: 10, taskLocalId: 5, taskServerId: 50,
-        title: 'Old', status: 'todo',
-        dueDate: '2026-01-01', order: 0,
-        completedAt: null, syncStatus: 0,
+        id: 1,
+        serverId: 10,
+        taskLocalId: 5,
+        taskServerId: 50,
+        title: 'Old',
+        status: 'todo',
+        dueDate: '2026-01-01',
+        order: 0,
+        completedAt: null,
+        syncStatus: 0,
       );
       final companion = SubtasksCompanion(
         id: const Value(2),
@@ -1538,13 +1697,21 @@ void main() {
 
     test('CreditCard.copyWithCompanion with all optional fields present', () {
       const c = CreditCard(
-        id: 1, serverId: 10, name: 'Old',
-        issuer: null, lastFour: null,
-        statementCloseDay: null, gracePeriodDays: null,
-        weekendShift: null, cycleDays: null,
-        cycleReferenceDate: null, dueDaySameMonth: null,
-        dueDayNextMonth: null, annualFeeMonth: null,
-        isActive: true, syncStatus: 0,
+        id: 1,
+        serverId: 10,
+        name: 'Old',
+        issuer: null,
+        lastFour: null,
+        statementCloseDay: null,
+        gracePeriodDays: null,
+        weekendShift: null,
+        cycleDays: null,
+        cycleReferenceDate: null,
+        dueDaySameMonth: null,
+        dueDayNextMonth: null,
+        annualFeeMonth: null,
+        isActive: true,
+        syncStatus: 0,
       );
       final companion = const CreditCardsCompanion(
         id: Value(2),
@@ -1571,8 +1738,12 @@ void main() {
 
     test('GroceryStore.copyWithCompanion with all fields', () {
       const s = GroceryStore(
-        id: 1, serverId: 10, name: 'Old',
-        location: null, isActive: true, syncStatus: 0,
+        id: 1,
+        serverId: 10,
+        name: 'Old',
+        location: null,
+        isActive: true,
+        syncStatus: 0,
       );
       final companion = const GroceryStoresCompanion(
         id: Value(2),
@@ -1589,8 +1760,11 @@ void main() {
 
     test('GroceryItem.copyWithCompanion with all fields', () {
       const i = GroceryItem(
-        id: 1, serverId: 10, name: 'Old',
-        defaultUnit: 'each', defaultStoreServerId: null,
+        id: 1,
+        serverId: 10,
+        name: 'Old',
+        defaultUnit: 'each',
+        defaultStoreServerId: null,
       );
       final companion = const GroceryItemsCompanion(
         id: Value(2),
@@ -1606,8 +1780,11 @@ void main() {
 
     test('GroceryOnHandData.copyWithCompanion with all fields', () {
       const o = GroceryOnHandData(
-        id: 1, itemServerId: 10,
-        quantity: 1.0, unit: 'each', syncStatus: 0,
+        id: 1,
+        itemServerId: 10,
+        quantity: 1.0,
+        unit: 'each',
+        syncStatus: 0,
       );
       final companion = GroceryOnHandCompanion(
         id: const Value(2),
@@ -1623,9 +1800,13 @@ void main() {
 
     test('GroceryList.copyWithCompanion with all fields', () {
       const l = GroceryList(
-        id: 1, serverId: 10, name: 'Old',
-        storeServerId: null, status: 'draft',
-        shoppingDate: null, syncStatus: 0,
+        id: 1,
+        serverId: 10,
+        name: 'Old',
+        storeServerId: null,
+        status: 'draft',
+        shoppingDate: null,
+        syncStatus: 0,
       );
       final companion = const GroceryListsCompanion(
         id: Value(2),
@@ -1644,9 +1825,17 @@ void main() {
 
     test('GroceryListItem.copyWithCompanion with all fields', () {
       const i = GroceryListItem(
-        id: 1, serverId: 10, listLocalId: 5, listServerId: 50,
-        itemServerId: 100, quantity: 1.0, unit: 'each',
-        price: null, status: 'needed', notes: null, syncStatus: 0,
+        id: 1,
+        serverId: 10,
+        listLocalId: 5,
+        listServerId: 50,
+        itemServerId: 100,
+        quantity: 1.0,
+        unit: 'each',
+        price: null,
+        status: 'needed',
+        notes: null,
+        syncStatus: 0,
       );
       final companion = const GroceryListItemsCompanion(
         id: Value(2),
@@ -1669,12 +1858,21 @@ void main() {
 
     test('CreditCardTrackerCacheData.copyWithCompanion with all fields', () {
       const r = CreditCardTrackerCacheData(
-        id: 1, cardServerId: 10, name: 'Old',
-        issuer: null, lastFour: null,
-        grace: '2026-05-15', prevClose: '2026-04-15',
-        prevDue: '2026-05-05', nextClose: '2026-05-15',
-        nextCloseDays: 7, nextDue: '2026-06-05', nextDueDays: 28,
-        annualFeeDate: null, annualFeeDays: null, prevDueOverdue: false,
+        id: 1,
+        cardServerId: 10,
+        name: 'Old',
+        issuer: null,
+        lastFour: null,
+        grace: '2026-05-15',
+        prevClose: '2026-04-15',
+        prevDue: '2026-05-05',
+        nextClose: '2026-05-15',
+        nextCloseDays: 7,
+        nextDue: '2026-06-05',
+        nextDueDays: 28,
+        annualFeeDate: null,
+        annualFeeDays: null,
+        prevDueOverdue: false,
       );
       final companion = CreditCardTrackerCacheCompanion(
         id: const Value(2),
@@ -1737,7 +1935,8 @@ void main() {
 
     test('SubtasksCompanion.toString contains field values', () {
       final c = SubtasksCompanion(
-        taskLocalId: const Value(1), title: const Value('Write test'),
+        taskLocalId: const Value(1),
+        title: const Value('Write test'),
       );
       expect(c.toString(), contains('Write test'));
     });
@@ -1774,7 +1973,8 @@ void main() {
 
     test('GroceryOnHandCompanion.toString contains field values', () {
       final c = GroceryOnHandCompanion(
-        itemServerId: const Value(10), quantity: const Value(2.5),
+        itemServerId: const Value(10),
+        quantity: const Value(2.5),
       );
       expect(c.toString(), contains('2.5'));
     });

@@ -13,7 +13,8 @@ class OccurrenceListScreen extends ConsumerStatefulWidget {
   const OccurrenceListScreen({super.key});
 
   @override
-  ConsumerState<OccurrenceListScreen> createState() => _OccurrenceListScreenState();
+  ConsumerState<OccurrenceListScreen> createState() =>
+      _OccurrenceListScreenState();
 }
 
 class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
@@ -41,12 +42,14 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
   @override
   Widget build(BuildContext context) {
     final occurrencesAsync = ref.watch(occurrencesProvider);
-    final categoriesAsync  = ref.watch(categoriesProvider);
-    final eventsAsync      = ref.watch(eventsProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final eventsAsync = ref.watch(eventsProvider);
 
     return occurrencesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => const Center(child: Text('Failed to load occurrences — try refreshing')),
+      error: (e, _) => const Center(
+        child: Text('Failed to load occurrences — try refreshing'),
+      ),
       data: (occurrences) {
         final categories = categoriesAsync.value ?? [];
         final catMap = {for (final c in categories) c.serverId: c};
@@ -73,7 +76,9 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
         // Days-ahead filter: show past (overdue) + upcoming within the window.
         final endDate = today.add(Duration(days: _daysAhead));
         final endDateStr = endDate.toIso8601DateString();
-        filtered = filtered.where((o) => o.occurrenceDate.compareTo(endDateStr) <= 0).toList();
+        filtered = filtered
+            .where((o) => o.occurrenceDate.compareTo(endDateStr) <= 0)
+            .toList();
 
         // Sort: overdue first, then by date
         filtered.sort((a, b) {
@@ -97,7 +102,9 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
             ),
             Expanded(
               child: filtered.isEmpty
-                  ? const Center(child: Text('No occurrences', style: AppText.small))
+                  ? const Center(
+                      child: Text('No occurrences', style: AppText.small),
+                    )
                   : ListView.separated(
                       padding: const EdgeInsets.all(12),
                       itemCount: filtered.length,
@@ -142,7 +149,9 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
     if (occ.serverId == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sync first to create a task from this occurrence')),
+        const SnackBar(
+          content: Text('Sync first to create a task from this occurrence'),
+        ),
       );
       return;
     }
@@ -151,15 +160,15 @@ class _OccurrenceListScreenState extends ConsumerState<OccurrenceListScreen> {
       if (!mounted) return;
       await ref.read(syncStateProvider.notifier).sync();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Task created')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Task created')));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create task — $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to create task — $e')));
     }
   }
 }
@@ -202,11 +211,19 @@ class _Toolbar extends StatelessWidget {
                   decoration: const InputDecoration(
                     labelText: 'Status',
                     isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                   ),
                   style: AppText.small,
                   items: statusOptions
-                      .map((s) => DropdownMenuItem(value: s, child: Text(s == 'all' ? 'All' : s)))
+                      .map(
+                        (s) => DropdownMenuItem(
+                          value: s,
+                          child: Text(s == 'all' ? 'All' : s),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) => v != null ? onStatusChanged(v) : null,
                 ),
@@ -218,11 +235,17 @@ class _Toolbar extends StatelessWidget {
                   decoration: const InputDecoration(
                     labelText: 'Days ahead',
                     isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                   ),
                   style: AppText.small,
                   items: _daysOptions
-                      .map((d) => DropdownMenuItem(value: d, child: Text('$d days')))
+                      .map(
+                        (d) =>
+                            DropdownMenuItem(value: d, child: Text('$d days')),
+                      )
                       .toList(),
                   onChanged: (v) => v != null ? onDaysAheadChanged(v) : null,
                 ),
@@ -239,8 +262,13 @@ class _Toolbar extends StatelessWidget {
             ),
             style: AppText.small,
             items: [
-              const DropdownMenuItem(value: null, child: Text('All categories')),
-              ...categories.map((c) => DropdownMenuItem(value: c.serverId, child: Text(c.name))),
+              const DropdownMenuItem(
+                value: null,
+                child: Text('All categories'),
+              ),
+              ...categories.map(
+                (c) => DropdownMenuItem(value: c.serverId, child: Text(c.name)),
+              ),
             ],
             onChanged: onCategoryChanged,
           ),
@@ -310,7 +338,11 @@ class _OccurrenceRow extends StatelessWidget {
                   ),
                   if (cat != null) ...[
                     const SizedBox(height: 3),
-                    CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
+                    CategoryBadge(
+                      name: cat.name,
+                      color: cat.color,
+                      icon: cat.icon,
+                    ),
                   ],
                 ],
               ),
@@ -322,7 +354,10 @@ class _OccurrenceRow extends StatelessWidget {
               children: [
                 StatusBadge(occurrence.status),
                 const SizedBox(height: 4),
-                _QuickActions(status: occurrence.status, onAction: onStatusChange),
+                _QuickActions(
+                  status: occurrence.status,
+                  onAction: onStatusChange,
+                ),
               ],
             ),
           ],
@@ -362,7 +397,9 @@ class _OccurrenceRow extends StatelessWidget {
   static String _relDate(String iso, DateTime today) {
     try {
       final d = DateTime.parse(iso);
-      final diff = d.difference(DateTime(today.year, today.month, today.day)).inDays;
+      final diff = d
+          .difference(DateTime(today.year, today.month, today.day))
+          .inDays;
       if (diff == 0) return 'Today';
       if (diff == 1) return 'Tomorrow';
       if (diff == -1) return 'Yesterday';
@@ -387,18 +424,35 @@ class _QuickActions extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (status != OccurrenceStatus.completed)
-          _IconBtn(icon: Icons.check_circle_outline, color: AppColors.btnGreen, onTap: () => onAction(OccurrenceStatus.completed)),
+          _IconBtn(
+            icon: Icons.check_circle_outline,
+            color: AppColors.btnGreen,
+            onTap: () => onAction(OccurrenceStatus.completed),
+          ),
         if (status != OccurrenceStatus.skipped)
-          _IconBtn(icon: Icons.skip_next_rounded, color: textMuted, onTap: () => onAction(OccurrenceStatus.skipped)),
-        if (status == OccurrenceStatus.completed || status == OccurrenceStatus.skipped)
-          _IconBtn(icon: Icons.replay_rounded, color: AppColors.btnBlue, onTap: () => onAction(OccurrenceStatus.upcoming)),
+          _IconBtn(
+            icon: Icons.skip_next_rounded,
+            color: textMuted,
+            onTap: () => onAction(OccurrenceStatus.skipped),
+          ),
+        if (status == OccurrenceStatus.completed ||
+            status == OccurrenceStatus.skipped)
+          _IconBtn(
+            icon: Icons.replay_rounded,
+            color: AppColors.btnBlue,
+            onTap: () => onAction(OccurrenceStatus.upcoming),
+          ),
       ],
     );
   }
 }
 
 class _IconBtn extends StatelessWidget {
-  const _IconBtn({required this.icon, required this.color, required this.onTap});
+  const _IconBtn({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
 
   final IconData icon;
   final Color color;
@@ -471,7 +525,11 @@ class _DetailSheet extends StatelessWidget {
           if (cat != null)
             _DetailRow(
               label: 'CATEGORY',
-              child: CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
+              child: CategoryBadge(
+                name: cat.name,
+                color: cat.color,
+                icon: cat.icon,
+              ),
             ),
           if (event?.priority != null)
             _DetailRow(label: 'PRIORITY', value: event!.priority),
@@ -486,25 +544,38 @@ class _DetailSheet extends StatelessWidget {
                 _ActionBtn(
                   label: 'Mark Done',
                   color: AppColors.btnGreen,
-                  onTap: () { onStatusChange(OccurrenceStatus.completed); Navigator.pop(context); },
+                  onTap: () {
+                    onStatusChange(OccurrenceStatus.completed);
+                    Navigator.pop(context);
+                  },
                 ),
               if (occurrence.status != OccurrenceStatus.skipped)
                 _ActionBtn(
                   label: 'Skip',
                   color: colors.btnGrayBg,
                   textColor: colors.btnGrayFg,
-                  onTap: () { onStatusChange(OccurrenceStatus.skipped); Navigator.pop(context); },
+                  onTap: () {
+                    onStatusChange(OccurrenceStatus.skipped);
+                    Navigator.pop(context);
+                  },
                 ),
-              if (occurrence.status == OccurrenceStatus.completed || occurrence.status == OccurrenceStatus.skipped)
+              if (occurrence.status == OccurrenceStatus.completed ||
+                  occurrence.status == OccurrenceStatus.skipped)
                 _ActionBtn(
                   label: 'Reopen',
                   color: AppColors.btnBlue,
-                  onTap: () { onStatusChange(OccurrenceStatus.upcoming); Navigator.pop(context); },
+                  onTap: () {
+                    onStatusChange(OccurrenceStatus.upcoming);
+                    Navigator.pop(context);
+                  },
                 ),
               _ActionBtn(
                 label: '→ Task',
                 color: const Color(0xFF7C3AED),
-                onTap: () { Navigator.pop(context); onCreateTask(); },
+                onTap: () {
+                  Navigator.pop(context);
+                  onCreateTask();
+                },
               ),
               _ActionBtn(
                 label: 'Delete',
@@ -516,11 +587,19 @@ class _DetailSheet extends StatelessWidget {
                       title: const Text('Delete occurrence?'),
                       content: const Text('This cannot be undone.'),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
                         ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.btnRed),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.btnRed,
+                          ),
                           onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
                       ],
                     ),
@@ -563,7 +642,12 @@ class _DetailRow extends StatelessWidget {
 }
 
 class _ActionBtn extends StatelessWidget {
-  const _ActionBtn({required this.label, required this.color, required this.onTap, this.textColor});
+  const _ActionBtn({
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.textColor,
+  });
 
   final String label;
   final Color color;

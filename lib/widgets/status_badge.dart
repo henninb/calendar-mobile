@@ -11,11 +11,27 @@ class StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final (bg, fg, label) = switch (status) {
-      OccurrenceStatus.upcoming  => (colors.upcomingBg,  colors.upcomingFg,  'UPCOMING'),
-      OccurrenceStatus.overdue   => (colors.overdueBg,   colors.overdueFg,   'OVERDUE'),
-      OccurrenceStatus.completed => (colors.completedBg, colors.completedFg, 'DONE'),
-      OccurrenceStatus.skipped   => (colors.skippedBg,   colors.skippedFg,   'SKIPPED'),
-      _                          => (colors.skippedBg,   colors.skippedFg,   status.toUpperCase()),
+      OccurrenceStatus.upcoming => (
+        colors.upcomingBg,
+        colors.upcomingFg,
+        'UPCOMING',
+      ),
+      OccurrenceStatus.overdue => (
+        colors.overdueBg,
+        colors.overdueFg,
+        'OVERDUE',
+      ),
+      OccurrenceStatus.completed => (
+        colors.completedBg,
+        colors.completedFg,
+        'DONE',
+      ),
+      OccurrenceStatus.skipped => (
+        colors.skippedBg,
+        colors.skippedFg,
+        'SKIPPED',
+      ),
+      _ => (colors.skippedBg, colors.skippedFg, status.toUpperCase()),
     };
     return _BadgeChip(bg: bg, fg: fg, label: label);
   }
@@ -30,11 +46,15 @@ class TaskStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final (bg, fg, label) = switch (status) {
-      TaskStatus.todo       => (colors.upcomingBg,  colors.upcomingFg,  'TODO'),
-      TaskStatus.inProgress => (colors.warningBg,   colors.offlineFg,   'IN PROGRESS'),
-      TaskStatus.done       => (colors.completedBg, colors.completedFg, 'DONE'),
-      TaskStatus.cancelled  => (colors.skippedBg,   colors.skippedFg,   'CANCELLED'),
-      _                     => (colors.skippedBg,   colors.skippedFg,   status.toUpperCase()),
+      TaskStatus.todo => (colors.upcomingBg, colors.upcomingFg, 'TODO'),
+      TaskStatus.inProgress => (
+        colors.warningBg,
+        colors.offlineFg,
+        'IN PROGRESS',
+      ),
+      TaskStatus.done => (colors.completedBg, colors.completedFg, 'DONE'),
+      TaskStatus.cancelled => (colors.skippedBg, colors.skippedFg, 'CANCELLED'),
+      _ => (colors.skippedBg, colors.skippedFg, status.toUpperCase()),
     };
     return _BadgeChip(bg: bg, fg: fg, label: label);
   }
@@ -49,10 +69,10 @@ class PriorityBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final textMuted = AppColors.of(context).textMuted;
     final (color, label) = switch (priority) {
-      'high'   => (AppColors.priorityHigh,   'HIGH'),
+      'high' => (AppColors.priorityHigh, 'HIGH'),
       'medium' => (AppColors.priorityMedium, 'MED'),
-      'low'    => (AppColors.priorityLow,    'LOW'),
-      _        => (textMuted,                priority.toUpperCase()),
+      'low' => (AppColors.priorityLow, 'LOW'),
+      _ => (textMuted, priority.toUpperCase()),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -76,11 +96,7 @@ class PriorityBadge extends StatelessWidget {
 
 // Shared filled-chip renderer used by StatusBadge and TaskStatusBadge.
 class _BadgeChip extends StatelessWidget {
-  const _BadgeChip({
-    required this.bg,
-    required this.fg,
-    required this.label,
-  });
+  const _BadgeChip({required this.bg, required this.fg, required this.label});
 
   final Color bg;
   final Color fg;

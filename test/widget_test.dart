@@ -24,10 +24,7 @@ void main() {
 
     expect(find.text('Calendar'), findsOneWidget);
     expect(theme.appBarTheme.backgroundColor, AppColors.darkSurface);
-    expect(
-      theme.floatingActionButtonTheme.backgroundColor,
-      AppColors.primary,
-    );
+    expect(theme.floatingActionButtonTheme.backgroundColor, AppColors.primary);
     expect(chip.label, isA<Text>());
   });
 }

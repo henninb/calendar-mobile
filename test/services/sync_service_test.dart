@@ -27,12 +27,18 @@ void main() {
 
   group('SyncService.fullRefresh', () {
     test('refreshes categories successfully', () async {
-      when(() => mockApi.fetchCategories()).thenAnswer((_) async => [
-            const ApiCategory(id: 1, name: 'Work', color: '#ff0000', icon: '💼'),
-          ]);
+      when(() => mockApi.fetchCategories()).thenAnswer(
+        (_) async => [
+          const ApiCategory(id: 1, name: 'Work', color: '#ff0000', icon: '💼'),
+        ],
+      );
       when(() => mockApi.fetchPersons()).thenAnswer((_) async => []);
-      when(() => mockApi.fetchOccurrences(startDate: any(named: 'startDate'), endDate: any(named: 'endDate')))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockApi.fetchOccurrences(
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => []);
       when(() => mockApi.fetchTasks()).thenAnswer((_) async => []);
       when(() => mockApi.fetchCreditCards()).thenAnswer((_) async => []);
       when(() => mockApi.fetchTrackerRows()).thenAnswer((_) async => []);
@@ -53,8 +59,12 @@ void main() {
       when(() => mockApi.fetchCategories()).thenThrow(Exception('API Error'));
       // ... mock others as empty
       when(() => mockApi.fetchPersons()).thenAnswer((_) async => []);
-      when(() => mockApi.fetchOccurrences(startDate: any(named: 'startDate'), endDate: any(named: 'endDate')))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockApi.fetchOccurrences(
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => []);
       when(() => mockApi.fetchTasks()).thenAnswer((_) async => []);
       when(() => mockApi.fetchCreditCards()).thenAnswer((_) async => []);
       when(() => mockApi.fetchTrackerRows()).thenAnswer((_) async => []);
@@ -79,17 +89,19 @@ void main() {
         ),
       );
 
-      when(() => mockApi.createTask(any())).thenAnswer((_) async => ApiTask(
-            id: 500,
-            title: 'New Task',
-            status: 'todo',
-            priority: 'medium',
-            recurrence: 'none',
-            order: 0,
-            subtasks: [],
-            createdAt: '2026-01-01',
-            updatedAt: '2026-01-01',
-          ));
+      when(() => mockApi.createTask(any())).thenAnswer(
+        (_) async => ApiTask(
+          id: 500,
+          title: 'New Task',
+          status: 'todo',
+          priority: 'medium',
+          recurrence: 'none',
+          order: 0,
+          subtasks: [],
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        ),
+      );
 
       final result = await syncService.pushPending();
 
@@ -113,7 +125,9 @@ void main() {
         ),
       );
 
-      when(() => mockApi.patchTask(any(), any())).thenAnswer((_) async => Response(requestOptions: RequestOptions()));
+      when(
+        () => mockApi.patchTask(any(), any()),
+      ).thenAnswer((_) async => Response(requestOptions: RequestOptions()));
 
       final result = await syncService.pushPending();
 
@@ -132,7 +146,9 @@ void main() {
         ),
       );
 
-      when(() => mockApi.deleteTask(any())).thenAnswer((_) async => Response(requestOptions: RequestOptions()));
+      when(
+        () => mockApi.deleteTask(any()),
+      ).thenAnswer((_) async => Response(requestOptions: RequestOptions()));
 
       final result = await syncService.pushPending();
 
@@ -145,24 +161,28 @@ void main() {
 
   group('SyncService.pushPending - task recovery (no serverId)', () {
     test('creates task on server when pendingUpdate has no serverId', () async {
-      final taskId = await database.insertTask(const TasksCompanion(
-        title: Value('Offline Task'),
-        syncStatus: Value(2), // pendingUpdate but never pushed
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
+      final taskId = await database.insertTask(
+        const TasksCompanion(
+          title: Value('Offline Task'),
+          syncStatus: Value(2), // pendingUpdate but never pushed
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
 
-      when(() => mockApi.createTask(any())).thenAnswer((_) async => ApiTask(
-            id: 600,
-            title: 'Offline Task',
-            status: 'todo',
-            priority: 'medium',
-            recurrence: 'none',
-            order: 0,
-            subtasks: [],
-            createdAt: '2026-01-01',
-            updatedAt: '2026-01-01',
-          ));
+      when(() => mockApi.createTask(any())).thenAnswer(
+        (_) async => ApiTask(
+          id: 600,
+          title: 'Offline Task',
+          status: 'todo',
+          priority: 'medium',
+          recurrence: 'none',
+          order: 0,
+          subtasks: [],
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        ),
+      );
 
       final result = await syncService.pushPending();
 
@@ -176,12 +196,14 @@ void main() {
     });
 
     test('deletes locally when pendingDelete has no serverId', () async {
-      final taskId = await database.insertTask(const TasksCompanion(
-        title: Value('Never-pushed Deleted Task'),
-        syncStatus: Value(3), // pendingDelete but no serverId
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
+      final taskId = await database.insertTask(
+        const TasksCompanion(
+          title: Value('Never-pushed Deleted Task'),
+          syncStatus: Value(3), // pendingDelete but no serverId
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
 
       final result = await syncService.pushPending();
 
@@ -197,27 +219,37 @@ void main() {
     late int taskId;
 
     setUp(() async {
-      taskId = await database.insertTask(const TasksCompanion(
-        serverId: Value(10),
-        title: Value('Parent Task'),
-        syncStatus: Value(0),
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
+      taskId = await database.insertTask(
+        const TasksCompanion(
+          serverId: Value(10),
+          title: Value('Parent Task'),
+          syncStatus: Value(0),
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
     });
 
     test('creates subtask on server when pendingCreate', () async {
-      final subId = await database.insertSubtask(SubtasksCompanion(
-        taskLocalId: Value(taskId),
-        taskServerId: const Value(10),
-        title: const Value('New Subtask'),
-        status: const Value('todo'),
-        syncStatus: const Value(1), // pendingCreate
-      ));
+      final subId = await database.insertSubtask(
+        SubtasksCompanion(
+          taskLocalId: Value(taskId),
+          taskServerId: const Value(10),
+          title: const Value('New Subtask'),
+          status: const Value('todo'),
+          syncStatus: const Value(1), // pendingCreate
+        ),
+      );
 
-      when(() => mockApi.createSubtask(any(), any()))
-          .thenAnswer((_) async => const ApiSubtask(
-                id: 700, taskId: 10, title: 'New Subtask', status: 'todo', order: 0));
+      when(() => mockApi.createSubtask(any(), any())).thenAnswer(
+        (_) async => const ApiSubtask(
+          id: 700,
+          taskId: 10,
+          title: 'New Subtask',
+          status: 'todo',
+          order: 0,
+        ),
+      );
 
       final result = await syncService.pushPending();
 
@@ -228,95 +260,126 @@ void main() {
       verify(() => mockApi.createSubtask(10, any())).called(1);
     });
 
-    test('patches subtask on server when pendingUpdate with serverId', () async {
-      await database.insertSubtask(SubtasksCompanion(
-        serverId: const Value(701),
-        taskLocalId: Value(taskId),
-        taskServerId: const Value(10),
-        title: const Value('Updated Subtask'),
-        status: const Value('done'),
-        syncStatus: const Value(2), // pendingUpdate
-      ));
+    test(
+      'patches subtask on server when pendingUpdate with serverId',
+      () async {
+        await database.insertSubtask(
+          SubtasksCompanion(
+            serverId: const Value(701),
+            taskLocalId: Value(taskId),
+            taskServerId: const Value(10),
+            title: const Value('Updated Subtask'),
+            status: const Value('done'),
+            syncStatus: const Value(2), // pendingUpdate
+          ),
+        );
 
-      when(() => mockApi.patchSubtask(any(), any(), any()))
-          .thenAnswer((_) async {});
+        when(
+          () => mockApi.patchSubtask(any(), any(), any()),
+        ).thenAnswer((_) async {});
 
-      final result = await syncService.pushPending();
+        final result = await syncService.pushPending();
 
-      expect(result.pushed, 1);
-      verify(() => mockApi.patchSubtask(10, 701, any())).called(1);
-      verifyNever(() => mockApi.createSubtask(any(), any()));
-    });
+        expect(result.pushed, 1);
+        verify(() => mockApi.patchSubtask(10, 701, any())).called(1);
+        verifyNever(() => mockApi.createSubtask(any(), any()));
+      },
+    );
 
-    test('deletes subtask on server when pendingDelete with serverId', () async {
-      final subId = await database.insertSubtask(SubtasksCompanion(
-        serverId: const Value(702),
-        taskLocalId: Value(taskId),
-        taskServerId: const Value(10),
-        title: const Value('Deleted Subtask'),
-        status: const Value('todo'),
-        syncStatus: const Value(3), // pendingDelete
-      ));
+    test(
+      'deletes subtask on server when pendingDelete with serverId',
+      () async {
+        final subId = await database.insertSubtask(
+          SubtasksCompanion(
+            serverId: const Value(702),
+            taskLocalId: Value(taskId),
+            taskServerId: const Value(10),
+            title: const Value('Deleted Subtask'),
+            status: const Value('todo'),
+            syncStatus: const Value(3), // pendingDelete
+          ),
+        );
 
-      when(() => mockApi.deleteSubtask(any(), any())).thenAnswer((_) async {});
+        when(
+          () => mockApi.deleteSubtask(any(), any()),
+        ).thenAnswer((_) async {});
 
-      final result = await syncService.pushPending();
+        final result = await syncService.pushPending();
 
-      expect(result.pushed, 1);
-      final subs = await database.getSubtasksForTask(taskId);
-      expect(subs, isEmpty);
-      verify(() => mockApi.deleteSubtask(10, 702)).called(1);
-    });
+        expect(result.pushed, 1);
+        final subs = await database.getSubtasksForTask(taskId);
+        expect(subs, isEmpty);
+        verify(() => mockApi.deleteSubtask(10, 702)).called(1);
+      },
+    );
 
-    test('creates subtask on server when pendingUpdate has no serverId', () async {
-      final subId = await database.insertSubtask(SubtasksCompanion(
-        taskLocalId: Value(taskId),
-        taskServerId: const Value(10),
-        title: const Value('Offline Subtask'),
-        status: const Value('todo'),
-        syncStatus: const Value(2), // pendingUpdate but never pushed
-      ));
+    test(
+      'creates subtask on server when pendingUpdate has no serverId',
+      () async {
+        final subId = await database.insertSubtask(
+          SubtasksCompanion(
+            taskLocalId: Value(taskId),
+            taskServerId: const Value(10),
+            title: const Value('Offline Subtask'),
+            status: const Value('todo'),
+            syncStatus: const Value(2), // pendingUpdate but never pushed
+          ),
+        );
 
-      when(() => mockApi.createSubtask(any(), any()))
-          .thenAnswer((_) async => const ApiSubtask(
-                id: 703, taskId: 10, title: 'Offline Subtask', status: 'todo', order: 0));
+        when(() => mockApi.createSubtask(any(), any())).thenAnswer(
+          (_) async => const ApiSubtask(
+            id: 703,
+            taskId: 10,
+            title: 'Offline Subtask',
+            status: 'todo',
+            order: 0,
+          ),
+        );
 
-      final result = await syncService.pushPending();
+        final result = await syncService.pushPending();
 
-      expect(result.pushed, 1);
-      final subs = await database.getSubtasksForTask(taskId);
-      expect(subs.first.serverId, 703);
-      expect(subs.first.syncStatus, 0);
-      verify(() => mockApi.createSubtask(10, any())).called(1);
-      verifyNever(() => mockApi.patchSubtask(any(), any(), any()));
-    });
+        expect(result.pushed, 1);
+        final subs = await database.getSubtasksForTask(taskId);
+        expect(subs.first.serverId, 703);
+        expect(subs.first.syncStatus, 0);
+        verify(() => mockApi.createSubtask(10, any())).called(1);
+        verifyNever(() => mockApi.patchSubtask(any(), any(), any()));
+      },
+    );
 
-    test('deletes subtask locally when pendingDelete has no serverId', () async {
-      final subId = await database.insertSubtask(SubtasksCompanion(
-        taskLocalId: Value(taskId),
-        taskServerId: const Value(10),
-        title: const Value('Never-pushed Deleted Subtask'),
-        status: const Value('todo'),
-        syncStatus: const Value(3), // pendingDelete but no serverId
-      ));
+    test(
+      'deletes subtask locally when pendingDelete has no serverId',
+      () async {
+        final subId = await database.insertSubtask(
+          SubtasksCompanion(
+            taskLocalId: Value(taskId),
+            taskServerId: const Value(10),
+            title: const Value('Never-pushed Deleted Subtask'),
+            status: const Value('todo'),
+            syncStatus: const Value(3), // pendingDelete but no serverId
+          ),
+        );
 
-      final result = await syncService.pushPending();
+        final result = await syncService.pushPending();
 
-      expect(result.pushed, 1);
-      final subs = await database.getSubtasksForTask(taskId);
-      expect(subs, isEmpty);
-      verifyNever(() => mockApi.deleteSubtask(any(), any()));
-    });
+        expect(result.pushed, 1);
+        final subs = await database.getSubtasksForTask(taskId);
+        expect(subs, isEmpty);
+        verifyNever(() => mockApi.deleteSubtask(any(), any()));
+      },
+    );
   });
 
   group('SyncService._refreshTasks pending-mutation protection', () {
     void stubOtherRefreshApis() {
       when(() => mockApi.fetchCategories()).thenAnswer((_) async => []);
       when(() => mockApi.fetchPersons()).thenAnswer((_) async => []);
-      when(() => mockApi.fetchOccurrences(
-            startDate: any(named: 'startDate'),
-            endDate: any(named: 'endDate'),
-          )).thenAnswer((_) async => []);
+      when(
+        () => mockApi.fetchOccurrences(
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => []);
       when(() => mockApi.fetchCreditCards()).thenAnswer((_) async => []);
       when(() => mockApi.fetchTrackerRows()).thenAnswer((_) async => []);
       when(() => mockApi.fetchStores()).thenAnswer((_) async => []);
@@ -325,140 +388,194 @@ void main() {
       when(() => mockApi.fetchGroceryLists()).thenAnswer((_) async => []);
     }
 
-    ApiTask serverTask(int id, String title, {List<ApiSubtask> subtasks = const []}) =>
-        ApiTask(
-          id: id,
-          title: title,
-          status: 'todo',
-          priority: 'medium',
-          recurrence: 'none',
-          order: 0,
-          subtasks: subtasks,
-          createdAt: '2026-01-01',
-          updatedAt: '2026-01-01',
-        );
+    ApiTask serverTask(
+      int id,
+      String title, {
+      List<ApiSubtask> subtasks = const [],
+    }) => ApiTask(
+      id: id,
+      title: title,
+      status: 'todo',
+      priority: 'medium',
+      recurrence: 'none',
+      order: 0,
+      subtasks: subtasks,
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+    );
 
     test('does not overwrite a pendingUpdate task on fullRefresh', () async {
-      await database.insertTask(const TasksCompanion(
-        serverId: Value(100),
-        title: Value('Local Modified Title'),
-        syncStatus: Value(2), // pendingUpdate
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
+      await database.insertTask(
+        const TasksCompanion(
+          serverId: Value(100),
+          title: Value('Local Modified Title'),
+          syncStatus: Value(2), // pendingUpdate
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
 
-      when(() => mockApi.fetchTasks())
-          .thenAnswer((_) async => [serverTask(100, 'Server Title')]);
+      when(
+        () => mockApi.fetchTasks(),
+      ).thenAnswer((_) async => [serverTask(100, 'Server Title')]);
       stubOtherRefreshApis();
 
       await syncService.fullRefresh();
 
       final tasks = await database.getTasks();
       expect(tasks.length, 1);
-      expect(tasks.first.syncStatus, 2, reason: 'pendingUpdate must survive fullRefresh');
-      expect(tasks.first.title, 'Local Modified Title',
-          reason: 'local changes must not be reverted by the server pull');
+      expect(
+        tasks.first.syncStatus,
+        2,
+        reason: 'pendingUpdate must survive fullRefresh',
+      );
+      expect(
+        tasks.first.title,
+        'Local Modified Title',
+        reason: 'local changes must not be reverted by the server pull',
+      );
     });
 
     test('does not overwrite a pendingDelete task on fullRefresh', () async {
-      await database.insertTask(const TasksCompanion(
-        serverId: Value(100),
-        title: Value('Task To Delete'),
-        syncStatus: Value(3), // pendingDelete
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
+      await database.insertTask(
+        const TasksCompanion(
+          serverId: Value(100),
+          title: Value('Task To Delete'),
+          syncStatus: Value(3), // pendingDelete
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
 
-      when(() => mockApi.fetchTasks())
-          .thenAnswer((_) async => [serverTask(100, 'Task To Delete')]);
+      when(
+        () => mockApi.fetchTasks(),
+      ).thenAnswer((_) async => [serverTask(100, 'Task To Delete')]);
       stubOtherRefreshApis();
 
       await syncService.fullRefresh();
 
       final tasks = await database.getTasks();
       expect(tasks.length, 1);
-      expect(tasks.first.syncStatus, 3, reason: 'pendingDelete must survive fullRefresh');
+      expect(
+        tasks.first.syncStatus,
+        3,
+        reason: 'pendingDelete must survive fullRefresh',
+      );
     });
 
     test('does not overwrite a pending subtask on fullRefresh', () async {
-      final taskId = await database.insertTask(const TasksCompanion(
-        serverId: Value(100),
-        title: Value('Synced Task'),
-        syncStatus: Value(0),
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
-      await database.insertSubtask(SubtasksCompanion(
-        serverId: const Value(200),
-        taskLocalId: Value(taskId),
-        taskServerId: const Value(100),
-        title: const Value('Local Modified Subtask'),
-        status: const Value('open'),
-        syncStatus: const Value(2), // pendingUpdate
-      ));
+      final taskId = await database.insertTask(
+        const TasksCompanion(
+          serverId: Value(100),
+          title: Value('Synced Task'),
+          syncStatus: Value(0),
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
+      await database.insertSubtask(
+        SubtasksCompanion(
+          serverId: const Value(200),
+          taskLocalId: Value(taskId),
+          taskServerId: const Value(100),
+          title: const Value('Local Modified Subtask'),
+          status: const Value('open'),
+          syncStatus: const Value(2), // pendingUpdate
+        ),
+      );
 
-      when(() => mockApi.fetchTasks()).thenAnswer((_) async => [
-            serverTask(100, 'Synced Task', subtasks: [
+      when(() => mockApi.fetchTasks()).thenAnswer(
+        (_) async => [
+          serverTask(
+            100,
+            'Synced Task',
+            subtasks: [
               const ApiSubtask(
-                  id: 200,
-                  taskId: 100,
-                  title: 'Server Subtask Title',
-                  status: 'open',
-                  order: 0),
-            ]),
-          ]);
+                id: 200,
+                taskId: 100,
+                title: 'Server Subtask Title',
+                status: 'open',
+                order: 0,
+              ),
+            ],
+          ),
+        ],
+      );
       stubOtherRefreshApis();
 
       await syncService.fullRefresh();
 
       final subtasks = await database.getSubtasksForTask(taskId);
       expect(subtasks.length, 1);
-      expect(subtasks.first.syncStatus, 2,
-          reason: 'pending subtask syncStatus must survive fullRefresh');
-      expect(subtasks.first.title, 'Local Modified Subtask',
-          reason: 'local subtask changes must not be reverted');
+      expect(
+        subtasks.first.syncStatus,
+        2,
+        reason: 'pending subtask syncStatus must survive fullRefresh',
+      );
+      expect(
+        subtasks.first.title,
+        'Local Modified Subtask',
+        reason: 'local subtask changes must not be reverted',
+      );
     });
 
     test('does not touch subtasks of a pending task on fullRefresh', () async {
-      final taskId = await database.insertTask(const TasksCompanion(
-        serverId: Value(100),
-        title: Value('Local Modified Task'),
-        syncStatus: Value(2), // pendingUpdate
-        createdAt: Value('2026-01-01'),
-        updatedAt: Value('2026-01-01'),
-      ));
-      await database.insertSubtask(SubtasksCompanion(
-        serverId: const Value(200),
-        taskLocalId: Value(taskId),
-        taskServerId: const Value(100),
-        title: const Value('Local Subtask'),
-        status: const Value('open'),
-        syncStatus: const Value(0),
-      ));
+      final taskId = await database.insertTask(
+        const TasksCompanion(
+          serverId: Value(100),
+          title: Value('Local Modified Task'),
+          syncStatus: Value(2), // pendingUpdate
+          createdAt: Value('2026-01-01'),
+          updatedAt: Value('2026-01-01'),
+        ),
+      );
+      await database.insertSubtask(
+        SubtasksCompanion(
+          serverId: const Value(200),
+          taskLocalId: Value(taskId),
+          taskServerId: const Value(100),
+          title: const Value('Local Subtask'),
+          status: const Value('open'),
+          syncStatus: const Value(0),
+        ),
+      );
 
-      when(() => mockApi.fetchTasks()).thenAnswer((_) async => [
-            serverTask(100, 'Server Task Title', subtasks: [
+      when(() => mockApi.fetchTasks()).thenAnswer(
+        (_) async => [
+          serverTask(
+            100,
+            'Server Task Title',
+            subtasks: [
               const ApiSubtask(
-                  id: 200,
-                  taskId: 100,
-                  title: 'Server Subtask Title',
-                  status: 'done',
-                  order: 0),
-            ]),
-          ]);
+                id: 200,
+                taskId: 100,
+                title: 'Server Subtask Title',
+                status: 'done',
+                order: 0,
+              ),
+            ],
+          ),
+        ],
+      );
       stubOtherRefreshApis();
 
       await syncService.fullRefresh();
 
       final tasks = await database.getTasks();
-      expect(tasks.first.title, 'Local Modified Task',
-          reason: 'pending task title must not be reverted');
+      expect(
+        tasks.first.title,
+        'Local Modified Task',
+        reason: 'pending task title must not be reverted',
+      );
       expect(tasks.first.syncStatus, 2);
 
       final subtasks = await database.getSubtasksForTask(taskId);
       expect(subtasks.length, 1);
-      expect(subtasks.first.title, 'Local Subtask',
-          reason: 'subtasks of a pending task must not be overwritten');
+      expect(
+        subtasks.first.title,
+        'Local Subtask',
+        reason: 'subtasks of a pending task must not be overwritten',
+      );
     });
   });
 
@@ -479,26 +596,32 @@ void main() {
         ),
       ]);
 
-      when(() => mockApi.fetchTasks()).thenAnswer((_) async => [
-            ApiTask(
-              id: 100,
-              title: 'Keep Me',
-              status: 'todo',
-              priority: 'medium',
-              recurrence: 'none',
-              order: 0,
-              subtasks: [],
-              createdAt: '2026-01-01',
-              updatedAt: '2026-01-01',
-            ),
-          ]);
+      when(() => mockApi.fetchTasks()).thenAnswer(
+        (_) async => [
+          ApiTask(
+            id: 100,
+            title: 'Keep Me',
+            status: 'todo',
+            priority: 'medium',
+            recurrence: 'none',
+            order: 0,
+            subtasks: [],
+            createdAt: '2026-01-01',
+            updatedAt: '2026-01-01',
+          ),
+        ],
+      );
 
       // We need to call the private method or trigger it via fullRefresh
       // Trigger via fullRefresh but mock everything else to succeed
       when(() => mockApi.fetchCategories()).thenAnswer((_) async => []);
       when(() => mockApi.fetchPersons()).thenAnswer((_) async => []);
-      when(() => mockApi.fetchOccurrences(startDate: any(named: 'startDate'), endDate: any(named: 'endDate')))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockApi.fetchOccurrences(
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => []);
       when(() => mockApi.fetchCreditCards()).thenAnswer((_) async => []);
       when(() => mockApi.fetchTrackerRows()).thenAnswer((_) async => []);
       when(() => mockApi.fetchStores()).thenAnswer((_) async => []);

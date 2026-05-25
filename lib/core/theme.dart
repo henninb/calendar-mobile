@@ -174,65 +174,64 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? btnGrayFg,
     Color? upcomingBg,
     Color? upcomingFg,
-  }) =>
-      AppColors(
-        background: background ?? this.background,
-        surface: surface ?? this.surface,
-        divider: divider ?? this.divider,
-        dividerLight: dividerLight ?? this.dividerLight,
-        tableHeader: tableHeader ?? this.tableHeader,
-        textPrimary: textPrimary ?? this.textPrimary,
-        textSecondary: textSecondary ?? this.textSecondary,
-        textMuted: textMuted ?? this.textMuted,
-        textLight: textLight ?? this.textLight,
-        overdueBg: overdueBg ?? this.overdueBg,
-        overdueFg: overdueFg ?? this.overdueFg,
-        completedBg: completedBg ?? this.completedBg,
-        completedFg: completedFg ?? this.completedFg,
-        skippedBg: skippedBg ?? this.skippedBg,
-        skippedFg: skippedFg ?? this.skippedFg,
-        warningBg: warningBg ?? this.warningBg,
-        warningFg: warningFg ?? this.warningFg,
-        offlineBanner: offlineBanner ?? this.offlineBanner,
-        offlineFg: offlineFg ?? this.offlineFg,
-        pendingBanner: pendingBanner ?? this.pendingBanner,
-        pendingFg: pendingFg ?? this.pendingFg,
-        pendingBorder: pendingBorder ?? this.pendingBorder,
-        btnGrayBg: btnGrayBg ?? this.btnGrayBg,
-        btnGrayFg: btnGrayFg ?? this.btnGrayFg,
-        upcomingBg: upcomingBg ?? this.upcomingBg,
-        upcomingFg: upcomingFg ?? this.upcomingFg,
-      );
+  }) => AppColors(
+    background: background ?? this.background,
+    surface: surface ?? this.surface,
+    divider: divider ?? this.divider,
+    dividerLight: dividerLight ?? this.dividerLight,
+    tableHeader: tableHeader ?? this.tableHeader,
+    textPrimary: textPrimary ?? this.textPrimary,
+    textSecondary: textSecondary ?? this.textSecondary,
+    textMuted: textMuted ?? this.textMuted,
+    textLight: textLight ?? this.textLight,
+    overdueBg: overdueBg ?? this.overdueBg,
+    overdueFg: overdueFg ?? this.overdueFg,
+    completedBg: completedBg ?? this.completedBg,
+    completedFg: completedFg ?? this.completedFg,
+    skippedBg: skippedBg ?? this.skippedBg,
+    skippedFg: skippedFg ?? this.skippedFg,
+    warningBg: warningBg ?? this.warningBg,
+    warningFg: warningFg ?? this.warningFg,
+    offlineBanner: offlineBanner ?? this.offlineBanner,
+    offlineFg: offlineFg ?? this.offlineFg,
+    pendingBanner: pendingBanner ?? this.pendingBanner,
+    pendingFg: pendingFg ?? this.pendingFg,
+    pendingBorder: pendingBorder ?? this.pendingBorder,
+    btnGrayBg: btnGrayBg ?? this.btnGrayBg,
+    btnGrayFg: btnGrayFg ?? this.btnGrayFg,
+    upcomingBg: upcomingBg ?? this.upcomingBg,
+    upcomingFg: upcomingFg ?? this.upcomingFg,
+  );
 
   @override
   AppColors lerp(AppColors other, double t) => AppColors(
-        background: Color.lerp(background, other.background, t)!,
-        surface: Color.lerp(surface, other.surface, t)!,
-        divider: Color.lerp(divider, other.divider, t)!,
-        dividerLight: Color.lerp(dividerLight, other.dividerLight, t)!,
-        tableHeader: Color.lerp(tableHeader, other.tableHeader, t)!,
-        textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
-        textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
-        textMuted: Color.lerp(textMuted, other.textMuted, t)!,
-        textLight: Color.lerp(textLight, other.textLight, t)!,
-        overdueBg: Color.lerp(overdueBg, other.overdueBg, t)!,
-        overdueFg: Color.lerp(overdueFg, other.overdueFg, t)!,
-        completedBg: Color.lerp(completedBg, other.completedBg, t)!,
-        completedFg: Color.lerp(completedFg, other.completedFg, t)!,
-        skippedBg: Color.lerp(skippedBg, other.skippedBg, t)!,
-        skippedFg: Color.lerp(skippedFg, other.skippedFg, t)!,
-        warningBg: Color.lerp(warningBg, other.warningBg, t)!,
-        warningFg: Color.lerp(warningFg, other.warningFg, t)!,
-        offlineBanner: Color.lerp(offlineBanner, other.offlineBanner, t)!,
-        offlineFg: Color.lerp(offlineFg, other.offlineFg, t)!,
-        pendingBanner: Color.lerp(pendingBanner, other.pendingBanner, t)!,
-        pendingFg: Color.lerp(pendingFg, other.pendingFg, t)!,
-        pendingBorder: Color.lerp(pendingBorder, other.pendingBorder, t)!,
-        btnGrayBg: Color.lerp(btnGrayBg, other.btnGrayBg, t)!,
-        btnGrayFg: Color.lerp(btnGrayFg, other.btnGrayFg, t)!,
-        upcomingBg: Color.lerp(upcomingBg, other.upcomingBg, t)!,
-        upcomingFg: Color.lerp(upcomingFg, other.upcomingFg, t)!,
-      );
+    background: Color.lerp(background, other.background, t)!,
+    surface: Color.lerp(surface, other.surface, t)!,
+    divider: Color.lerp(divider, other.divider, t)!,
+    dividerLight: Color.lerp(dividerLight, other.dividerLight, t)!,
+    tableHeader: Color.lerp(tableHeader, other.tableHeader, t)!,
+    textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
+    textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
+    textMuted: Color.lerp(textMuted, other.textMuted, t)!,
+    textLight: Color.lerp(textLight, other.textLight, t)!,
+    overdueBg: Color.lerp(overdueBg, other.overdueBg, t)!,
+    overdueFg: Color.lerp(overdueFg, other.overdueFg, t)!,
+    completedBg: Color.lerp(completedBg, other.completedBg, t)!,
+    completedFg: Color.lerp(completedFg, other.completedFg, t)!,
+    skippedBg: Color.lerp(skippedBg, other.skippedBg, t)!,
+    skippedFg: Color.lerp(skippedFg, other.skippedFg, t)!,
+    warningBg: Color.lerp(warningBg, other.warningBg, t)!,
+    warningFg: Color.lerp(warningFg, other.warningFg, t)!,
+    offlineBanner: Color.lerp(offlineBanner, other.offlineBanner, t)!,
+    offlineFg: Color.lerp(offlineFg, other.offlineFg, t)!,
+    pendingBanner: Color.lerp(pendingBanner, other.pendingBanner, t)!,
+    pendingFg: Color.lerp(pendingFg, other.pendingFg, t)!,
+    pendingBorder: Color.lerp(pendingBorder, other.pendingBorder, t)!,
+    btnGrayBg: Color.lerp(btnGrayBg, other.btnGrayBg, t)!,
+    btnGrayFg: Color.lerp(btnGrayFg, other.btnGrayFg, t)!,
+    upcomingBg: Color.lerp(upcomingBg, other.upcomingBg, t)!,
+    upcomingFg: Color.lerp(upcomingFg, other.upcomingFg, t)!,
+  );
 }
 
 // ── Text styles (color-free; theme drives default text color) ─────────────────
@@ -242,7 +241,6 @@ class AppColors extends ThemeExtension<AppColors> {
 /// Use `AppColors.of(context).textMuted` etc. when a specific semantic color is
 /// required beyond the default.
 abstract final class AppText {
-
   static const TextStyle heading = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w700,
@@ -274,29 +272,29 @@ abstract final class AppText {
 
 /// Light [ThemeData] wired with [AppColors.light].
 ThemeData buildAppTheme() => _build(
-      brightness: Brightness.light,
-      scheme: const ColorScheme.light(
-        primary: AppColors.primary,
-        onPrimary: Colors.white,
-        surface: Color(0xFFFFFFFF),
-        onSurface: Color(0xFF1E293B),
-        surfaceContainerHighest: Color(0xFFF1F5F9),
-      ),
-      colors: AppColors.light,
-    );
+  brightness: Brightness.light,
+  scheme: const ColorScheme.light(
+    primary: AppColors.primary,
+    onPrimary: Colors.white,
+    surface: Color(0xFFFFFFFF),
+    onSurface: Color(0xFF1E293B),
+    surfaceContainerHighest: Color(0xFFF1F5F9),
+  ),
+  colors: AppColors.light,
+);
 
 /// Dark [ThemeData] wired with [AppColors.dark].
 ThemeData buildDarkAppTheme() => _build(
-      brightness: Brightness.dark,
-      scheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        onPrimary: Colors.white,
-        surface: Color(0xFF1E293B),
-        onSurface: Color(0xFFE2E8F0),
-        surfaceContainerHighest: Color(0xFF0F172A),
-      ),
-      colors: AppColors.dark,
-    );
+  brightness: Brightness.dark,
+  scheme: const ColorScheme.dark(
+    primary: AppColors.primary,
+    onPrimary: Colors.white,
+    surface: Color(0xFF1E293B),
+    onSurface: Color(0xFFE2E8F0),
+    surfaceContainerHighest: Color(0xFF0F172A),
+  ),
+  colors: AppColors.dark,
+);
 
 ThemeData _build({
   required Brightness brightness,
@@ -326,8 +324,10 @@ ThemeData _build({
       backgroundColor: AppColors.darkSurface,
       selectedItemColor: Colors.white,
       unselectedItemColor: colors.textMuted,
-      selectedLabelStyle:
-          const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+      selectedLabelStyle: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+      ),
       unselectedLabelStyle: const TextStyle(fontSize: 11),
       type: BottomNavigationBarType.fixed,
       elevation: 8,
@@ -349,8 +349,7 @@ ThemeData _build({
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: colors.surface,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
         borderSide: BorderSide(color: colors.divider),
@@ -361,8 +360,7 @@ ThemeData _build({
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide:
-            const BorderSide(color: AppColors.primary, width: 1.5),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
       labelStyle: TextStyle(
         fontSize: 11,
@@ -389,8 +387,7 @@ ThemeData _build({
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColors.darkSurface,
       contentTextStyle: const TextStyle(color: Colors.white, fontSize: 13),
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       behavior: SnackBarBehavior.floating,
     ),
   );

@@ -33,14 +33,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final occurrencesAsync = ref.watch(occurrencesProvider);
-    final categoriesAsync  = ref.watch(categoriesProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
     // Fix: resolve events once at the screen level so _OccurrenceCard can do a
     // direct map lookup instead of issuing a DB query per card (N+1 fix).
-    final eventsAsync      = ref.watch(eventsProvider);
+    final eventsAsync = ref.watch(eventsProvider);
 
     return occurrencesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => const Center(child: Text('Failed to load calendar — try refreshing')),
+      error: (e, _) =>
+          const Center(child: Text('Failed to load calendar — try refreshing')),
       data: (occurrences) {
         final categories = categoriesAsync.value ?? [];
         final catMap = {for (final c in categories) c.serverId: c};
@@ -61,7 +62,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         }
 
         final selected = _selectedDay;
-        final selectedOccs = selected != null ? eventsForDay(selected) : <Occurrence>[];
+        final selectedOccs = selected != null
+            ? eventsForDay(selected)
+            : <Occurrence>[];
 
         return Column(
           children: [
@@ -72,9 +75,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             const Divider(),
             Expanded(
               child: selectedOccs.isEmpty
-                  ? const Center(
-                      child: Text('No events', style: AppText.small),
-                    )
+                  ? const Center(child: Text('No events', style: AppText.small))
                   : ListView.separated(
                       padding: const EdgeInsets.all(12),
                       itemCount: selectedOccs.length,
@@ -85,7 +86,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           occurrence: occ,
                           eventMap: eventMap,
                           catMap: catMap,
-                          onStatusChange: (newStatus) => _updateStatus(occ, newStatus),
+                          onStatusChange: (newStatus) =>
+                              _updateStatus(occ, newStatus),
                           onDelete: () => _deleteOccurrence(occ),
                         );
                       },
@@ -131,7 +133,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             color: AppColors.primary,
             shape: BoxShape.circle,
           ),
-          selectedTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          selectedTextStyle: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
           markerDecoration: const BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
@@ -247,7 +252,11 @@ class _OccurrenceCard extends StatelessWidget {
               Text(occurrence.notes!, style: AppText.small),
             ],
             const SizedBox(height: 10),
-            _ActionRow(status: occurrence.status, onStatusChange: onStatusChange, onDelete: onDelete),
+            _ActionRow(
+              status: occurrence.status,
+              onStatusChange: onStatusChange,
+              onDelete: onDelete,
+            ),
           ],
         ),
       ),
@@ -256,7 +265,11 @@ class _OccurrenceCard extends StatelessWidget {
 }
 
 class _ActionRow extends StatelessWidget {
-  const _ActionRow({required this.status, required this.onStatusChange, required this.onDelete});
+  const _ActionRow({
+    required this.status,
+    required this.onStatusChange,
+    required this.onDelete,
+  });
 
   final String status;
   final void Function(String) onStatusChange;
@@ -269,7 +282,11 @@ class _ActionRow extends StatelessWidget {
       runSpacing: 6,
       children: [
         if (status != OccurrenceStatus.completed)
-          _Btn(label: 'Done', color: AppColors.btnGreen, onTap: () => onStatusChange(OccurrenceStatus.completed)),
+          _Btn(
+            label: 'Done',
+            color: AppColors.btnGreen,
+            onTap: () => onStatusChange(OccurrenceStatus.completed),
+          ),
         if (status != OccurrenceStatus.skipped)
           _Btn(
             label: 'Skip',
@@ -277,8 +294,13 @@ class _ActionRow extends StatelessWidget {
             textColor: AppColors.of(context).btnGrayFg,
             onTap: () => onStatusChange(OccurrenceStatus.skipped),
           ),
-        if (status == OccurrenceStatus.completed || status == OccurrenceStatus.skipped)
-          _Btn(label: 'Reopen', color: AppColors.btnBlue, onTap: () => onStatusChange(OccurrenceStatus.upcoming)),
+        if (status == OccurrenceStatus.completed ||
+            status == OccurrenceStatus.skipped)
+          _Btn(
+            label: 'Reopen',
+            color: AppColors.btnBlue,
+            onTap: () => onStatusChange(OccurrenceStatus.upcoming),
+          ),
         _Btn(
           label: 'Delete',
           color: AppColors.btnRed,
@@ -289,11 +311,19 @@ class _ActionRow extends StatelessWidget {
                 title: const Text('Delete occurrence?'),
                 content: const Text('This cannot be undone.'),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
                   ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.btnRed),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.btnRed,
+                    ),
                     onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                    child: const Text(
+                      'Delete',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ],
               ),
@@ -307,7 +337,12 @@ class _ActionRow extends StatelessWidget {
 }
 
 class _Btn extends StatelessWidget {
-  const _Btn({required this.label, required this.color, required this.onTap, this.textColor});
+  const _Btn({
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.textColor,
+  });
 
   final String label;
   final Color color;

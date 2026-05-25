@@ -14,20 +14,20 @@ import '../widgets/category_badge.dart';
 // ── File-level constants & helpers ────────────────────────────────────────────
 
 final _kDateFirst = DateTime(2000);
-final _kDateLast  = DateTime(2100);
+final _kDateLast = DateTime(2100);
 
-const _kFilterActive  = 'active';
+const _kFilterActive = 'active';
 const _kDimmedOpacity = 0.55;
 
 // Section keys — used in _buildSections, _isCollapsed, and _kSectionAccents.
-const _kKeyDone     = 'done';
-const _kKeyOverdue  = 'overdue';
-const _kKeyToday    = 'today';
+const _kKeyDone = 'done';
+const _kKeyOverdue = 'overdue';
+const _kKeyToday = 'today';
 const _kKeyTomorrow = 'tomorrow';
 const _kKeyThisWeek = 'this_week';
 const _kKeyNextWeek = 'next_week';
-const _kKeyLater    = 'later';
-const _kKeyNoDate   = 'no_date';
+const _kKeyLater = 'later';
+const _kKeyNoDate = 'no_date';
 
 bool _isTaskActive(String status) =>
     status != TaskStatus.done && status != TaskStatus.cancelled;
@@ -36,16 +36,15 @@ Future<T?> _showAppSheet<T>(
   BuildContext context,
   WidgetBuilder builder, {
   bool isScrollControlled = true,
-}) =>
-    showModalBottomSheet<T>(
-      context: context,
-      isScrollControlled: isScrollControlled,
-      backgroundColor: AppColors.of(context).surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: builder,
-    );
+}) => showModalBottomSheet<T>(
+  context: context,
+  isScrollControlled: isScrollControlled,
+  backgroundColor: AppColors.of(context).surface,
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+  ),
+  builder: builder,
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -92,28 +91,40 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
 
     return tasksAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => const Center(child: Text('Failed to load tasks — try refreshing')),
+      error: (e, _) =>
+          const Center(child: Text('Failed to load tasks — try refreshing')),
       data: (tasks) {
         final categories = categoriesAsync.value ?? [];
         final categoryMap = {for (final c in categories) c.serverId: c};
         final colors = AppColors.of(context);
 
         final today = DateTime.now();
-        final todayStr    = today.toIso8601DateString();
-        final tomorrowStr = today.add(const Duration(days: 1)).toIso8601DateString();
-        final week1EndStr = today.add(const Duration(days: 7)).toIso8601DateString();
-        final week2EndStr = today.add(const Duration(days: 14)).toIso8601DateString();
+        final todayStr = today.toIso8601DateString();
+        final tomorrowStr = today
+            .add(const Duration(days: 1))
+            .toIso8601DateString();
+        final week1EndStr = today
+            .add(const Duration(days: 7))
+            .toIso8601DateString();
+        final week2EndStr = today
+            .add(const Duration(days: 14))
+            .toIso8601DateString();
 
         var filtered = tasks.where((t) {
           if (t.syncStatus == SyncStatus.pendingDelete.value) return false;
           if (t.dueDate == null) return true;
           if (t.dueDate!.compareTo(todayStr) >= 0) return true;
           // Past due: only show if not completed
-          return t.status != TaskStatus.done && t.status != TaskStatus.cancelled;
+          return t.status != TaskStatus.done &&
+              t.status != TaskStatus.cancelled;
         }).toList();
         if (_filterStatus == _kFilterActive) {
           filtered = filtered
-              .where((t) => t.status == TaskStatus.todo || t.status == TaskStatus.inProgress)
+              .where(
+                (t) =>
+                    t.status == TaskStatus.todo ||
+                    t.status == TaskStatus.inProgress,
+              )
               .toList();
         } else if (_filterStatus != 'all') {
           filtered = filtered.where((t) => t.status == _filterStatus).toList();
@@ -121,13 +132,16 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         if (_searchQuery.isNotEmpty) {
           final query = _searchQuery.toLowerCase();
           filtered = filtered
-              .where((t) =>
-                  t.title.toLowerCase().contains(query) ||
-                  (t.description?.toLowerCase().contains(query) ?? false))
+              .where(
+                (t) =>
+                    t.title.toLowerCase().contains(query) ||
+                    (t.description?.toLowerCase().contains(query) ?? false),
+              )
               .toList();
         }
         filtered.sort((a, b) {
-          if (a.dueDate == null && b.dueDate == null) return _doneWeight(a) - _doneWeight(b);
+          if (a.dueDate == null && b.dueDate == null)
+            return _doneWeight(a) - _doneWeight(b);
           if (a.dueDate == null) return 1;
           if (b.dueDate == null) return -1;
           final dateCmp = a.dueDate!.compareTo(b.dueDate!);
@@ -135,7 +149,13 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
           return _doneWeight(a) - _doneWeight(b);
         });
 
-        final sections = _buildSections(filtered, todayStr, tomorrowStr, week1EndStr, week2EndStr);
+        final sections = _buildSections(
+          filtered,
+          todayStr,
+          tomorrowStr,
+          week1EndStr,
+          week2EndStr,
+        );
 
         return Stack(
           children: [
@@ -152,13 +172,16 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                   ),
                 Expanded(
                   child: RefreshIndicator(
-                    onRefresh: () => ref.read(syncStateProvider.notifier).sync(),
+                    onRefresh: () =>
+                        ref.read(syncStateProvider.notifier).sync(),
                     child: filtered.isEmpty
                         ? const SingleChildScrollView(
                             physics: AlwaysScrollableScrollPhysics(),
                             child: SizedBox(
                               height: 400,
-                              child: Center(child: Text('No tasks', style: AppText.small)),
+                              child: Center(
+                                child: Text('No tasks', style: AppText.small),
+                              ),
                             ),
                           )
                         : ListView(
@@ -166,7 +189,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                             padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
                             children: [
                               for (final section in sections)
-                                if (!section.hideWhenEmpty || section.tasks.isNotEmpty) ...[
+                                if (!section.hideWhenEmpty ||
+                                    section.tasks.isNotEmpty) ...[
                                   _SectionHeader(
                                     sectionKey: section.key,
                                     label: section.label,
@@ -178,13 +202,20 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                                     Container(
                                       decoration: BoxDecoration(
                                         color: colors.dividerLight,
-                                        borderRadius: const BorderRadius.vertical(
-                                          bottom: Radius.circular(12),
-                                        ),
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                              bottom: Radius.circular(12),
+                                            ),
                                         border: Border(
-                                          left:   BorderSide(color: colors.divider),
-                                          right:  BorderSide(color: colors.divider),
-                                          bottom: BorderSide(color: colors.divider),
+                                          left: BorderSide(
+                                            color: colors.divider,
+                                          ),
+                                          right: BorderSide(
+                                            color: colors.divider,
+                                          ),
+                                          bottom: BorderSide(
+                                            color: colors.divider,
+                                          ),
                                         ),
                                       ),
                                       padding: const EdgeInsets.all(12),
@@ -192,7 +223,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                                         children: [
                                           for (final task in section.tasks)
                                             Padding(
-                                              padding: const EdgeInsets.only(bottom: 6),
+                                              padding: const EdgeInsets.only(
+                                                bottom: 6,
+                                              ),
                                               child: _TaskCard(
                                                 key: ValueKey(task.id),
                                                 task: task,
@@ -232,14 +265,14 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     String week1EndStr,
     String week2EndStr,
   ) {
-    final done         = <Task>[];
-    final overdue      = <Task>[];
-    final todayList    = <Task>[];
+    final done = <Task>[];
+    final overdue = <Task>[];
+    final todayList = <Task>[];
     final tomorrowList = <Task>[];
-    final thisWeek     = <Task>[];
-    final nextWeek     = <Task>[];
-    final later        = <Task>[];
-    final noDate       = <Task>[];
+    final thisWeek = <Task>[];
+    final nextWeek = <Task>[];
+    final later = <Task>[];
+    final noDate = <Task>[];
 
     for (final task in tasks) {
       if (task.status == TaskStatus.done) {
@@ -262,14 +295,24 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     }
 
     return [
-      _TaskSection(key: _kKeyDone,     label: 'Done',      tasks: done,         hideWhenEmpty: true),
-      _TaskSection(key: _kKeyOverdue,  label: 'Overdue',   tasks: overdue),
-      _TaskSection(key: _kKeyToday,    label: 'Today',     tasks: todayList),
-      _TaskSection(key: _kKeyTomorrow, label: 'Tomorrow',  tasks: tomorrowList),
+      _TaskSection(
+        key: _kKeyDone,
+        label: 'Done',
+        tasks: done,
+        hideWhenEmpty: true,
+      ),
+      _TaskSection(key: _kKeyOverdue, label: 'Overdue', tasks: overdue),
+      _TaskSection(key: _kKeyToday, label: 'Today', tasks: todayList),
+      _TaskSection(key: _kKeyTomorrow, label: 'Tomorrow', tasks: tomorrowList),
       _TaskSection(key: _kKeyThisWeek, label: 'This Week', tasks: thisWeek),
       _TaskSection(key: _kKeyNextWeek, label: 'Next Week', tasks: nextWeek),
-      _TaskSection(key: _kKeyLater,    label: 'Later',     tasks: later),
-      _TaskSection(key: _kKeyNoDate,   label: 'No Date',   tasks: noDate,        hideWhenEmpty: true),
+      _TaskSection(key: _kKeyLater, label: 'Later', tasks: later),
+      _TaskSection(
+        key: _kKeyNoDate,
+        label: 'No Date',
+        tasks: noDate,
+        hideWhenEmpty: true,
+      ),
     ];
   }
 
@@ -311,7 +354,10 @@ class _SearchBar extends StatelessWidget {
                 )
               : null,
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 8,
+          ),
           filled: true,
           fillColor: colors.surface,
           border: OutlineInputBorder(
@@ -333,20 +379,19 @@ class _SearchBar extends StatelessWidget {
 }
 
 class _StatusFilter extends StatelessWidget {
-  const _StatusFilter({
-    required this.selected,
-    required this.onChanged,
-  });
+  const _StatusFilter({required this.selected, required this.onChanged});
 
   final String selected;
   final ValueChanged<String> onChanged;
 
   static const _statusOptions = [
-    _kFilterActive, TaskStatus.todo, TaskStatus.inProgress,
+    _kFilterActive,
+    TaskStatus.todo,
+    TaskStatus.inProgress,
   ];
   static const _statusLabels = {
-    _kFilterActive:        'Active',
-    TaskStatus.todo:       'Todo',
+    _kFilterActive: 'Active',
+    TaskStatus.todo: 'Todo',
     TaskStatus.inProgress: 'In Progress',
   };
 
@@ -366,9 +411,7 @@ class _StatusFilter extends StatelessWidget {
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: active ? bg : colors.divider,
-            ),
+            border: Border.all(color: active ? bg : colors.divider),
           ),
           child: Text(
             label,
@@ -393,12 +436,16 @@ class _StatusFilter extends StatelessWidget {
         child: ListView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          children: _statusOptions.map((status) => _chip(
-            label: _statusLabels[status] ?? status,
-            active: selected == status,
-            onTap: () => onChanged(status),
-            colors: colors,
-          )).toList(),
+          children: _statusOptions
+              .map(
+                (status) => _chip(
+                  label: _statusLabels[status] ?? status,
+                  active: selected == status,
+                  onTap: () => onChanged(status),
+                  colors: colors,
+                ),
+              )
+              .toList(),
         ),
       ),
     );
@@ -440,12 +487,16 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     // in a ConsumerStatefulWidget because the widget may be disposed by then.
     final syncNotifier = ref.read(syncStateProvider.notifier);
     try {
-      await ref.read(dbProvider).insertSubtask(SubtasksCompanion(
-        taskLocalId: Value(task.id),
-        taskServerId: Value(task.serverId),
-        title: Value(title),
-        syncStatus: Value(SyncStatus.pendingCreate.value),
-      ));
+      await ref
+          .read(dbProvider)
+          .insertSubtask(
+            SubtasksCompanion(
+              taskLocalId: Value(task.id),
+              taskServerId: Value(task.serverId),
+              title: Value(title),
+              syncStatus: Value(SyncStatus.pendingCreate.value),
+            ),
+          );
       syncNotifier.syncIfOnline();
     } catch (e, st) {
       dev.log('_addSubtask: $e', name: 'tasks', level: 900, stackTrace: st);
@@ -453,9 +504,9 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
   }
 
   static Color _priorityStripe(String priority) => switch (priority) {
-    'high'   => AppColors.priorityHigh,
+    'high' => AppColors.priorityHigh,
     'medium' => AppColors.priorityMedium,
-    _        => AppColors.priorityLow,
+    _ => AppColors.priorityLow,
   };
 
   @override
@@ -465,7 +516,8 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     final todayStr = widget.todayStr;
     final isActive = _isTaskActive(task.status);
     final isDueToday = task.dueDate == todayStr;
-    final isOverdue = task.dueDate != null && task.dueDate!.compareTo(todayStr) < 0;
+    final isOverdue =
+        task.dueDate != null && task.dueDate!.compareTo(todayStr) < 0;
     final isDimmed = !isActive;
 
     final subtasksAsync = ref.watch(subtasksForTaskProvider(task.id));
@@ -480,8 +532,8 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     final cardBg = isActive && isOverdue
         ? (isDark ? const Color(0x1ADC2626) : const Color(0xFFFEF2F2))
         : isActive && isDueToday
-            ? (isDark ? const Color(0x1AF97316) : const Color(0xFFFFFBEB))
-            : colors.surface;
+        ? (isDark ? const Color(0x1AF97316) : const Color(0xFFFFFBEB))
+        : colors.surface;
 
     final card = ClipRRect(
       borderRadius: const BorderRadius.only(
@@ -489,16 +541,16 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
         bottomRight: Radius.circular(12),
       ),
       child: Container(
-      decoration: BoxDecoration(
-        color: cardBg,
-        border: Border(
-          left:   BorderSide(color: stripeColor, width: 4),
-          top:    BorderSide(color: colors.divider, width: 0.5),
-          right:  BorderSide(color: colors.divider, width: 0.5),
-          bottom: BorderSide(color: colors.divider, width: 0.5),
+        decoration: BoxDecoration(
+          color: cardBg,
+          border: Border(
+            left: BorderSide(color: stripeColor, width: 4),
+            top: BorderSide(color: colors.divider, width: 0.5),
+            right: BorderSide(color: colors.divider, width: 0.5),
+            bottom: BorderSide(color: colors.divider, width: 0.5),
+          ),
         ),
-      ),
-      child: IntrinsicHeight(
+        child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -519,8 +571,12 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                                 task.title,
                                 style: AppText.body.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  decoration: isDimmed ? TextDecoration.lineThrough : null,
-                                  color: isDimmed ? colors.textMuted : colors.textPrimary,
+                                  decoration: isDimmed
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  color: isDimmed
+                                      ? colors.textMuted
+                                      : colors.textPrimary,
                                 ),
                               ),
                             ),
@@ -542,15 +598,27 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                           children: [
                             PriorityBadge(task.priority),
                             if (cat != null)
-                              CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
+                              CategoryBadge(
+                                name: cat.name,
+                                color: cat.color,
+                                icon: cat.icon,
+                              ),
                             if (task.dueDate != null)
                               GestureDetector(
                                 onTap: () => _showQuickDateSheet(context),
-                                child: _DaysBadge(dueDate: task.dueDate!, todayStr: todayStr, isActive: isActive),
+                                child: _DaysBadge(
+                                  dueDate: task.dueDate!,
+                                  todayStr: todayStr,
+                                  isActive: isActive,
+                                ),
                               ),
                             _RecurrenceBadge(task.recurrence),
                             if (task.syncStatus != SyncStatus.synced.value)
-                              Icon(Icons.cloud_upload_outlined, size: 12, color: colors.textMuted),
+                              Icon(
+                                Icons.cloud_upload_outlined,
+                                size: 12,
+                                color: colors.textMuted,
+                              ),
                           ],
                         ),
                         // Subtask progress bar + expand toggle
@@ -566,7 +634,10 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                                     value: progress,
                                     minHeight: 4,
                                     backgroundColor: colors.divider,
-                                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.btnGreen),
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          AppColors.btnGreen,
+                                        ),
                                   ),
                                 ),
                               ),
@@ -575,13 +646,17 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                                 '$doneCount/${subtasks.length}',
                                 style: AppText.small.copyWith(
                                   color: colors.textMuted,
-                                  fontFeatures: [const FontFeature.tabularFigures()],
+                                  fontFeatures: [
+                                    const FontFeature.tabularFigures(),
+                                  ],
                                 ),
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 _expanded ? '▾ hide' : '▸ subtasks',
-                                style: AppText.small.copyWith(color: colors.textMuted),
+                                style: AppText.small.copyWith(
+                                  color: colors.textMuted,
+                                ),
                               ),
                             ],
                           ),
@@ -590,7 +665,8 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                           const SizedBox(height: 6),
                           const Divider(height: 1),
                           const SizedBox(height: 4),
-                          if (task.description != null && task.description!.isNotEmpty) ...[
+                          if (task.description != null &&
+                              task.description!.isNotEmpty) ...[
                             Text(
                               task.description!,
                               style: AppText.small,
@@ -610,9 +686,15 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                                   maxLength: 255,
                                   decoration: InputDecoration(
                                     hintText: 'Add subtask…',
-                                    hintStyle: TextStyle(fontSize: 12, color: colors.textMuted),
+                                    hintStyle: TextStyle(
+                                      fontSize: 12,
+                                      color: colors.textMuted,
+                                    ),
                                     isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 6,
+                                    ),
                                     border: const OutlineInputBorder(),
                                     counterText: '',
                                   ),
@@ -624,12 +706,22 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                               GestureDetector(
                                 onTap: _addSubtask,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.primary,
                                     borderRadius: BorderRadius.circular(5),
                                   ),
-                                  child: const Text('Add', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+                                  child: const Text(
+                                    'Add',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -652,7 +744,8 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
   void _showDetail(BuildContext context) {
     _showAppSheet(
       context,
-      (_) => _TaskDetailSheet(task: widget.task, categoryMap: widget.categoryMap),
+      (_) =>
+          _TaskDetailSheet(task: widget.task, categoryMap: widget.categoryMap),
     );
   }
 
@@ -682,7 +775,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
   void _showQuickDateSheet(BuildContext context) {
     final task = widget.task;
     final now = DateTime.now();
-    final today    = now.toIso8601DateString();
+    final today = now.toIso8601DateString();
     final tomorrow = now.add(const Duration(days: 1)).toIso8601DateString();
     final nextWeek = now.add(const Duration(days: 7)).toIso8601DateString();
 
@@ -697,7 +790,10 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Change Due Date', style: AppText.body.copyWith(fontWeight: FontWeight.w700)),
+                child: Text(
+                  'Change Due Date',
+                  style: AppText.body.copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
             ),
             const Divider(height: 1),
@@ -749,11 +845,13 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                 if (!mounted) return;
                 final picked = await showDatePicker(
                   context: context,
-                  initialDate: DateTime.tryParse(task.dueDate ?? '') ?? DateTime.now(),
+                  initialDate:
+                      DateTime.tryParse(task.dueDate ?? '') ?? DateTime.now(),
                   firstDate: _kDateFirst,
                   lastDate: _kDateLast,
                 );
-                if (picked != null && mounted) await _updateDueDate(picked.toIso8601DateString());
+                if (picked != null && mounted)
+                  await _updateDueDate(picked.toIso8601DateString());
               },
             ),
           ],
@@ -783,16 +881,23 @@ class _InlineSubtaskRow extends ConsumerWidget {
               final newStatus = done ? TaskStatus.todo : TaskStatus.done;
               final syncNotifier = ref.read(syncStateProvider.notifier);
               try {
-                await ref.read(dbProvider).updateSubtask(
-                  subtask.id,
-                  SubtasksCompanion(
-                    status: Value(newStatus),
-                    syncStatus: Value(SyncStatus.next(subtask.syncStatus)),
-                  ),
-                );
+                await ref
+                    .read(dbProvider)
+                    .updateSubtask(
+                      subtask.id,
+                      SubtasksCompanion(
+                        status: Value(newStatus),
+                        syncStatus: Value(SyncStatus.next(subtask.syncStatus)),
+                      ),
+                    );
                 syncNotifier.syncIfOnline();
               } catch (e, st) {
-                dev.log('_InlineSubtaskRow toggle: $e', name: 'tasks', level: 900, stackTrace: st);
+                dev.log(
+                  '_InlineSubtaskRow toggle: $e',
+                  name: 'tasks',
+                  level: 900,
+                  stackTrace: st,
+                );
               }
             },
             child: Icon(
@@ -855,7 +960,11 @@ class _DaysBadge extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.calendar_today_outlined, size: 11, color: colors.textMuted),
+          Icon(
+            Icons.calendar_today_outlined,
+            size: 11,
+            color: colors.textMuted,
+          ),
           const SizedBox(width: 3),
           Text(dueDate, style: AppText.label),
         ],
@@ -907,9 +1016,15 @@ class _RecurrenceBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: isRecurring ? colors.pendingBanner : colors.textMuted.withValues(alpha: 0.1),
+        color: isRecurring
+            ? colors.pendingBanner
+            : colors.textMuted.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: isRecurring ? colors.pendingBorder : colors.textMuted.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: isRecurring
+              ? colors.pendingBorder
+              : colors.textMuted.withValues(alpha: 0.3),
+        ),
       ),
       child: Text(
         isRecurring ? '↻ $recurrence' : 'onetime',
@@ -929,69 +1044,69 @@ class _WebStatusPill extends StatelessWidget {
   final String status;
 
   static const _icons = {
-    TaskStatus.todo:       '○',
+    TaskStatus.todo: '○',
     TaskStatus.inProgress: '◑',
-    TaskStatus.done:       '✓',
-    TaskStatus.cancelled:  '✕',
+    TaskStatus.done: '✓',
+    TaskStatus.cancelled: '✕',
   };
 
   static const _labels = {
-    TaskStatus.todo:       'To Do',
+    TaskStatus.todo: 'To Do',
     TaskStatus.inProgress: 'In Progress',
-    TaskStatus.done:       'Done',
-    TaskStatus.cancelled:  'Cancelled',
+    TaskStatus.done: 'Done',
+    TaskStatus.cancelled: 'Cancelled',
   };
 
   static const _bgsLight = {
-    TaskStatus.todo:       Color(0xFFEFF6FF),
+    TaskStatus.todo: Color(0xFFEFF6FF),
     TaskStatus.inProgress: Color(0xFFFFFBEB),
-    TaskStatus.done:       Color(0xFFF0FDF4),
-    TaskStatus.cancelled:  Color(0xFFF8FAFC),
+    TaskStatus.done: Color(0xFFF0FDF4),
+    TaskStatus.cancelled: Color(0xFFF8FAFC),
   };
   static const _fgsLight = {
-    TaskStatus.todo:       Color(0xFF1D4ED8),
+    TaskStatus.todo: Color(0xFF1D4ED8),
     TaskStatus.inProgress: Color(0xFFB45309),
-    TaskStatus.done:       Color(0xFF15803D),
-    TaskStatus.cancelled:  Color(0xFF64748B),
+    TaskStatus.done: Color(0xFF15803D),
+    TaskStatus.cancelled: Color(0xFF64748B),
   };
   static const _bordersLight = {
-    TaskStatus.todo:       Color(0xFFBFDBFE),
+    TaskStatus.todo: Color(0xFFBFDBFE),
     TaskStatus.inProgress: Color(0xFFFDE68A),
-    TaskStatus.done:       Color(0xFFBBF7D0),
-    TaskStatus.cancelled:  Color(0xFFE2E8F0),
+    TaskStatus.done: Color(0xFFBBF7D0),
+    TaskStatus.cancelled: Color(0xFFE2E8F0),
   };
 
   static const _bgsDark = {
-    TaskStatus.todo:       Color(0x331D4ED8),
+    TaskStatus.todo: Color(0x331D4ED8),
     TaskStatus.inProgress: Color(0x1AFBBF24),
-    TaskStatus.done:       Color(0x3315803D),
-    TaskStatus.cancelled:  Color(0xFF334155),
+    TaskStatus.done: Color(0x3315803D),
+    TaskStatus.cancelled: Color(0xFF334155),
   };
   static const _fgsDark = {
-    TaskStatus.todo:       Color(0xFF93C5FD),
+    TaskStatus.todo: Color(0xFF93C5FD),
     TaskStatus.inProgress: Color(0xFFFDE68A),
-    TaskStatus.done:       Color(0xFF86EFAC),
-    TaskStatus.cancelled:  Color(0xFF94A3B8),
+    TaskStatus.done: Color(0xFF86EFAC),
+    TaskStatus.cancelled: Color(0xFF94A3B8),
   };
   static const _bordersDark = {
-    TaskStatus.todo:       Color(0x661D4ED8),
+    TaskStatus.todo: Color(0x661D4ED8),
     TaskStatus.inProgress: Color(0x1AFBBF24),
-    TaskStatus.done:       Color(0x3315803D),
-    TaskStatus.cancelled:  Color(0xFF334155),
+    TaskStatus.done: Color(0x3315803D),
+    TaskStatus.cancelled: Color(0xFF334155),
   };
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgs     = isDark ? _bgsDark     : _bgsLight;
-    final fgs     = isDark ? _fgsDark     : _fgsLight;
+    final bgs = isDark ? _bgsDark : _bgsLight;
+    final fgs = isDark ? _fgsDark : _fgsLight;
     final borders = isDark ? _bordersDark : _bordersLight;
-    final colors  = AppColors.of(context);
+    final colors = AppColors.of(context);
 
-    final bg     = bgs[status]     ?? colors.surface;
-    final fg     = fgs[status]     ?? colors.textMuted;
+    final bg = bgs[status] ?? colors.surface;
+    final fg = fgs[status] ?? colors.textMuted;
     final border = borders[status] ?? colors.divider;
-    final icon  = _icons[status]  ?? '○';
+    final icon = _icons[status] ?? '○';
     final label = _labels[status] ?? status;
 
     return Container(
@@ -1008,7 +1123,11 @@ class _WebStatusPill extends StatelessWidget {
           const SizedBox(width: 3),
           Text(
             label,
-            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: fg),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: fg,
+            ),
           ),
         ],
       ),
@@ -1036,7 +1155,9 @@ class _IconActions extends ConsumerWidget {
           TasksCompanion(
             status: Value(status),
             updatedAt: Value(now),
-            completedAt: status == TaskStatus.done ? Value(now) : const Value.absent(),
+            completedAt: status == TaskStatus.done
+                ? Value(now)
+                : const Value.absent(),
             syncStatus: Value(SyncStatus.next(task.syncStatus)),
           ),
         );
@@ -1054,11 +1175,19 @@ class _IconActions extends ConsumerWidget {
           title: const Text('Delete Task'),
           content: Text('Delete "${task.title}"?'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.btnRed),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.btnRed,
+              ),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -1089,7 +1218,10 @@ class _IconActions extends ConsumerWidget {
                 border: Border.all(color: colors.divider, width: 1.5),
               ),
               child: Center(
-                child: Text('✓', style: TextStyle(fontSize: 11, color: colors.textMuted)),
+                child: Text(
+                  '✓',
+                  style: TextStyle(fontSize: 11, color: colors.textMuted),
+                ),
               ),
             ),
           )
@@ -1100,12 +1232,18 @@ class _IconActions extends ConsumerWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: colors.completedBg,
-              border: Border.fromBorderSide(BorderSide(color: colors.completedFg, width: 1.5)),
+              border: Border.fromBorderSide(
+                BorderSide(color: colors.completedFg, width: 1.5),
+              ),
             ),
             child: Center(
               child: Text(
                 '✓',
-                style: TextStyle(fontSize: 11, color: colors.completedFg, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: colors.completedFg,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
@@ -1122,7 +1260,10 @@ class _IconActions extends ConsumerWidget {
                 border: Border.all(color: colors.divider, width: 1.5),
               ),
               child: Center(
-                child: Text('▶', style: TextStyle(fontSize: 9, color: colors.textMuted)),
+                child: Text(
+                  '▶',
+                  style: TextStyle(fontSize: 9, color: colors.textMuted),
+                ),
               ),
             ),
           ),
@@ -1141,27 +1282,46 @@ class _IconActions extends ConsumerWidget {
                       leading: const Icon(Icons.edit_outlined, size: 18),
                       title: const Text('Edit'),
                       dense: true,
-                      onTap: () { Navigator.pop(context); onShowEdit(); },
+                      onTap: () {
+                        Navigator.pop(context);
+                        onShowEdit();
+                      },
                     ),
                     if (isActive)
                       ListTile(
                         leading: const Icon(Icons.cancel_outlined, size: 18),
                         title: const Text('Cancel task'),
                         dense: true,
-                        onTap: () { Navigator.pop(context); setStatus(TaskStatus.cancelled); },
+                        onTap: () {
+                          Navigator.pop(context);
+                          setStatus(TaskStatus.cancelled);
+                        },
                       ),
                     if (!isActive)
                       ListTile(
                         leading: const Icon(Icons.refresh_outlined, size: 18),
                         title: const Text('Reopen'),
                         dense: true,
-                        onTap: () { Navigator.pop(context); setStatus(TaskStatus.todo); },
+                        onTap: () {
+                          Navigator.pop(context);
+                          setStatus(TaskStatus.todo);
+                        },
                       ),
                     ListTile(
-                      leading: const Icon(Icons.delete_outline, size: 18, color: AppColors.btnRed),
-                      title: const Text('Delete', style: TextStyle(color: AppColors.btnRed)),
+                      leading: const Icon(
+                        Icons.delete_outline,
+                        size: 18,
+                        color: AppColors.btnRed,
+                      ),
+                      title: const Text(
+                        'Delete',
+                        style: TextStyle(color: AppColors.btnRed),
+                      ),
                       dense: true,
-                      onTap: () { Navigator.pop(context); deleteTask(); },
+                      onTap: () {
+                        Navigator.pop(context);
+                        deleteTask();
+                      },
                     ),
                   ],
                 ),
@@ -1172,11 +1332,16 @@ class _IconActions extends ConsumerWidget {
           child: Container(
             width: 26,
             height: 26,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(6),
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
             child: Center(
-              child: Text('···', style: TextStyle(fontSize: 14, color: colors.textMuted, letterSpacing: -1)),
+              child: Text(
+                '···',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colors.textMuted,
+                  letterSpacing: -1,
+                ),
+              ),
             ),
           ),
         ),
@@ -1235,15 +1400,16 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: Text(_task.title, style: AppText.heading),
-                    ),
+                    Expanded(child: Text(_task.title, style: AppText.heading)),
                     TextButton(
                       onPressed: () => setState(() => _editing = !_editing),
                       child: Text(_editing ? 'Cancel' : 'Edit'),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, color: AppColors.btnRed),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: AppColors.btnRed,
+                      ),
                       onPressed: _deleteTask,
                     ),
                   ],
@@ -1258,27 +1424,58 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                     if (_editing)
                       _TaskForm(existing: _task)
                     else ...[
-                      _InfoRow(label: 'STATUS', child: TaskStatusBadge(_task.status)),
-                      _InfoRow(label: 'PRIORITY', child: PriorityBadge(_task.priority)),
-                      if (widget.categoryMap[_task.categoryServerId] case final cat?)
+                      _InfoRow(
+                        label: 'STATUS',
+                        child: TaskStatusBadge(_task.status),
+                      ),
+                      _InfoRow(
+                        label: 'PRIORITY',
+                        child: PriorityBadge(_task.priority),
+                      ),
+                      if (widget.categoryMap[_task.categoryServerId]
+                          case final cat?)
                         _InfoRow(
                           label: 'CATEGORY',
-                          child: CategoryBadge(name: cat.name, color: cat.color, icon: cat.icon),
+                          child: CategoryBadge(
+                            name: cat.name,
+                            color: cat.color,
+                            icon: cat.icon,
+                          ),
                         ),
-                      if (_task.dueDate != null) _InfoRow(label: 'DUE', value: _task.dueDate!),
-                      if (_task.completedAt != null) _InfoRow(label: 'COMPLETED', value: _task.completedAt!),
+                      if (_task.dueDate != null)
+                        _InfoRow(label: 'DUE', value: _task.dueDate!),
+                      if (_task.completedAt != null)
+                        _InfoRow(label: 'COMPLETED', value: _task.completedAt!),
                       if (_task.assigneeServerId != null)
-                        Consumer(builder: (context, ref, _) {
-                          final persons = ref.watch(personsProvider).value ?? [];
-                          final person = persons.where((p) => p.serverId == _task.assigneeServerId).firstOrNull;
-                          if (person == null) return const SizedBox.shrink();
-                          return _InfoRow(label: 'ASSIGNEE', value: person.name);
-                        }),
-                      if (_task.recurrence != 'none') _InfoRow(label: 'RECURRENCE', value: _task.recurrence),
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final persons =
+                                ref.watch(personsProvider).value ?? [];
+                            final person = persons
+                                .where(
+                                  (p) => p.serverId == _task.assigneeServerId,
+                                )
+                                .firstOrNull;
+                            if (person == null) return const SizedBox.shrink();
+                            return _InfoRow(
+                              label: 'ASSIGNEE',
+                              value: person.name,
+                            );
+                          },
+                        ),
+                      if (_task.recurrence != 'none')
+                        _InfoRow(label: 'RECURRENCE', value: _task.recurrence),
                       if (_task.estimatedMinutes != null)
-                        _InfoRow(label: 'ESTIMATED', value: '${_task.estimatedMinutes} min'),
-                      if (_task.description != null && _task.description!.isNotEmpty)
-                        _InfoRow(label: 'DESCRIPTION', value: _task.description!),
+                        _InfoRow(
+                          label: 'ESTIMATED',
+                          value: '${_task.estimatedMinutes} min',
+                        ),
+                      if (_task.description != null &&
+                          _task.description!.isNotEmpty)
+                        _InfoRow(
+                          label: 'DESCRIPTION',
+                          value: _task.description!,
+                        ),
                     ],
                     const SizedBox(height: 16),
                     // Subtasks
@@ -1289,13 +1486,24 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                         TextButton.icon(
                           onPressed: _addSubtask,
                           icon: const Icon(Icons.add, size: 14),
-                          label: const Text('Add', style: TextStyle(fontSize: 12)),
+                          label: const Text(
+                            'Add',
+                            style: TextStyle(fontSize: 12),
+                          ),
                         ),
                       ],
                     ),
                     subtasksStream.when(
-                      loading: () => const SizedBox(height: 32, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
-                      error: (e, _) => const Text('Failed to load subtasks', style: AppText.small),
+                      loading: () => const SizedBox(
+                        height: 32,
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      error: (e, _) => const Text(
+                        'Failed to load subtasks',
+                        style: AppText.small,
+                      ),
                       data: (subtasks) => subtasks.isEmpty
                           ? const Padding(
                               padding: EdgeInsets.symmetric(vertical: 8),
@@ -1332,26 +1540,40 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
             autofocus: true,
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
               onPressed: () async {
                 if (subtaskController.text.trim().isEmpty) return;
                 final syncNotifier = ref.read(syncStateProvider.notifier);
                 try {
                   final db = ref.read(dbProvider);
-                  await db.insertSubtask(SubtasksCompanion(
-                    taskLocalId: Value(_task.id),
-                    taskServerId: Value(_task.serverId),
-                    title: Value(subtaskController.text.trim()),
-                    syncStatus: Value(SyncStatus.pendingCreate.value),
-                  ));
+                  await db.insertSubtask(
+                    SubtasksCompanion(
+                      taskLocalId: Value(_task.id),
+                      taskServerId: Value(_task.serverId),
+                      title: Value(subtaskController.text.trim()),
+                      syncStatus: Value(SyncStatus.pendingCreate.value),
+                    ),
+                  );
                   if (mounted) Navigator.pop(context);
                   syncNotifier.syncIfOnline();
                 } catch (e, st) {
-                  dev.log('_TaskDetailSheet _addSubtask: $e', name: 'tasks', level: 900, stackTrace: st);
+                  dev.log(
+                    '_TaskDetailSheet _addSubtask: $e',
+                    name: 'tasks',
+                    level: 900,
+                    stackTrace: st,
+                  );
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Failed to add subtask. Please try again.')),
+                      const SnackBar(
+                        content: Text(
+                          'Failed to add subtask. Please try again.',
+                        ),
+                      ),
                     );
                   }
                 }
@@ -1373,7 +1595,10 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
         title: const Text('Delete Task'),
         content: Text('Delete "${_task.title}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.btnRed),
             onPressed: () => Navigator.pop(context, true),
@@ -1391,10 +1616,17 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
         syncNotifier.syncIfOnline();
       });
     } catch (e, st) {
-      dev.log('_TaskDetailSheet _deleteTask: $e', name: 'tasks', level: 900, stackTrace: st);
+      dev.log(
+        '_TaskDetailSheet _deleteTask: $e',
+        name: 'tasks',
+        level: 900,
+        stackTrace: st,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to delete task. Please try again.')),
+          const SnackBar(
+            content: Text('Failed to delete task. Please try again.'),
+          ),
         );
       }
     }
@@ -1420,16 +1652,23 @@ class _SubtaskRow extends ConsumerWidget {
               final newStatus = isDone ? TaskStatus.todo : TaskStatus.done;
               final syncNotifier = ref.read(syncStateProvider.notifier);
               try {
-                await ref.read(dbProvider).updateSubtask(
-                  subtask.id,
-                  SubtasksCompanion(
-                    status: Value(newStatus),
-                    syncStatus: Value(SyncStatus.next(subtask.syncStatus)),
-                  ),
-                );
+                await ref
+                    .read(dbProvider)
+                    .updateSubtask(
+                      subtask.id,
+                      SubtasksCompanion(
+                        status: Value(newStatus),
+                        syncStatus: Value(SyncStatus.next(subtask.syncStatus)),
+                      ),
+                    );
                 syncNotifier.syncIfOnline();
               } catch (e, st) {
-                dev.log('_SubtaskRow toggle: $e', name: 'tasks', level: 900, stackTrace: st);
+                dev.log(
+                  '_SubtaskRow toggle: $e',
+                  name: 'tasks',
+                  level: 900,
+                  stackTrace: st,
+                );
               }
             },
             child: Icon(
@@ -1456,7 +1695,12 @@ class _SubtaskRow extends ConsumerWidget {
                 await ref.read(dbProvider).markSubtaskDeleted(subtask.id);
                 syncNotifier.syncIfOnline();
               } catch (e, st) {
-                dev.log('_SubtaskRow delete: $e', name: 'tasks', level: 900, stackTrace: st);
+                dev.log(
+                  '_SubtaskRow delete: $e',
+                  name: 'tasks',
+                  level: 900,
+                  stackTrace: st,
+                );
               }
             },
           ),
@@ -1504,27 +1748,41 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _title;
   late TextEditingController _description;
-  String _status     = TaskStatus.todo;
-  String _priority   = 'medium';
+  String _status = TaskStatus.todo;
+  String _priority = 'medium';
   String _recurrence = 'none';
   late String _dueDate;
   int? _assigneeServerId;
   int? _categoryServerId;
 
-  static const _statuses    = [TaskStatus.todo, TaskStatus.inProgress, TaskStatus.done, TaskStatus.cancelled];
-  static const _priorities  = ['low', 'medium', 'high'];
-  static const _recurrences = ['none', 'daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'semiannual', 'yearly'];
+  static const _statuses = [
+    TaskStatus.todo,
+    TaskStatus.inProgress,
+    TaskStatus.done,
+    TaskStatus.cancelled,
+  ];
+  static const _priorities = ['low', 'medium', 'high'];
+  static const _recurrences = [
+    'none',
+    'daily',
+    'weekly',
+    'biweekly',
+    'monthly',
+    'quarterly',
+    'semiannual',
+    'yearly',
+  ];
 
   @override
   void initState() {
     super.initState();
     final existing = widget.existing;
-    _title       = TextEditingController(text: existing?.title ?? '');
+    _title = TextEditingController(text: existing?.title ?? '');
     _description = TextEditingController(text: existing?.description ?? '');
-    _status      = existing?.status ?? TaskStatus.todo;
-    _priority    = existing?.priority ?? 'medium';
-    _recurrence  = existing?.recurrence ?? 'none';
-    _dueDate     = existing?.dueDate ?? DateTime.now().toIso8601DateString();
+    _status = existing?.status ?? TaskStatus.todo;
+    _priority = existing?.priority ?? 'medium';
+    _recurrence = existing?.recurrence ?? 'none';
+    _dueDate = existing?.dueDate ?? DateTime.now().toIso8601DateString();
     _assigneeServerId = existing?.assigneeServerId;
     _categoryServerId = existing?.categoryServerId;
   }
@@ -1539,7 +1797,9 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -1548,121 +1808,155 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            TextFormField(
-              controller: _title,
-              decoration: const InputDecoration(labelText: 'Title *'),
-              maxLength: 255,
-              validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: _description,
-              decoration: const InputDecoration(labelText: 'Description'),
-              maxLines: 2,
-              maxLength: 2000,
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _status,
-                    decoration: const InputDecoration(labelText: 'Status'),
-                    items: _statuses.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                    onChanged: (v) => setState(() => _status = v!),
+              TextFormField(
+                controller: _title,
+                decoration: const InputDecoration(labelText: 'Title *'),
+                maxLength: 255,
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _description,
+                decoration: const InputDecoration(labelText: 'Description'),
+                maxLines: 2,
+                maxLength: 2000,
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _status,
+                      decoration: const InputDecoration(labelText: 'Status'),
+                      items: _statuses
+                          .map(
+                            (s) => DropdownMenuItem(value: s, child: Text(s)),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _status = v!),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _priority,
+                      decoration: const InputDecoration(labelText: 'Priority'),
+                      items: _priorities
+                          .map(
+                            (s) => DropdownMenuItem(value: s, child: Text(s)),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _priority = v!),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                initialValue: _recurrence,
+                decoration: const InputDecoration(labelText: 'Recurrence'),
+                items: _recurrences
+                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                    .toList(),
+                onChanged: (v) => setState(() => _recurrence = v!),
+              ),
+              const SizedBox(height: 10),
+              // Due date picker
+              InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.tryParse(_dueDate) ?? DateTime.now(),
+                    firstDate: _kDateFirst,
+                    lastDate: _kDateLast,
+                  );
+                  if (picked != null) {
+                    setState(() => _dueDate = picked.toIso8601DateString());
+                  }
+                },
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Due Date'),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(_dueDate, style: AppText.body),
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 16,
+                        color: AppColors.of(context).textMuted,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _priority,
-                    decoration: const InputDecoration(labelText: 'Priority'),
-                    items: _priorities.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                    onChanged: (v) => setState(() => _priority = v!),
+              ),
+              const SizedBox(height: 10),
+              // Category dropdown
+              ref
+                  .watch(categoriesProvider)
+                  .when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, _) => const SizedBox.shrink(),
+                    data: (categories) => DropdownButtonFormField<int?>(
+                      initialValue: _categoryServerId,
+                      decoration: const InputDecoration(labelText: 'Category'),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('None'),
+                        ),
+                        ...categories.map(
+                          (c) => DropdownMenuItem(
+                            value: c.serverId,
+                            child: Text('${c.icon} ${c.name}'),
+                          ),
+                        ),
+                      ],
+                      onChanged: (v) => setState(() => _categoryServerId = v),
+                    ),
+                  ),
+              const SizedBox(height: 10),
+              // Assignee dropdown
+              ref
+                  .watch(personsProvider)
+                  .when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, _) => const SizedBox.shrink(),
+                    data: (persons) => DropdownButtonFormField<int?>(
+                      initialValue: _assigneeServerId,
+                      decoration: const InputDecoration(labelText: 'Assignee'),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('None'),
+                        ),
+                        ...persons.map(
+                          (p) => DropdownMenuItem(
+                            value: p.serverId,
+                            child: Text(p.name),
+                          ),
+                        ),
+                      ],
+                      onChanged: (v) => setState(() => _assigneeServerId = v),
+                    ),
+                  ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: Text(
+                    widget.existing == null ? 'Create Task' : 'Save Changes',
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              initialValue: _recurrence,
-              decoration: const InputDecoration(labelText: 'Recurrence'),
-              items: _recurrences.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-              onChanged: (v) => setState(() => _recurrence = v!),
-            ),
-            const SizedBox(height: 10),
-            // Due date picker
-            InkWell(
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.tryParse(_dueDate) ?? DateTime.now(),
-                  firstDate: _kDateFirst,
-                  lastDate: _kDateLast,
-                );
-                if (picked != null) {
-                  setState(() => _dueDate = picked.toIso8601DateString());
-                }
-              },
-              child: InputDecorator(
-                decoration: const InputDecoration(labelText: 'Due Date'),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(_dueDate, style: AppText.body),
-                    Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.of(context).textMuted),
-                  ],
-                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            // Category dropdown
-            ref.watch(categoriesProvider).when(
-              loading: () => const SizedBox.shrink(),
-              error: (_, _) => const SizedBox.shrink(),
-              data: (categories) => DropdownButtonFormField<int?>(
-                initialValue: _categoryServerId,
-                decoration: const InputDecoration(labelText: 'Category'),
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('None')),
-                  ...categories.map((c) => DropdownMenuItem(
-                        value: c.serverId,
-                        child: Text('${c.icon} ${c.name}'),
-                      )),
-                ],
-                onChanged: (v) => setState(() => _categoryServerId = v),
-              ),
-            ),
-            const SizedBox(height: 10),
-            // Assignee dropdown
-            ref.watch(personsProvider).when(
-              loading: () => const SizedBox.shrink(),
-              error: (_, _) => const SizedBox.shrink(),
-              data: (persons) => DropdownButtonFormField<int?>(
-                initialValue: _assigneeServerId,
-                decoration: const InputDecoration(labelText: 'Assignee'),
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('None')),
-                  ...persons.map((p) => DropdownMenuItem(value: p.serverId, child: Text(p.name))),
-                ],
-                onChanged: (v) => setState(() => _assigneeServerId = v),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: Text(widget.existing == null ? 'Create Task' : 'Save Changes'),
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
@@ -1681,19 +1975,21 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
 
     try {
       if (widget.existing == null) {
-        await db.insertTask(TasksCompanion(
-          title: Value(title),
-          description: Value(desc.isEmpty ? null : desc),
-          status: Value(_status),
-          priority: Value(_priority),
-          recurrence: Value(_recurrence),
-          dueDate: Value(_dueDate),
-          assigneeServerId: Value(_assigneeServerId),
-          categoryServerId: Value(_categoryServerId),
-          syncStatus: Value(SyncStatus.pendingCreate.value),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ));
+        await db.insertTask(
+          TasksCompanion(
+            title: Value(title),
+            description: Value(desc.isEmpty ? null : desc),
+            status: Value(_status),
+            priority: Value(_priority),
+            recurrence: Value(_recurrence),
+            dueDate: Value(_dueDate),
+            assigneeServerId: Value(_assigneeServerId),
+            categoryServerId: Value(_categoryServerId),
+            syncStatus: Value(SyncStatus.pendingCreate.value),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
       } else {
         await db.updateTask(
           widget.existing!.id,
@@ -1729,7 +2025,9 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
       dev.log('_save: $e', name: 'tasks', level: 900, stackTrace: st);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save task. Please try again.')),
+          const SnackBar(
+            content: Text('Failed to save task. Please try again.'),
+          ),
         );
       }
     }
@@ -1773,86 +2071,134 @@ class _SectionAccent {
 
 const _kSectionAccents = <String, _SectionAccent>{
   _kKeyOverdue: _SectionAccent(
-    stripe: AppColors.btnRed, bg: Color(0xFFFEF2F2),
-    labelColor: Color(0xFFB91C1C), badgeBg: Color(0xFFFEE2E2), badgeFg: Color(0xFFB91C1C),
+    stripe: AppColors.btnRed,
+    bg: Color(0xFFFEF2F2),
+    labelColor: Color(0xFFB91C1C),
+    badgeBg: Color(0xFFFEE2E2),
+    badgeFg: Color(0xFFB91C1C),
     icon: '🔥',
   ),
   _kKeyToday: _SectionAccent(
-    stripe: Color(0xFFF97316), bg: Color(0xFFFFF7ED),
-    labelColor: Color(0xFFC2410C), badgeBg: Color(0xFFFED7AA), badgeFg: Color(0xFFC2410C),
+    stripe: Color(0xFFF97316),
+    bg: Color(0xFFFFF7ED),
+    labelColor: Color(0xFFC2410C),
+    badgeBg: Color(0xFFFED7AA),
+    badgeFg: Color(0xFFC2410C),
     icon: '🔥',
   ),
   _kKeyTomorrow: _SectionAccent(
-    stripe: Color(0xFFF59E0B), bg: Color(0xFFFFFBEB),
-    labelColor: Color(0xFFB45309), badgeBg: Color(0xFFFDE68A), badgeFg: Color(0xFFB45309),
+    stripe: Color(0xFFF59E0B),
+    bg: Color(0xFFFFFBEB),
+    labelColor: Color(0xFFB45309),
+    badgeBg: Color(0xFFFDE68A),
+    badgeFg: Color(0xFFB45309),
     icon: '📅',
   ),
   _kKeyThisWeek: _SectionAccent(
-    stripe: AppColors.primary, bg: Color(0xFFEFF6FF),
-    labelColor: Color(0xFF1D4ED8), badgeBg: Color(0xFFDBEAFE), badgeFg: Color(0xFF1D4ED8),
+    stripe: AppColors.primary,
+    bg: Color(0xFFEFF6FF),
+    labelColor: Color(0xFF1D4ED8),
+    badgeBg: Color(0xFFDBEAFE),
+    badgeFg: Color(0xFF1D4ED8),
     icon: '📆',
   ),
   _kKeyNextWeek: _SectionAccent(
-    stripe: Color(0xFF8B5CF6), bg: Color(0xFFF5F3FF),
-    labelColor: Color(0xFF6D28D9), badgeBg: Color(0xFFEDE9FE), badgeFg: Color(0xFF6D28D9),
+    stripe: Color(0xFF8B5CF6),
+    bg: Color(0xFFF5F3FF),
+    labelColor: Color(0xFF6D28D9),
+    badgeBg: Color(0xFFEDE9FE),
+    badgeFg: Color(0xFF6D28D9),
     icon: '🗓',
   ),
   _kKeyLater: _SectionAccent(
-    stripe: Color(0xFF94A3B8), bg: Color(0xFFF8FAFC),
-    labelColor: Color(0xFF475569), badgeBg: Color(0xFFE2E8F0), badgeFg: Color(0xFF475569),
+    stripe: Color(0xFF94A3B8),
+    bg: Color(0xFFF8FAFC),
+    labelColor: Color(0xFF475569),
+    badgeBg: Color(0xFFE2E8F0),
+    badgeFg: Color(0xFF475569),
     icon: '⏳',
   ),
   _kKeyDone: _SectionAccent(
-    stripe: AppColors.btnGreen, bg: Color(0xFFF0FDF4),
-    labelColor: Color(0xFF15803D), badgeBg: Color(0xFFDCFCE7), badgeFg: Color(0xFF15803D),
+    stripe: AppColors.btnGreen,
+    bg: Color(0xFFF0FDF4),
+    labelColor: Color(0xFF15803D),
+    badgeBg: Color(0xFFDCFCE7),
+    badgeFg: Color(0xFF15803D),
     icon: '✅',
   ),
   _kKeyNoDate: _SectionAccent(
-    stripe: Color(0xFF94A3B8), bg: Color(0xFFF8FAFC),
-    labelColor: Color(0xFF64748B), badgeBg: Color(0xFFE2E8F0), badgeFg: Color(0xFF64748B),
+    stripe: Color(0xFF94A3B8),
+    bg: Color(0xFFF8FAFC),
+    labelColor: Color(0xFF64748B),
+    badgeBg: Color(0xFFE2E8F0),
+    badgeFg: Color(0xFF64748B),
     icon: '📌',
   ),
 };
 
 const _kSectionAccentsDark = <String, _SectionAccent>{
   _kKeyOverdue: _SectionAccent(
-    stripe: AppColors.btnRed, bg: Color(0x1ADC2626),
-    labelColor: Color(0xFFFCA5A5), badgeBg: Color(0x26DC2626), badgeFg: Color(0xFFFCA5A5),
+    stripe: AppColors.btnRed,
+    bg: Color(0x1ADC2626),
+    labelColor: Color(0xFFFCA5A5),
+    badgeBg: Color(0x26DC2626),
+    badgeFg: Color(0xFFFCA5A5),
     icon: '🔥',
   ),
   _kKeyToday: _SectionAccent(
-    stripe: Color(0xFFF97316), bg: Color(0x1AF97316),
-    labelColor: Color(0xFFFDBA74), badgeBg: Color(0x26F97316), badgeFg: Color(0xFFFDBA74),
+    stripe: Color(0xFFF97316),
+    bg: Color(0x1AF97316),
+    labelColor: Color(0xFFFDBA74),
+    badgeBg: Color(0x26F97316),
+    badgeFg: Color(0xFFFDBA74),
     icon: '🔥',
   ),
   _kKeyTomorrow: _SectionAccent(
-    stripe: Color(0xFFF59E0B), bg: Color(0x1AF59E0B),
-    labelColor: Color(0xFFFDE68A), badgeBg: Color(0x26F59E0B), badgeFg: Color(0xFFFDE68A),
+    stripe: Color(0xFFF59E0B),
+    bg: Color(0x1AF59E0B),
+    labelColor: Color(0xFFFDE68A),
+    badgeBg: Color(0x26F59E0B),
+    badgeFg: Color(0xFFFDE68A),
     icon: '📅',
   ),
   _kKeyThisWeek: _SectionAccent(
-    stripe: AppColors.primary, bg: Color(0x1A3B82F6),
-    labelColor: Color(0xFF93C5FD), badgeBg: Color(0x263B82F6), badgeFg: Color(0xFF93C5FD),
+    stripe: AppColors.primary,
+    bg: Color(0x1A3B82F6),
+    labelColor: Color(0xFF93C5FD),
+    badgeBg: Color(0x263B82F6),
+    badgeFg: Color(0xFF93C5FD),
     icon: '📆',
   ),
   _kKeyNextWeek: _SectionAccent(
-    stripe: Color(0xFF8B5CF6), bg: Color(0x1A8B5CF6),
-    labelColor: Color(0xFFC4B5FD), badgeBg: Color(0x268B5CF6), badgeFg: Color(0xFFC4B5FD),
+    stripe: Color(0xFF8B5CF6),
+    bg: Color(0x1A8B5CF6),
+    labelColor: Color(0xFFC4B5FD),
+    badgeBg: Color(0x268B5CF6),
+    badgeFg: Color(0xFFC4B5FD),
     icon: '🗓',
   ),
   _kKeyLater: _SectionAccent(
-    stripe: Color(0xFF94A3B8), bg: Color(0xFF1E293B),
-    labelColor: Color(0xFF94A3B8), badgeBg: Color(0xFF334155), badgeFg: Color(0xFF94A3B8),
+    stripe: Color(0xFF94A3B8),
+    bg: Color(0xFF1E293B),
+    labelColor: Color(0xFF94A3B8),
+    badgeBg: Color(0xFF334155),
+    badgeFg: Color(0xFF94A3B8),
     icon: '⏳',
   ),
   _kKeyDone: _SectionAccent(
-    stripe: AppColors.btnGreen, bg: Color(0x1A22C55E),
-    labelColor: Color(0xFF86EFAC), badgeBg: Color(0x2622C55E), badgeFg: Color(0xFF86EFAC),
+    stripe: AppColors.btnGreen,
+    bg: Color(0x1A22C55E),
+    labelColor: Color(0xFF86EFAC),
+    badgeBg: Color(0x2622C55E),
+    badgeFg: Color(0xFF86EFAC),
     icon: '✅',
   ),
   _kKeyNoDate: _SectionAccent(
-    stripe: Color(0xFF94A3B8), bg: Color(0xFF1E293B),
-    labelColor: Color(0xFF64748B), badgeBg: Color(0xFF334155), badgeFg: Color(0xFF64748B),
+    stripe: Color(0xFF94A3B8),
+    bg: Color(0xFF1E293B),
+    labelColor: Color(0xFF64748B),
+    badgeBg: Color(0xFF334155),
+    badgeFg: Color(0xFF64748B),
     icon: '📌',
   ),
 };
@@ -1891,66 +2237,65 @@ class _SectionHeader extends StatelessWidget {
             ? const BorderRadius.vertical(top: Radius.circular(12))
             : BorderRadius.circular(12),
         child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: accent.bg,
-          border: Border(
-            left:   BorderSide(color: accent.stripe, width: 4),
-            top:    BorderSide(color: divider),
-            right:  BorderSide(color: divider),
-            bottom: BorderSide(color: divider),
-          ),
-        ),
-        child: Row(
-          children: [
-            Text(accent.icon, style: const TextStyle(fontSize: 14)),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
-                color: accent.labelColor,
-              ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: accent.bg,
+            border: Border(
+              left: BorderSide(color: accent.stripe, width: 4),
+              top: BorderSide(color: divider),
+              right: BorderSide(color: divider),
+              bottom: BorderSide(color: divider),
             ),
-            const Spacer(),
-            if (sectionKey == _kKeyOverdue && count > 0) ...[
+          ),
+          child: Row(
+            children: [
+              Text(accent.icon, style: const TextStyle(fontSize: 14)),
+              const SizedBox(width: 8),
               Text(
-                'Needs attention',
+                label,
                 style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
                   color: accent.labelColor,
                 ),
               ),
-              const SizedBox(width: 6),
-            ],
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: accent.badgeBg,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: accent.badgeFg,
+              const Spacer(),
+              if (sectionKey == _kKeyOverdue && count > 0) ...[
+                Text(
+                  'Needs attention',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: accent.labelColor,
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: accent.badgeBg,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: accent.badgeFg,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              isExpanded ? '▾' : '▸',
-              style: TextStyle(fontSize: 13, color: accent.labelColor),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                isExpanded ? '▾' : '▸',
+                style: TextStyle(fontSize: 13, color: accent.labelColor),
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
 }
-

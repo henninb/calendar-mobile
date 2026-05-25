@@ -4,43 +4,57 @@ import 'package:calendar_mobile/widgets/status_badge.dart';
 import 'package:calendar_mobile/core/constants.dart';
 import 'package:calendar_mobile/core/theme.dart';
 
-Widget _wrap(Widget child) => MaterialApp(theme: buildAppTheme(), home: Scaffold(body: child));
+Widget _wrap(Widget child) => MaterialApp(
+  theme: buildAppTheme(),
+  home: Scaffold(body: child),
+);
 
 void main() {
   group('StatusBadge', () {
     testWidgets('upcoming status shows UPCOMING label', (tester) async {
-      await tester.pumpWidget(_wrap(const StatusBadge(OccurrenceStatus.upcoming)));
+      await tester.pumpWidget(
+        _wrap(const StatusBadge(OccurrenceStatus.upcoming)),
+      );
       expect(find.text('UPCOMING'), findsOneWidget);
     });
 
     testWidgets('overdue status shows OVERDUE label', (tester) async {
-      await tester.pumpWidget(_wrap(const StatusBadge(OccurrenceStatus.overdue)));
+      await tester.pumpWidget(
+        _wrap(const StatusBadge(OccurrenceStatus.overdue)),
+      );
       expect(find.text('OVERDUE'), findsOneWidget);
     });
 
     testWidgets('completed status shows DONE label', (tester) async {
-      await tester.pumpWidget(_wrap(const StatusBadge(OccurrenceStatus.completed)));
+      await tester.pumpWidget(
+        _wrap(const StatusBadge(OccurrenceStatus.completed)),
+      );
       expect(find.text('DONE'), findsOneWidget);
     });
 
     testWidgets('skipped status shows SKIPPED label', (tester) async {
-      await tester.pumpWidget(_wrap(const StatusBadge(OccurrenceStatus.skipped)));
+      await tester.pumpWidget(
+        _wrap(const StatusBadge(OccurrenceStatus.skipped)),
+      );
       expect(find.text('SKIPPED'), findsOneWidget);
     });
 
-    testWidgets('unknown status shows uppercased status as label', (tester) async {
+    testWidgets('unknown status shows uppercased status as label', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(const StatusBadge('pending')));
       expect(find.text('PENDING'), findsOneWidget);
     });
 
     testWidgets('completed status uses completed badge colors', (tester) async {
-      await tester.pumpWidget(_wrap(const StatusBadge(OccurrenceStatus.completed)));
+      await tester.pumpWidget(
+        _wrap(const StatusBadge(OccurrenceStatus.completed)),
+      );
 
       final container = tester.widget<Container>(
-        find.ancestor(
-          of: find.text('DONE'),
-          matching: find.byType(Container),
-        ).first,
+        find
+            .ancestor(of: find.text('DONE'), matching: find.byType(Container))
+            .first,
       );
       final decoration = container.decoration! as BoxDecoration;
       final text = tester.widget<Text>(find.text('DONE'));
@@ -57,7 +71,9 @@ void main() {
     });
 
     testWidgets('in_progress status shows IN PROGRESS label', (tester) async {
-      await tester.pumpWidget(_wrap(const TaskStatusBadge(TaskStatus.inProgress)));
+      await tester.pumpWidget(
+        _wrap(const TaskStatusBadge(TaskStatus.inProgress)),
+      );
       expect(find.text('IN PROGRESS'), findsOneWidget);
     });
 
@@ -67,7 +83,9 @@ void main() {
     });
 
     testWidgets('cancelled status shows CANCELLED label', (tester) async {
-      await tester.pumpWidget(_wrap(const TaskStatusBadge(TaskStatus.cancelled)));
+      await tester.pumpWidget(
+        _wrap(const TaskStatusBadge(TaskStatus.cancelled)),
+      );
       expect(find.text('CANCELLED'), findsOneWidget);
     });
 
@@ -77,13 +95,17 @@ void main() {
     });
 
     testWidgets('in progress status uses amber palette', (tester) async {
-      await tester.pumpWidget(_wrap(const TaskStatusBadge(TaskStatus.inProgress)));
+      await tester.pumpWidget(
+        _wrap(const TaskStatusBadge(TaskStatus.inProgress)),
+      );
 
       final container = tester.widget<Container>(
-        find.ancestor(
-          of: find.text('IN PROGRESS'),
-          matching: find.byType(Container),
-        ).first,
+        find
+            .ancestor(
+              of: find.text('IN PROGRESS'),
+              matching: find.byType(Container),
+            )
+            .first,
       );
       final decoration = container.decoration! as BoxDecoration;
       final text = tester.widget<Text>(find.text('IN PROGRESS'));
@@ -114,21 +136,25 @@ void main() {
       expect(find.text('CRITICAL'), findsOneWidget);
     });
 
-    testWidgets('high priority badge uses tinted background and border', (tester) async {
+    testWidgets('high priority badge uses tinted background and border', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(const PriorityBadge('high')));
 
       final container = tester.widget<Container>(
-        find.ancestor(
-          of: find.text('HIGH'),
-          matching: find.byType(Container),
-        ).first,
+        find
+            .ancestor(of: find.text('HIGH'), matching: find.byType(Container))
+            .first,
       );
       final decoration = container.decoration! as BoxDecoration;
       final text = tester.widget<Text>(find.text('HIGH'));
 
       expect(decoration.color, AppColors.priorityHigh.withAlpha(30));
       expect(decoration.border, isNotNull);
-      expect((decoration.border! as Border).top.color, AppColors.priorityHigh.withAlpha(80));
+      expect(
+        (decoration.border! as Border).top.color,
+        AppColors.priorityHigh.withAlpha(80),
+      );
       expect((text.style!).color, AppColors.priorityHigh);
     });
   });

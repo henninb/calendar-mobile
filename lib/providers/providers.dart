@@ -38,32 +38,44 @@ final apiKeyInitialValueProvider = Provider<String>((ref) {
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 
-final baseUrlProvider = NotifierProvider<BaseUrlNotifier, String>(BaseUrlNotifier.new);
+final baseUrlProvider = NotifierProvider<BaseUrlNotifier, String>(
+  BaseUrlNotifier.new,
+);
 
 class BaseUrlNotifier extends Notifier<String> {
   @override
   String build() {
     final prefs = ref.read(sharedPreferencesProvider);
-    return prefs.getString(AppConstants.prefBaseUrl) ?? AppConstants.defaultBaseUrl;
+    return prefs.getString(AppConstants.prefBaseUrl) ??
+        AppConstants.defaultBaseUrl;
   }
 
   bool set(String url) {
     final trimmed = url.trim();
     final uri = Uri.tryParse(trimmed);
-    if (uri == null || !uri.hasScheme || uri.scheme != 'https' || uri.host.isEmpty) return false;
+    if (uri == null ||
+        !uri.hasScheme ||
+        uri.scheme != 'https' ||
+        uri.host.isEmpty)
+      return false;
     state = trimmed;
-    ref.read(sharedPreferencesProvider).setString(AppConstants.prefBaseUrl, trimmed);
+    ref
+        .read(sharedPreferencesProvider)
+        .setString(AppConstants.prefBaseUrl, trimmed);
     return true;
   }
 }
 
-final wgTunnelNameProvider =
-    NotifierProvider<WgTunnelNameNotifier, String>(WgTunnelNameNotifier.new);
+final wgTunnelNameProvider = NotifierProvider<WgTunnelNameNotifier, String>(
+  WgTunnelNameNotifier.new,
+);
 
 class WgTunnelNameNotifier extends Notifier<String> {
   @override
   String build() {
-    return ref.read(sharedPreferencesProvider).getString(AppConstants.prefWgTunnelName) ??
+    return ref
+            .read(sharedPreferencesProvider)
+            .getString(AppConstants.prefWgTunnelName) ??
         AppConstants.defaultWgTunnelName;
   }
 
@@ -71,11 +83,15 @@ class WgTunnelNameNotifier extends Notifier<String> {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
     state = trimmed;
-    ref.read(sharedPreferencesProvider).setString(AppConstants.prefWgTunnelName, trimmed);
+    ref
+        .read(sharedPreferencesProvider)
+        .setString(AppConstants.prefWgTunnelName, trimmed);
   }
 }
 
-final apiKeyProvider = NotifierProvider<ApiKeyNotifier, String>(ApiKeyNotifier.new);
+final apiKeyProvider = NotifierProvider<ApiKeyNotifier, String>(
+  ApiKeyNotifier.new,
+);
 
 class ApiKeyNotifier extends Notifier<String> {
   @override
@@ -87,10 +103,9 @@ class ApiKeyNotifier extends Notifier<String> {
   Future<void> set(String key) async {
     state = key;
     // Persist to Android Keystore / iOS Keychain; never write to SharedPreferences.
-    await ref.read(secureStorageProvider).write(
-      key: AppConstants.prefApiKey,
-      value: key,
-    );
+    await ref
+        .read(secureStorageProvider)
+        .write(key: AppConstants.prefApiKey, value: key);
   }
 }
 
@@ -108,13 +123,21 @@ final dbProvider = Provider<AppDatabase>((ref) {
 // is created once and reused. URL changes call updateBaseUrl() in-place instead
 // of leaking a new Dio instance on every settings save.
 
-final apiClientProvider = NotifierProvider<ApiClientNotifier, ApiClient>(ApiClientNotifier.new);
+final apiClientProvider = NotifierProvider<ApiClientNotifier, ApiClient>(
+  ApiClientNotifier.new,
+);
 
 class ApiClientNotifier extends Notifier<ApiClient> {
   @override
   ApiClient build() {
-    final client = ApiClient(ref.read(baseUrlProvider), apiKey: ref.read(apiKeyProvider));
-    ref.listen<String>(baseUrlProvider, (_, next) => client.updateBaseUrl(next));
+    final client = ApiClient(
+      ref.read(baseUrlProvider),
+      apiKey: ref.read(apiKeyProvider),
+    );
+    ref.listen<String>(
+      baseUrlProvider,
+      (_, next) => client.updateBaseUrl(next),
+    );
     ref.listen<String>(apiKeyProvider, (_, next) => client.updateApiKey(next));
     return client;
   }
@@ -132,13 +155,15 @@ final syncServiceProvider = Provider<SyncService>((ref) {
 // state. Useful when the WireGuard tunnel is down but the OS still reports
 // a network interface as connected.
 
-final forcedOfflineProvider =
-    NotifierProvider<ForcedOfflineNotifier, bool>(ForcedOfflineNotifier.new);
+final forcedOfflineProvider = NotifierProvider<ForcedOfflineNotifier, bool>(
+  ForcedOfflineNotifier.new,
+);
 
 class ForcedOfflineNotifier extends Notifier<bool> {
   @override
   bool build() {
-    return ref.read(sharedPreferencesProvider)
+    return ref
+            .read(sharedPreferencesProvider)
             .getBool(AppConstants.prefForcedOffline) ??
         false;
   }
@@ -149,7 +174,10 @@ class ForcedOfflineNotifier extends Notifier<bool> {
     ref
         .read(sharedPreferencesProvider)
         .setBool(AppConstants.prefForcedOffline, value);
-    dev.log('ForcedOfflineNotifier: forcedOffline=$value', name: 'connectivity');
+    dev.log(
+      'ForcedOfflineNotifier: forcedOffline=$value',
+      name: 'connectivity',
+    );
   }
 
   void toggle() => set(!state);
@@ -165,10 +193,13 @@ class ForcedOfflineNotifier extends Notifier<bool> {
 // This keeps isOnlineProvider as the single source of truth consumed by all
 // sync logic — no call sites need changing.
 
-final connectivityInstanceProvider = Provider<Connectivity>((ref) => Connectivity());
+final connectivityInstanceProvider = Provider<Connectivity>(
+  (ref) => Connectivity(),
+);
 
-final isOnlineProvider =
-    NotifierProvider<ConnectivityNotifier, bool>(ConnectivityNotifier.new);
+final isOnlineProvider = NotifierProvider<ConnectivityNotifier, bool>(
+  ConnectivityNotifier.new,
+);
 
 class ConnectivityNotifier extends Notifier<bool> {
   StreamSubscription<List<ConnectivityResult>>? _sub;
@@ -202,7 +233,11 @@ class ConnectivityNotifier extends Notifier<bool> {
       _networkOnline = _isOnline(results);
       state = _networkOnline && !ref.read(forcedOfflineProvider);
     } catch (e) {
-      dev.log('ConnectivityNotifier._init failed: $e', name: 'connectivity', level: 900);
+      dev.log(
+        'ConnectivityNotifier._init failed: $e',
+        name: 'connectivity',
+        level: 900,
+      );
       // Leave the optimistic initial state in place; sync errors will surface
       // when the user triggers a manual sync.
     }
@@ -250,21 +285,22 @@ class SyncState {
     SyncPhase? phase,
     Object? errorMessage = _keep,
     int? pendingCount,
-  }) =>
-      SyncState(
-        phase: phase ?? this.phase,
-        errorMessage: identical(errorMessage, _keep)
-            ? this.errorMessage
-            : errorMessage as String?,
-        pendingCount: pendingCount ?? this.pendingCount,
-      );
+  }) => SyncState(
+    phase: phase ?? this.phase,
+    errorMessage: identical(errorMessage, _keep)
+        ? this.errorMessage
+        : errorMessage as String?,
+    pendingCount: pendingCount ?? this.pendingCount,
+  );
 
   // Sentinel that distinguishes "caller did not pass errorMessage" from
   // "caller explicitly passed null to clear it".
   static const _keep = Object();
 }
 
-final syncStateProvider = NotifierProvider<SyncNotifier, SyncState>(SyncNotifier.new);
+final syncStateProvider = NotifierProvider<SyncNotifier, SyncState>(
+  SyncNotifier.new,
+);
 
 class SyncNotifier extends Notifier<SyncState> {
   Timer? _periodicTimer;
@@ -276,14 +312,22 @@ class SyncNotifier extends Notifier<SyncState> {
       AppConstants.periodicSync,
       // Skip the refresh when offline so we don't transition to
       // SyncPhase.error every 5 minutes and show a spurious error banner.
-      (_) { if (ref.read(isOnlineProvider) && ref.read(baseUrlProvider).isNotEmpty) silentRefresh(); },
+      (_) {
+        if (ref.read(isOnlineProvider) && ref.read(baseUrlProvider).isNotEmpty)
+          silentRefresh();
+      },
     );
 
     // When the device comes back online after being offline, immediately
     // push any mutations queued while offline and pull fresh data.
     ref.listen<bool>(isOnlineProvider, (prev, next) {
-      if (prev == false && next == true && ref.read(baseUrlProvider).isNotEmpty) {
-        dev.log('SyncNotifier: connectivity restored, triggering silentRefresh', name: 'sync');
+      if (prev == false &&
+          next == true &&
+          ref.read(baseUrlProvider).isNotEmpty) {
+        dev.log(
+          'SyncNotifier: connectivity restored, triggering silentRefresh',
+          name: 'sync',
+        );
         silentRefresh();
       }
     });
@@ -323,7 +367,11 @@ class SyncNotifier extends Notifier<SyncState> {
     try {
       final result = await syncSvc.pushPending();
       if (result.errors.isNotEmpty) {
-        dev.log('SyncNotifier.sync: push errors=${result.errors}', name: 'sync', level: 900);
+        dev.log(
+          'SyncNotifier.sync: push errors=${result.errors}',
+          name: 'sync',
+          level: 900,
+        );
         pushError = result.errors.first;
         // Fall through — still do fullRefresh so the server-spawned next
         // recurring task is pulled down even when some pushes failed.
@@ -360,7 +408,8 @@ class SyncNotifier extends Notifier<SyncState> {
     // Block only while a sync is actively in-progress. Allow retry from
     // error/offline so the periodic timer and the connectivity-restored
     // listener can auto-recover without requiring user interaction.
-    if (state.phase == SyncPhase.pulling || state.phase == SyncPhase.pushing) return;
+    if (state.phase == SyncPhase.pulling || state.phase == SyncPhase.pushing)
+      return;
     dev.log('SyncNotifier.silentRefresh: start', name: 'sync');
     state = state.copyWith(phase: SyncPhase.pulling);
     final svc = ref.read(syncServiceProvider);
@@ -370,10 +419,18 @@ class SyncNotifier extends Notifier<SyncState> {
       try {
         final result = await svc.pushPending();
         if (result.errors.isNotEmpty) {
-          dev.log('SyncNotifier.silentRefresh: push errors (suppressed)=${result.errors}', name: 'sync', level: 900);
+          dev.log(
+            'SyncNotifier.silentRefresh: push errors (suppressed)=${result.errors}',
+            name: 'sync',
+            level: 900,
+          );
         }
       } catch (e) {
-        dev.log('SyncNotifier.silentRefresh: push threw (suppressed) $e', name: 'sync', level: 900);
+        dev.log(
+          'SyncNotifier.silentRefresh: push threw (suppressed) $e',
+          name: 'sync',
+          level: 900,
+        );
       }
       await svc.fullRefresh();
       dev.log('SyncNotifier.silentRefresh: complete', name: 'sync');
@@ -406,8 +463,10 @@ class SyncNotifier extends Notifier<SyncState> {
     if (msg.contains('Connection refused') || msg.contains('SocketException')) {
       return 'Cannot reach backend — check the URL in Settings';
     }
-    if (msg.contains('timed out')) return 'Request timed out — is the server running?';
-    if (msg.contains('status code of 401') || msg.contains('status code of 403')) {
+    if (msg.contains('timed out'))
+      return 'Request timed out — is the server running?';
+    if (msg.contains('status code of 401') ||
+        msg.contains('status code of 403')) {
       return 'Authentication failed — check the API key in Settings';
     }
     if (msg.length <= 120) return msg;
@@ -418,7 +477,9 @@ class SyncNotifier extends Notifier<SyncState> {
 // ── Task Search ──────────────────────────────────────────────────────────────
 
 final taskSearchVisibleProvider =
-    NotifierProvider<TaskSearchVisibleNotifier, bool>(TaskSearchVisibleNotifier.new);
+    NotifierProvider<TaskSearchVisibleNotifier, bool>(
+      TaskSearchVisibleNotifier.new,
+    );
 
 class TaskSearchVisibleNotifier extends Notifier<bool> {
   @override
@@ -450,7 +511,9 @@ final creditCardsProvider = StreamProvider<List<CreditCard>>((ref) {
   return ref.watch(dbProvider).watchCreditCards();
 });
 
-final trackerCacheProvider = StreamProvider<List<CreditCardTrackerCacheData>>((ref) {
+final trackerCacheProvider = StreamProvider<List<CreditCardTrackerCacheData>>((
+  ref,
+) {
   return ref.watch(dbProvider).watchTrackerCache();
 });
 
@@ -458,11 +521,11 @@ final personsProvider = StreamProvider<List<Person>>((ref) {
   return ref.watch(dbProvider).watchPersons();
 });
 
-final subtasksForTaskProvider =
-    StreamProvider.autoDispose.family<List<Subtask>, int>(
-  (ref, taskLocalId) =>
-      ref.watch(dbProvider).watchSubtasksForTask(taskLocalId),
-);
+final subtasksForTaskProvider = StreamProvider.autoDispose
+    .family<List<Subtask>, int>(
+      (ref, taskLocalId) =>
+          ref.watch(dbProvider).watchSubtasksForTask(taskLocalId),
+    );
 
 // ── Grocery Streams ───────────────────────────────────────────────────────────
 
@@ -474,8 +537,7 @@ final groceryItemsProvider = StreamProvider<List<GroceryItem>>((ref) {
   return ref.watch(dbProvider).watchGroceryItems();
 });
 
-final groceryOnHandProvider =
-    StreamProvider<List<GroceryOnHandData>>((ref) {
+final groceryOnHandProvider = StreamProvider<List<GroceryOnHandData>>((ref) {
   return ref.watch(dbProvider).watchGroceryOnHand();
 });
 
@@ -483,21 +545,21 @@ final groceryListsProvider = StreamProvider<List<GroceryList>>((ref) {
   return ref.watch(dbProvider).watchGroceryLists();
 });
 
-final groceryListItemsProvider =
-    StreamProvider<List<GroceryListItem>>((ref) {
+final groceryListItemsProvider = StreamProvider<List<GroceryListItem>>((ref) {
   return ref.watch(dbProvider).watchGroceryListItems();
 });
 
-final groceryListItemsForListProvider =
-    StreamProvider.autoDispose.family<List<GroceryListItem>, int>(
-  (ref, listLocalId) =>
-      ref.watch(dbProvider).watchGroceryListItemsForList(listLocalId),
-);
+final groceryListItemsForListProvider = StreamProvider.autoDispose
+    .family<List<GroceryListItem>, int>(
+      (ref, listLocalId) =>
+          ref.watch(dbProvider).watchGroceryListItemsForList(listLocalId),
+    );
 
 // ── Theme Mode ────────────────────────────────────────────────────────────────
 
-final themeModeProvider =
-    NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
+final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
+  ThemeModeNotifier.new,
+);
 
 class ThemeModeNotifier extends Notifier<ThemeMode> {
   static const _key = 'themeMode';
@@ -507,16 +569,16 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
     final saved = ref.read(sharedPreferencesProvider).getString(_key);
     return switch (saved) {
       'light' => ThemeMode.light,
-      'dark'  => ThemeMode.dark,
-      _       => ThemeMode.system,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
     };
   }
 
   void set(ThemeMode mode) {
     state = mode;
     ref.read(sharedPreferencesProvider).setString(_key, switch (mode) {
-      ThemeMode.light  => 'light',
-      ThemeMode.dark   => 'dark',
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
       ThemeMode.system => 'system',
     });
   }

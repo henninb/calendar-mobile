@@ -32,13 +32,16 @@ class SyncBanner extends ConsumerWidget {
       );
     }
 
-    if (syncState.phase == SyncPhase.pulling || syncState.phase == SyncPhase.pushing) {
+    if (syncState.phase == SyncPhase.pulling ||
+        syncState.phase == SyncPhase.pushing) {
       return _Banner(
         color: colors.pendingBanner,
         iconColor: colors.pendingFg,
         textColor: colors.pendingFg,
         icon: Icons.sync_rounded,
-        text: syncState.phase == SyncPhase.pushing ? 'Pushing changes…' : 'Refreshing data…',
+        text: syncState.phase == SyncPhase.pushing
+            ? 'Pushing changes…'
+            : 'Refreshing data…',
         spinning: true,
       );
     }
@@ -99,7 +102,11 @@ class _Banner extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 12, color: textColor, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 12,
+                color: textColor,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           if (onDismiss != null)

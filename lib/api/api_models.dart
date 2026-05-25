@@ -18,12 +18,12 @@ class ApiCategory {
   });
 
   factory ApiCategory.fromJson(Map<String, dynamic> j) => ApiCategory(
-        id: (j['id'] as num).toInt(),
-        name: j['name'] as String,
-        color: j['color'] as String? ?? '#3b82f6',
-        icon: j['icon'] as String? ?? '📅',
-        description: j['description'] as String?,
-      );
+    id: (j['id'] as num).toInt(),
+    name: j['name'] as String,
+    color: j['color'] as String? ?? '#3b82f6',
+    icon: j['icon'] as String? ?? '📅',
+    description: j['description'] as String?,
+  );
 }
 
 @immutable
@@ -35,10 +35,10 @@ class ApiPerson {
   const ApiPerson({required this.id, required this.name, this.email});
 
   factory ApiPerson.fromJson(Map<String, dynamic> j) => ApiPerson(
-        id: (j['id'] as num).toInt(),
-        name: j['name'] as String,
-        email: j['email'] as String?,
-      );
+    id: (j['id'] as num).toInt(),
+    name: j['name'] as String,
+    email: j['email'] as String?,
+  );
 }
 
 @immutable
@@ -72,19 +72,19 @@ class ApiEvent {
   });
 
   factory ApiEvent.fromJson(Map<String, dynamic> j) => ApiEvent(
-        id: (j['id'] as num).toInt(),
-        title: j['title'] as String,
-        categoryId: (j['category_id'] as num).toInt(),
-        rrule: j['rrule'] as String?,
-        dtstart: j['dtstart'] as String,
-        priority: j['priority'] as String? ?? 'medium',
-        description: j['description'] as String?,
-        isActive: j['is_active'] as bool? ?? true,
-        category: ApiCategory.fromJson(j['category'] as Map<String, dynamic>),
-        amount: j['amount']?.toString(),
-        location: j['location'] as String?,
-        durationDays: (j['duration_days'] as num?)?.toInt() ?? 1,
-      );
+    id: (j['id'] as num).toInt(),
+    title: j['title'] as String,
+    categoryId: (j['category_id'] as num).toInt(),
+    rrule: j['rrule'] as String?,
+    dtstart: j['dtstart'] as String,
+    priority: j['priority'] as String? ?? 'medium',
+    description: j['description'] as String?,
+    isActive: j['is_active'] as bool? ?? true,
+    category: ApiCategory.fromJson(j['category'] as Map<String, dynamic>),
+    amount: j['amount']?.toString(),
+    location: j['location'] as String?,
+    durationDays: (j['duration_days'] as num?)?.toInt() ?? 1,
+  );
 }
 
 @immutable
@@ -106,15 +106,15 @@ class ApiOccurrence {
   });
 
   factory ApiOccurrence.fromJson(Map<String, dynamic> j) => ApiOccurrence(
-        id: (j['id'] as num).toInt(),
-        eventId: (j['event_id'] as num).toInt(),
-        occurrenceDate: j['occurrence_date'] as String,
-        status: j['status'] as String? ?? 'upcoming',
-        notes: j['notes'] as String?,
-        event: j['event'] != null
-            ? ApiEvent.fromJson(j['event'] as Map<String, dynamic>)
-            : null,
-      );
+    id: (j['id'] as num).toInt(),
+    eventId: (j['event_id'] as num).toInt(),
+    occurrenceDate: j['occurrence_date'] as String,
+    status: j['status'] as String? ?? 'upcoming',
+    notes: j['notes'] as String?,
+    event: j['event'] != null
+        ? ApiEvent.fromJson(j['event'] as Map<String, dynamic>)
+        : null,
+  );
 }
 
 @immutable
@@ -138,14 +138,14 @@ class ApiSubtask {
   });
 
   factory ApiSubtask.fromJson(Map<String, dynamic> j) => ApiSubtask(
-        id: (j['id'] as num).toInt(),
-        taskId: (j['task_id'] as num).toInt(),
-        title: j['title'] as String,
-        status: j['status'] as String? ?? 'todo',
-        dueDate: j['due_date'] as String?,
-        order: (j['order'] as num?)?.toInt() ?? 0,
-        completedAt: j['completed_at'] as String?,
-      );
+    id: (j['id'] as num).toInt(),
+    taskId: (j['task_id'] as num).toInt(),
+    title: j['title'] as String,
+    status: j['status'] as String? ?? 'todo',
+    dueDate: j['due_date'] as String?,
+    order: (j['order'] as num?)?.toInt() ?? 0,
+    completedAt: j['completed_at'] as String?,
+  );
 }
 
 @immutable
@@ -191,31 +191,31 @@ class ApiTask {
   });
 
   factory ApiTask.fromJson(Map<String, dynamic> j) => ApiTask(
-        id: (j['id'] as num).toInt(),
-        title: j['title'] as String,
-        description: j['description'] as String?,
-        status: j['status'] as String? ?? 'todo',
-        priority: j['priority'] as String? ?? 'medium',
-        assigneeId: (j['assignee_id'] as num?)?.toInt(),
-        categoryId: (j['category_id'] as num?)?.toInt(),
-        dueDate: j['due_date'] as String?,
-        estimatedMinutes: (j['estimated_minutes'] as num?)?.toInt(),
-        recurrence: j['recurrence'] as String? ?? 'none',
-        occurrenceId: (j['occurrence_id'] as num?)?.toInt(),
-        order: (j['order'] as num?)?.toInt() ?? 0,
-        assignee: j['assignee'] != null
-            ? ApiPerson.fromJson(j['assignee'] as Map<String, dynamic>)
-            : null,
-        category: j['category'] != null
-            ? ApiCategory.fromJson(j['category'] as Map<String, dynamic>)
-            : null,
-        subtasks: (j['subtasks'] as List? ?? [])
-            .map((s) => ApiSubtask.fromJson(s as Map<String, dynamic>))
-            .toList(),
-        completedAt: j['completed_at'] as String?,
-        createdAt: j['created_at'] as String,
-        updatedAt: j['updated_at'] as String,
-      );
+    id: (j['id'] as num).toInt(),
+    title: j['title'] as String,
+    description: j['description'] as String?,
+    status: j['status'] as String? ?? 'todo',
+    priority: j['priority'] as String? ?? 'medium',
+    assigneeId: (j['assignee_id'] as num?)?.toInt(),
+    categoryId: (j['category_id'] as num?)?.toInt(),
+    dueDate: j['due_date'] as String?,
+    estimatedMinutes: (j['estimated_minutes'] as num?)?.toInt(),
+    recurrence: j['recurrence'] as String? ?? 'none',
+    occurrenceId: (j['occurrence_id'] as num?)?.toInt(),
+    order: (j['order'] as num?)?.toInt() ?? 0,
+    assignee: j['assignee'] != null
+        ? ApiPerson.fromJson(j['assignee'] as Map<String, dynamic>)
+        : null,
+    category: j['category'] != null
+        ? ApiCategory.fromJson(j['category'] as Map<String, dynamic>)
+        : null,
+    subtasks: (j['subtasks'] as List? ?? [])
+        .map((s) => ApiSubtask.fromJson(s as Map<String, dynamic>))
+        .toList(),
+    completedAt: j['completed_at'] as String?,
+    createdAt: j['created_at'] as String,
+    updatedAt: j['updated_at'] as String,
+  );
 }
 
 @immutable
@@ -251,20 +251,20 @@ class ApiCreditCard {
   });
 
   factory ApiCreditCard.fromJson(Map<String, dynamic> j) => ApiCreditCard(
-        id: (j['id'] as num).toInt(),
-        name: j['name'] as String,
-        issuer: j['issuer'] as String?,
-        lastFour: j['last_four'] as String?,
-        statementCloseDay: (j['statement_close_day'] as num?)?.toInt(),
-        gracePeriodDays: (j['grace_period_days'] as num?)?.toInt(),
-        weekendShift: j['weekend_shift'] as String?,
-        cycleDays: (j['cycle_days'] as num?)?.toInt(),
-        cycleReferenceDate: j['cycle_reference_date'] as String?,
-        dueDaySameMonth: (j['due_day_same_month'] as num?)?.toInt(),
-        dueDayNextMonth: (j['due_day_next_month'] as num?)?.toInt(),
-        annualFeeMonth: (j['annual_fee_month'] as num?)?.toInt(),
-        isActive: j['is_active'] as bool? ?? true,
-      );
+    id: (j['id'] as num).toInt(),
+    name: j['name'] as String,
+    issuer: j['issuer'] as String?,
+    lastFour: j['last_four'] as String?,
+    statementCloseDay: (j['statement_close_day'] as num?)?.toInt(),
+    gracePeriodDays: (j['grace_period_days'] as num?)?.toInt(),
+    weekendShift: j['weekend_shift'] as String?,
+    cycleDays: (j['cycle_days'] as num?)?.toInt(),
+    cycleReferenceDate: j['cycle_reference_date'] as String?,
+    dueDaySameMonth: (j['due_day_same_month'] as num?)?.toInt(),
+    dueDayNextMonth: (j['due_day_next_month'] as num?)?.toInt(),
+    annualFeeMonth: (j['annual_fee_month'] as num?)?.toInt(),
+    isActive: j['is_active'] as bool? ?? true,
+  );
 }
 
 // ── Grocery ───────────────────────────────────────────────────────────────────
@@ -301,11 +301,11 @@ class ApiStore {
   });
 
   factory ApiStore.fromJson(Map<String, dynamic> j) => ApiStore(
-        id: (j['id'] as num).toInt(),
-        name: j['name'] as String,
-        location: j['location'] as String?,
-        isActive: j['is_active'] as bool? ?? true,
-      );
+    id: (j['id'] as num).toInt(),
+    name: j['name'] as String,
+    location: j['location'] as String?,
+    isActive: j['is_active'] as bool? ?? true,
+  );
 }
 
 @immutable
@@ -323,11 +323,11 @@ class ApiGroceryItem {
   });
 
   factory ApiGroceryItem.fromJson(Map<String, dynamic> j) => ApiGroceryItem(
-        id: (j['id'] as num).toInt(),
-        name: j['name'] as String,
-        defaultUnit: j['default_unit'] as String? ?? 'each',
-        defaultStoreId: (j['default_store_id'] as num?)?.toInt(),
-      );
+    id: (j['id'] as num).toInt(),
+    name: j['name'] as String,
+    defaultUnit: j['default_unit'] as String? ?? 'each',
+    defaultStoreId: (j['default_store_id'] as num?)?.toInt(),
+  );
 }
 
 @immutable
@@ -347,14 +347,14 @@ class ApiOnHand {
   });
 
   factory ApiOnHand.fromJson(Map<String, dynamic> j) => ApiOnHand(
-        id: (j['id'] as num).toInt(),
-        itemId: (j['item_id'] as num).toInt(),
-        quantity: _decimalToDouble(j['quantity'], 0.0),
-        unit: j['unit'] as String? ?? 'each',
-        item: j['item'] != null
-            ? ApiGroceryItem.fromJson(j['item'] as Map<String, dynamic>)
-            : null,
-      );
+    id: (j['id'] as num).toInt(),
+    itemId: (j['item_id'] as num).toInt(),
+    quantity: _decimalToDouble(j['quantity'], 0.0),
+    unit: j['unit'] as String? ?? 'each',
+    item: j['item'] != null
+        ? ApiGroceryItem.fromJson(j['item'] as Map<String, dynamic>)
+        : null,
+  );
 }
 
 @immutable
@@ -418,20 +418,18 @@ class ApiGroceryList {
   });
 
   factory ApiGroceryList.fromJson(Map<String, dynamic> j) => ApiGroceryList(
-        id: (j['id'] as num).toInt(),
-        name: j['name'] as String,
-        storeId: (j['store_id'] as num?)?.toInt(),
-        status: j['status'] as String? ?? 'draft',
-        shoppingDate: j['shopping_date'] as String?,
-        store: j['store'] != null
-            ? ApiStore.fromJson(j['store'] as Map<String, dynamic>)
-            : null,
-        items: (j['items'] as List? ?? [])
-            .map(
-              (i) => ApiGroceryListItem.fromJson(i as Map<String, dynamic>),
-            )
-            .toList(),
-      );
+    id: (j['id'] as num).toInt(),
+    name: j['name'] as String,
+    storeId: (j['store_id'] as num?)?.toInt(),
+    status: j['status'] as String? ?? 'draft',
+    shoppingDate: j['shopping_date'] as String?,
+    store: j['store'] != null
+        ? ApiStore.fromJson(j['store'] as Map<String, dynamic>)
+        : null,
+    items: (j['items'] as List? ?? [])
+        .map((i) => ApiGroceryListItem.fromJson(i as Map<String, dynamic>))
+        .toList(),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -471,19 +469,19 @@ class ApiTrackerRow {
   });
 
   factory ApiTrackerRow.fromJson(Map<String, dynamic> j) => ApiTrackerRow(
-        id: (j['id'] as num).toInt(),
-        name: j['name'] as String,
-        issuer: j['issuer'] as String?,
-        lastFour: j['last_four'] as String?,
-        grace: j['grace'] as String? ?? '',
-        prevClose: j['prev_close'] as String? ?? '',
-        prevDue: j['prev_due'] as String? ?? '',
-        nextClose: j['next_close'] as String? ?? '',
-        nextCloseDays: (j['next_close_days'] as num?)?.toInt() ?? 0,
-        nextDue: j['next_due'] as String? ?? '',
-        nextDueDays: (j['next_due_days'] as num?)?.toInt() ?? 0,
-        annualFeeDate: j['annual_fee_date'] as String?,
-        annualFeeDays: (j['annual_fee_days'] as num?)?.toInt(),
-        prevDueOverdue: j['prev_due_overdue'] as bool? ?? false,
-      );
+    id: (j['id'] as num).toInt(),
+    name: j['name'] as String,
+    issuer: j['issuer'] as String?,
+    lastFour: j['last_four'] as String?,
+    grace: j['grace'] as String? ?? '',
+    prevClose: j['prev_close'] as String? ?? '',
+    prevDue: j['prev_due'] as String? ?? '',
+    nextClose: j['next_close'] as String? ?? '',
+    nextCloseDays: (j['next_close_days'] as num?)?.toInt() ?? 0,
+    nextDue: j['next_due'] as String? ?? '',
+    nextDueDays: (j['next_due_days'] as num?)?.toInt() ?? 0,
+    annualFeeDate: j['annual_fee_date'] as String?,
+    annualFeeDays: (j['annual_fee_days'] as num?)?.toInt(),
+    prevDueOverdue: j['prev_due_overdue'] as bool? ?? false,
+  );
 }
