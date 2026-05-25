@@ -123,7 +123,7 @@ void main() {
   // ── Credit Cards ──────────────────────────────────────────────────────────
 
   group('pushPending — credit cards', () {
-    const _apiCard = ApiCreditCard(id: 900, name: 'New Card', isActive: true);
+    const apiCard = ApiCreditCard(id: 900, name: 'New Card', isActive: true);
 
     test('pendingCreate calls createCreditCard and marks synced', () async {
       final localId = await db.insertCreditCard(
@@ -133,7 +133,7 @@ void main() {
         ),
       );
 
-      when(() => api.createCreditCard(any())).thenAnswer((_) async => _apiCard);
+      when(() => api.createCreditCard(any())).thenAnswer((_) async => apiCard);
 
       final result = await syncService.pushPending();
 
@@ -158,7 +158,7 @@ void main() {
 
       when(
         () => api.updateCreditCard(any(), any()),
-      ).thenAnswer((_) async => _apiCard);
+      ).thenAnswer((_) async => apiCard);
 
       final result = await syncService.pushPending();
 
@@ -225,12 +225,7 @@ void main() {
   // ── Grocery On Hand ───────────────────────────────────────────────────────
 
   group('pushPending — grocery on hand', () {
-    const _apiOnHand = ApiOnHand(
-      id: 200,
-      itemId: 10,
-      quantity: 2.0,
-      unit: 'lb',
-    );
+    const apiOnHand = ApiOnHand(id: 200, itemId: 10, quantity: 2.0, unit: 'lb');
 
     test('pendingCreate upserts and marks synced', () async {
       await db.upsertGroceryOnHand([
@@ -244,7 +239,7 @@ void main() {
 
       when(
         () => api.upsertOnHand(any(), any()),
-      ).thenAnswer((_) async => _apiOnHand);
+      ).thenAnswer((_) async => apiOnHand);
 
       final result = await syncService.pushPending();
 
@@ -267,7 +262,7 @@ void main() {
 
       when(
         () => api.upsertOnHand(any(), any()),
-      ).thenAnswer((_) async => _apiOnHand);
+      ).thenAnswer((_) async => apiOnHand);
 
       final result = await syncService.pushPending();
 
@@ -302,7 +297,7 @@ void main() {
   // ── Grocery Stores ────────────────────────────────────────────────────────
 
   group('pushPending — grocery stores', () {
-    const _apiStore = ApiStore(id: 300, name: 'Market', isActive: true);
+    const apiStore = ApiStore(id: 300, name: 'Market', isActive: true);
 
     test('pendingCreate calls createStore and marks synced', () async {
       final localId = await db.insertGroceryStore(
@@ -312,7 +307,7 @@ void main() {
         ),
       );
 
-      when(() => api.createStore(any())).thenAnswer((_) async => _apiStore);
+      when(() => api.createStore(any())).thenAnswer((_) async => apiStore);
 
       final result = await syncService.pushPending();
 
@@ -326,7 +321,7 @@ void main() {
     });
 
     test('pendingUpdate with serverId calls updateStore', () async {
-      final localId = await db.insertGroceryStore(
+      await db.insertGroceryStore(
         const GroceryStoresCompanion(
           serverId: Value(55),
           name: Value('Update Store'),
@@ -336,7 +331,7 @@ void main() {
 
       when(
         () => api.updateStore(any(), any()),
-      ).thenAnswer((_) async => _apiStore);
+      ).thenAnswer((_) async => apiStore);
 
       final result = await syncService.pushPending();
 
@@ -398,7 +393,7 @@ void main() {
   // ── Grocery Lists ─────────────────────────────────────────────────────────
 
   group('pushPending — grocery lists', () {
-    const _apiList = ApiGroceryList(
+    const apiList = ApiGroceryList(
       id: 400,
       name: 'List',
       status: 'draft',
@@ -413,9 +408,7 @@ void main() {
         ),
       );
 
-      when(
-        () => api.createGroceryList(any()),
-      ).thenAnswer((_) async => _apiList);
+      when(() => api.createGroceryList(any())).thenAnswer((_) async => apiList);
 
       final result = await syncService.pushPending();
 
@@ -427,7 +420,7 @@ void main() {
     });
 
     test('pendingUpdate with serverId calls updateGroceryList', () async {
-      final localId = await db.insertGroceryList(
+      await db.insertGroceryList(
         const GroceryListsCompanion(
           serverId: Value(60),
           name: Value('Update List'),
@@ -437,7 +430,7 @@ void main() {
 
       when(
         () => api.updateGroceryList(any(), any()),
-      ).thenAnswer((_) async => _apiList);
+      ).thenAnswer((_) async => apiList);
 
       final result = await syncService.pushPending();
 
@@ -494,7 +487,7 @@ void main() {
   // ── Grocery List Items ────────────────────────────────────────────────────
 
   group('pushPending — grocery list items', () {
-    const _apiItem = ApiGroceryListItem(
+    const apiItem = ApiGroceryListItem(
       id: 500,
       listId: 60,
       itemId: 10,
@@ -527,7 +520,7 @@ void main() {
 
       when(
         () => api.addGroceryListItem(any(), any()),
-      ).thenAnswer((_) async => _apiItem);
+      ).thenAnswer((_) async => apiItem);
 
       final result = await syncService.pushPending();
 
@@ -541,7 +534,7 @@ void main() {
     });
 
     test('pendingCreate resolves listServerId from DB when null', () async {
-      final itemId = await db.insertGroceryListItem(
+      await db.insertGroceryListItem(
         GroceryListItemsCompanion(
           listLocalId: Value(listLocalId),
           itemServerId: const Value(10),
@@ -551,7 +544,7 @@ void main() {
 
       when(
         () => api.addGroceryListItem(any(), any()),
-      ).thenAnswer((_) async => _apiItem);
+      ).thenAnswer((_) async => apiItem);
 
       final result = await syncService.pushPending();
 
@@ -596,7 +589,7 @@ void main() {
 
       when(
         () => api.updateGroceryListItem(any(), any(), any()),
-      ).thenAnswer((_) async => _apiItem);
+      ).thenAnswer((_) async => apiItem);
 
       final result = await syncService.pushPending();
 

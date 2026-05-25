@@ -140,8 +140,9 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
               .toList();
         }
         filtered.sort((a, b) {
-          if (a.dueDate == null && b.dueDate == null)
+          if (a.dueDate == null && b.dueDate == null) {
             return _doneWeight(a) - _doneWeight(b);
+          }
           if (a.dueDate == null) return 1;
           if (b.dueDate == null) return -1;
           final dateCmp = a.dueDate!.compareTo(b.dueDate!);
@@ -850,8 +851,9 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                   firstDate: _kDateFirst,
                   lastDate: _kDateLast,
                 );
-                if (picked != null && mounted)
+                if (picked != null && mounted) {
                   await _updateDueDate(picked.toIso8601DateString());
+                }
               },
             ),
           ],

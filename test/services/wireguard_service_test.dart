@@ -1,5 +1,4 @@
 import 'dart:async' show TimeoutException;
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,7 +6,6 @@ import 'package:calendar_mobile/services/wireguard_service.dart';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-bool get _isAndroid => Platform.isAndroid;
 bool _onAndroid() => true;
 bool _notAndroid() => false;
 

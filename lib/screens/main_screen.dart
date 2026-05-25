@@ -468,8 +468,9 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
                       keyboardType: TextInputType.number,
                       onChanged: (v) {
                         final n = int.tryParse(v);
-                        if (n != null && n >= 1)
+                        if (n != null && n >= 1) {
                           setState(() => _durationDays = n);
+                        }
                       },
                     ),
                   ),

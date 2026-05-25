@@ -19,10 +19,11 @@ class _FakeSecureStorage extends Fake implements FlutterSecureStorage {
     AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
-    if (value == null)
+    if (value == null) {
       _store.remove(key);
-    else
+    } else {
       _store[key] = value;
+    }
   }
 
   @override

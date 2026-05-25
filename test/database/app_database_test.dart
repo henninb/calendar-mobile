@@ -1104,7 +1104,7 @@ void main() {
   // ── Credit Card Tracker Cache DAO ────────────────────────────────────────
 
   group('CreditCardTrackerCache DAO', () {
-    CreditCardTrackerCacheCompanion _makeEntry(int cardServerId) =>
+    CreditCardTrackerCacheCompanion makeEntry(int cardServerId) =>
         CreditCardTrackerCacheCompanion(
           cardServerId: Value(cardServerId),
           name: const Value('Test Card'),
@@ -1118,15 +1118,15 @@ void main() {
         );
 
     test('replaceTrackerCache inserts rows', () async {
-      await database.replaceTrackerCache([_makeEntry(1), _makeEntry(2)]);
+      await database.replaceTrackerCache([makeEntry(1), makeEntry(2)]);
 
       final rows = await database.getTrackerCache();
       expect(rows.length, 2);
     });
 
     test('replaceTrackerCache replaces previous rows', () async {
-      await database.replaceTrackerCache([_makeEntry(1), _makeEntry(2)]);
-      await database.replaceTrackerCache([_makeEntry(3)]);
+      await database.replaceTrackerCache([makeEntry(1), makeEntry(2)]);
+      await database.replaceTrackerCache([makeEntry(3)]);
 
       final rows = await database.getTrackerCache();
       expect(rows.length, 1);
@@ -1134,7 +1134,7 @@ void main() {
     });
 
     test('replaceTrackerCache with empty list clears the table', () async {
-      await database.replaceTrackerCache([_makeEntry(1)]);
+      await database.replaceTrackerCache([makeEntry(1)]);
       await database.replaceTrackerCache([]);
 
       expect(await database.getTrackerCache(), isEmpty);
@@ -1149,7 +1149,7 @@ void main() {
       );
 
       await Future.delayed(Duration.zero);
-      await database.replaceTrackerCache([_makeEntry(1)]);
+      await database.replaceTrackerCache([makeEntry(1)]);
 
       await expectation;
     });

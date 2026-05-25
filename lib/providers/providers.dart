@@ -56,8 +56,9 @@ class BaseUrlNotifier extends Notifier<String> {
     if (uri == null ||
         !uri.hasScheme ||
         uri.scheme != 'https' ||
-        uri.host.isEmpty)
+        uri.host.isEmpty) {
       return false;
+    }
     state = trimmed;
     ref
         .read(sharedPreferencesProvider)
@@ -313,8 +314,10 @@ class SyncNotifier extends Notifier<SyncState> {
       // Skip the refresh when offline so we don't transition to
       // SyncPhase.error every 5 minutes and show a spurious error banner.
       (_) {
-        if (ref.read(isOnlineProvider) && ref.read(baseUrlProvider).isNotEmpty)
+        if (ref.read(isOnlineProvider) &&
+            ref.read(baseUrlProvider).isNotEmpty) {
           silentRefresh();
+        }
       },
     );
 
@@ -408,8 +411,9 @@ class SyncNotifier extends Notifier<SyncState> {
     // Block only while a sync is actively in-progress. Allow retry from
     // error/offline so the periodic timer and the connectivity-restored
     // listener can auto-recover without requiring user interaction.
-    if (state.phase == SyncPhase.pulling || state.phase == SyncPhase.pushing)
+    if (state.phase == SyncPhase.pulling || state.phase == SyncPhase.pushing) {
       return;
+    }
     dev.log('SyncNotifier.silentRefresh: start', name: 'sync');
     state = state.copyWith(phase: SyncPhase.pulling);
     final svc = ref.read(syncServiceProvider);
@@ -463,8 +467,9 @@ class SyncNotifier extends Notifier<SyncState> {
     if (msg.contains('Connection refused') || msg.contains('SocketException')) {
       return 'Cannot reach backend — check the URL in Settings';
     }
-    if (msg.contains('timed out'))
+    if (msg.contains('timed out')) {
       return 'Request timed out — is the server running?';
+    }
     if (msg.contains('status code of 401') ||
         msg.contains('status code of 403')) {
       return 'Authentication failed — check the API key in Settings';

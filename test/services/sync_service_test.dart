@@ -115,7 +115,7 @@ void main() {
     });
 
     test('pushes pending task update', () async {
-      final taskId = await database.insertTask(
+      await database.insertTask(
         const TasksCompanion(
           serverId: Value(501),
           title: Value('Updated Task'),
@@ -231,7 +231,7 @@ void main() {
     });
 
     test('creates subtask on server when pendingCreate', () async {
-      final subId = await database.insertSubtask(
+      await database.insertSubtask(
         SubtasksCompanion(
           taskLocalId: Value(taskId),
           taskServerId: const Value(10),
@@ -289,7 +289,7 @@ void main() {
     test(
       'deletes subtask on server when pendingDelete with serverId',
       () async {
-        final subId = await database.insertSubtask(
+        await database.insertSubtask(
           SubtasksCompanion(
             serverId: const Value(702),
             taskLocalId: Value(taskId),
@@ -316,7 +316,7 @@ void main() {
     test(
       'creates subtask on server when pendingUpdate has no serverId',
       () async {
-        final subId = await database.insertSubtask(
+        await database.insertSubtask(
           SubtasksCompanion(
             taskLocalId: Value(taskId),
             taskServerId: const Value(10),
@@ -350,7 +350,7 @@ void main() {
     test(
       'deletes subtask locally when pendingDelete has no serverId',
       () async {
-        final subId = await database.insertSubtask(
+        await database.insertSubtask(
           SubtasksCompanion(
             taskLocalId: Value(taskId),
             taskServerId: const Value(10),

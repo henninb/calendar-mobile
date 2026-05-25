@@ -1130,7 +1130,7 @@ void main() {
   // ── CreditCardTrackerCache Manager ────────────────────────────────────────
 
   group('Manager API - CreditCardTrackerCache', () {
-    CreditCardTrackerCacheCompanion _entry(int cardServerId) =>
+    CreditCardTrackerCacheCompanion entry(int cardServerId) =>
         CreditCardTrackerCacheCompanion(
           cardServerId: Value(cardServerId),
           name: const Value('Card'),
@@ -1144,13 +1144,13 @@ void main() {
         );
 
     test('get via manager', () async {
-      await database.replaceTrackerCache([_entry(1), _entry(2)]);
+      await database.replaceTrackerCache([entry(1), entry(2)]);
       final rows = await database.managers.creditCardTrackerCache.get();
       expect(rows.length, 2);
     });
 
     test('filter by cardServerId', () async {
-      await database.replaceTrackerCache([_entry(1), _entry(2)]);
+      await database.replaceTrackerCache([entry(1), entry(2)]);
       final result = await database.managers.creditCardTrackerCache
           .filter((f) => f.cardServerId.equals(1))
           .get();
@@ -1158,7 +1158,7 @@ void main() {
     });
 
     test('filter by name', () async {
-      await database.replaceTrackerCache([_entry(1)]);
+      await database.replaceTrackerCache([entry(1)]);
       final result = await database.managers.creditCardTrackerCache
           .filter((f) => f.name.equals('Card'))
           .get();
@@ -1166,7 +1166,7 @@ void main() {
     });
 
     test('filter by nextDueDays', () async {
-      await database.replaceTrackerCache([_entry(1)]);
+      await database.replaceTrackerCache([entry(1)]);
       final result = await database.managers.creditCardTrackerCache
           .filter((f) => f.nextDueDays.equals(28))
           .get();
@@ -1174,7 +1174,7 @@ void main() {
     });
 
     test('filter by prevDueOverdue', () async {
-      await database.replaceTrackerCache([_entry(1)]);
+      await database.replaceTrackerCache([entry(1)]);
       final result = await database.managers.creditCardTrackerCache
           .filter((f) => f.prevDueOverdue.equals(false))
           .get();
@@ -1182,7 +1182,7 @@ void main() {
     });
 
     test('filter by issuer isNull', () async {
-      await database.replaceTrackerCache([_entry(1)]);
+      await database.replaceTrackerCache([entry(1)]);
       final result = await database.managers.creditCardTrackerCache
           .filter((f) => f.issuer.isNull())
           .get();
@@ -1190,7 +1190,7 @@ void main() {
     });
 
     test('filter by annualFeeDate isNull', () async {
-      await database.replaceTrackerCache([_entry(1)]);
+      await database.replaceTrackerCache([entry(1)]);
       final result = await database.managers.creditCardTrackerCache
           .filter((f) => f.annualFeeDate.isNull())
           .get();
@@ -1198,7 +1198,7 @@ void main() {
     });
 
     test('orderBy nextDueDays asc', () async {
-      await database.replaceTrackerCache([_entry(1), _entry(2)]);
+      await database.replaceTrackerCache([entry(1), entry(2)]);
       final result = await database.managers.creditCardTrackerCache
           .orderBy((o) => o.nextDueDays.asc())
           .get();
@@ -1206,7 +1206,7 @@ void main() {
     });
 
     test('orderBy cardServerId desc', () async {
-      await database.replaceTrackerCache([_entry(1), _entry(2)]);
+      await database.replaceTrackerCache([entry(1), entry(2)]);
       final result = await database.managers.creditCardTrackerCache
           .orderBy((o) => o.cardServerId.desc())
           .get();
@@ -1215,7 +1215,7 @@ void main() {
 
     test('count and exists', () async {
       expect(await database.managers.creditCardTrackerCache.count(), 0);
-      await database.replaceTrackerCache([_entry(1)]);
+      await database.replaceTrackerCache([entry(1)]);
       expect(await database.managers.creditCardTrackerCache.count(), 1);
       expect(await database.managers.creditCardTrackerCache.exists(), isTrue);
     });

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:calendar_mobile/providers/providers.dart';
-import 'package:calendar_mobile/core/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockConnectivity extends Mock implements Connectivity {}

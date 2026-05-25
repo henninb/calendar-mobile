@@ -19,8 +19,6 @@ class FakeConnectivityNotifier extends ConnectivityNotifier {
   FakeConnectivityNotifier(this._initial);
   @override
   bool build() => _initial;
-  @override
-  Future<void> _init() async {} // skip real init
 }
 
 void main() {

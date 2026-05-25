@@ -26,8 +26,6 @@ class _FakeConnectivityNotifier extends ConnectivityNotifier {
   _FakeConnectivityNotifier(this._initial);
   @override
   bool build() => _initial;
-  @override
-  Future<void> _init() async {}
 }
 
 ProviderContainer _makeOnlineContainer(

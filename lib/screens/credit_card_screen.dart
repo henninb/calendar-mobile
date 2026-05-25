@@ -340,10 +340,12 @@ class _CardFormState extends ConsumerState<_CardForm> {
                     keyboardType: TextInputType.number,
                     maxLength: 4,
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty)
+                      if (v == null || v.trim().isEmpty) {
                         return null; // optional
-                      if (!RegExp(r'^\d{4}$').hasMatch(v.trim()))
+                      }
+                      if (!RegExp(r'^\d{4}$').hasMatch(v.trim())) {
                         return 'Must be exactly 4 digits';
+                      }
                       return null;
                     },
                   ),
@@ -361,8 +363,9 @@ class _CardFormState extends ConsumerState<_CardForm> {
                     ),
                     keyboardType: TextInputType.number,
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty)
+                      if (v == null || v.trim().isEmpty) {
                         return null; // optional
+                      }
                       final n = int.tryParse(v.trim());
                       if (n == null || n < 1 || n > 31) return 'Must be 1–31';
                       return null;
@@ -378,8 +381,9 @@ class _CardFormState extends ConsumerState<_CardForm> {
                     ),
                     keyboardType: TextInputType.number,
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty)
+                      if (v == null || v.trim().isEmpty) {
                         return null; // optional
+                      }
                       final n = int.tryParse(v.trim());
                       if (n == null || n < 0) return 'Must be 0 or more';
                       return null;

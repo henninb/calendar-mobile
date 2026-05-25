@@ -66,8 +66,9 @@ Future<bool> toggleWireGuardTunnel({
   // A null result means the check failed — proceed rather than assume desired state.
   final checkVpn = vpnActiveCheck ?? () => isWireGuardActive();
   final alreadyActive = await checkVpn();
-  if (goOffline && alreadyActive == false)
+  if (goOffline && alreadyActive == false) {
     return true; // confident: already DOWN
+  }
   if (!goOffline && alreadyActive == true) return true; // confident: already UP
 
   bool granted;
