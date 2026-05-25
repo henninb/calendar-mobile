@@ -14,7 +14,7 @@ dependencies:
   flutter_riverpod: ^3.3.1
 
   # Local database (offline-first)
-  drift: ^2.32.1
+  drift: ^2.33.0
   drift_flutter: ^0.3.0
   sqlite3_flutter_libs: ^0.6.0
 
@@ -34,7 +34,7 @@ dependencies:
   url_launcher: ^6.3.0
 
   # Secure key storage (Android Keystore / iOS Keychain)
-  flutter_secure_storage: ^10.0.0
+  flutter_secure_storage: ^10.3.0
 
   # Utilities
   intl: ^0.20.1
