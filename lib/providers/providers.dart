@@ -62,7 +62,16 @@ class BaseUrlNotifier extends Notifier<String> {
     state = trimmed;
     ref
         .read(sharedPreferencesProvider)
-        .setString(AppConstants.prefBaseUrl, trimmed);
+        .setString(AppConstants.prefBaseUrl, trimmed)
+        .then((ok) {
+          if (!ok) {
+            dev.log(
+              'setString prefBaseUrl failed',
+              name: 'settings',
+              level: 900,
+            );
+          }
+        });
     return true;
   }
 }
@@ -86,7 +95,16 @@ class WgTunnelNameNotifier extends Notifier<String> {
     state = trimmed;
     ref
         .read(sharedPreferencesProvider)
-        .setString(AppConstants.prefWgTunnelName, trimmed);
+        .setString(AppConstants.prefWgTunnelName, trimmed)
+        .then((ok) {
+          if (!ok) {
+            dev.log(
+              'setString prefWgTunnelName failed',
+              name: 'settings',
+              level: 900,
+            );
+          }
+        });
   }
 }
 
@@ -174,7 +192,16 @@ class ForcedOfflineNotifier extends Notifier<bool> {
     state = value;
     ref
         .read(sharedPreferencesProvider)
-        .setBool(AppConstants.prefForcedOffline, value);
+        .setBool(AppConstants.prefForcedOffline, value)
+        .then((ok) {
+          if (!ok) {
+            dev.log(
+              'setBool prefForcedOffline failed',
+              name: 'settings',
+              level: 900,
+            );
+          }
+        });
     dev.log(
       'ForcedOfflineNotifier: forcedOffline=$value',
       name: 'connectivity',
@@ -581,10 +608,17 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 
   void set(ThemeMode mode) {
     state = mode;
-    ref.read(sharedPreferencesProvider).setString(_key, switch (mode) {
-      ThemeMode.light => 'light',
-      ThemeMode.dark => 'dark',
-      ThemeMode.system => 'system',
-    });
+    ref
+        .read(sharedPreferencesProvider)
+        .setString(_key, switch (mode) {
+          ThemeMode.light => 'light',
+          ThemeMode.dark => 'dark',
+          ThemeMode.system => 'system',
+        })
+        .then((ok) {
+          if (!ok) {
+            dev.log('setString themeMode failed', name: 'settings', level: 900);
+          }
+        });
   }
 }

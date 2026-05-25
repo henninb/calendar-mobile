@@ -594,7 +594,7 @@ void main() {
       final result = await syncService.pushPending();
 
       expect(result.pushed, 1);
-      verify(() => api.updateGroceryListItem(60, 11, any())).called(1);
+      verify(() => api.updateGroceryListItem(60, 501, any())).called(1);
     });
 
     test(
@@ -626,6 +626,7 @@ void main() {
         await db.upsertGroceryListItems([
           GroceryListItemsCompanion(
             listLocalId: Value(listLocalId),
+            serverId: const Value(501),
             listServerId: const Value(60),
             itemServerId: const Value(12),
             syncStatus: const Value(3),
@@ -640,7 +641,7 @@ void main() {
         final result = await syncService.pushPending();
 
         expect(result.pushed, 1);
-        verify(() => api.removeGroceryListItem(60, 12)).called(1);
+        verify(() => api.removeGroceryListItem(60, 501)).called(1);
         expect(
           await (db.select(
             db.groceryListItems,
@@ -659,9 +660,12 @@ void main() {
             syncStatus: Value(0),
           ),
         );
+        // serverId is set so the code reaches the listServerId check rather
+        // than taking the null-serverId short-circuit path.
         await db.insertGroceryListItem(
           GroceryListItemsCompanion(
             listLocalId: Value(orphanListId),
+            serverId: const Value(77),
             itemServerId: const Value(10),
             syncStatus: const Value(3),
           ),

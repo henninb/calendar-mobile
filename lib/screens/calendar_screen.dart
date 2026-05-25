@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -187,18 +188,36 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   // Fix: added mounted guard after each await so we don't touch ref/context on
   // a disposed widget (mirrors the same fix already present in occurrence_list_screen).
   Future<void> _updateStatus(Occurrence occ, String newStatus) async {
-    await ref.read(dbProvider).updateOccurrenceStatus(occ.id, newStatus);
-    if (!mounted) return;
-    if (ref.read(isOnlineProvider)) {
-      await ref.read(syncStateProvider.notifier).sync();
+    try {
+      await ref.read(dbProvider).updateOccurrenceStatus(occ.id, newStatus);
+      if (!mounted) return;
+      if (ref.read(isOnlineProvider)) {
+        await ref.read(syncStateProvider.notifier).sync();
+      }
+    } catch (e, st) {
+      dev.log(
+        '_updateStatus: $e',
+        name: 'calendar',
+        level: 900,
+        stackTrace: st,
+      );
     }
   }
 
   Future<void> _deleteOccurrence(Occurrence occ) async {
-    await ref.read(dbProvider).markOccurrenceDeleted(occ.id);
-    if (!mounted) return;
-    if (ref.read(isOnlineProvider)) {
-      await ref.read(syncStateProvider.notifier).sync();
+    try {
+      await ref.read(dbProvider).markOccurrenceDeleted(occ.id);
+      if (!mounted) return;
+      if (ref.read(isOnlineProvider)) {
+        await ref.read(syncStateProvider.notifier).sync();
+      }
+    } catch (e, st) {
+      dev.log(
+        '_deleteOccurrence: $e',
+        name: 'calendar',
+        level: 900,
+        stackTrace: st,
+      );
     }
   }
 }

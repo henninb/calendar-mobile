@@ -793,25 +793,26 @@ class SyncService {
           if (updateListServerId == null || item.serverId == null) {
             return false;
           }
-          await _api
-              .updateGroceryListItem(updateListServerId, item.itemServerId, {
-                'status': item.status,
-                'quantity': item.quantity,
-                'unit': item.unit,
-                if (item.price != null) 'price': item.price,
-                if (item.notes != null) 'notes': item.notes,
-              });
+          await _api.updateGroceryListItem(updateListServerId, item.serverId!, {
+            'status': item.status,
+            'quantity': item.quantity,
+            'unit': item.unit,
+            if (item.price != null) 'price': item.price,
+            if (item.notes != null) 'notes': item.notes,
+          });
           await _db.markGroceryListItemSynced(item.id, item.serverId!);
           return true;
         case SyncStatus.pendingDelete:
+          if (item.serverId == null) {
+            // Never reached the server — nothing to delete remotely.
+            await _db.deleteGroceryListItemLocal(item.id);
+            return true;
+          }
           final deleteListServerId =
               item.listServerId ??
               (await _db.getGroceryListById(item.listLocalId))?.serverId;
           if (deleteListServerId == null) return false;
-          await _api.removeGroceryListItem(
-            deleteListServerId,
-            item.itemServerId,
-          );
+          await _api.removeGroceryListItem(deleteListServerId, item.serverId!);
           await _db.deleteGroceryListItemLocal(item.id);
           return true;
       }
@@ -843,6 +844,7 @@ class SyncService {
     if (t.dueDate != null) 'due_date': t.dueDate,
     if (t.estimatedMinutes != null) 'estimated_minutes': t.estimatedMinutes,
     'recurrence': t.recurrence,
+    'order': t.order,
   };
 
   Map<String, dynamic> _subtaskToJson(Subtask s) => {
@@ -850,6 +852,7 @@ class SyncService {
     'status': s.status,
     if (s.dueDate != null) 'due_date': s.dueDate,
     'order': s.order,
+    if (s.completedAt != null) 'completed_at': s.completedAt,
   };
 
   Map<String, dynamic> _cardToJson(CreditCard c) => {

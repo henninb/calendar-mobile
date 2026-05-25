@@ -112,8 +112,12 @@ class _ListsOverview extends ConsumerWidget {
   }
 
   Future<void> _deleteList(WidgetRef ref, GroceryList list) async {
-    await ref.read(dbProvider).markGroceryListDeleted(list.id);
-    ref.read(syncStateProvider.notifier).syncIfOnline();
+    try {
+      await ref.read(dbProvider).markGroceryListDeleted(list.id);
+      ref.read(syncStateProvider.notifier).syncIfOnline();
+    } catch (e, st) {
+      dev.log('_deleteList: $e', name: 'grocery', level: 900, stackTrace: st);
+    }
   }
 
   void _showCreateSheet(BuildContext context, WidgetRef ref) {
@@ -324,14 +328,22 @@ class _ListDetailView extends ConsumerWidget {
   }
 
   Future<void> _toggle(WidgetRef ref, GroceryListItem item) async {
-    final next = item.status == 'needed' ? 'purchased' : 'needed';
-    await ref.read(dbProvider).updateGroceryListItemStatus(item.id, next);
-    ref.read(syncStateProvider.notifier).syncIfOnline();
+    try {
+      final next = item.status == 'needed' ? 'purchased' : 'needed';
+      await ref.read(dbProvider).updateGroceryListItemStatus(item.id, next);
+      ref.read(syncStateProvider.notifier).syncIfOnline();
+    } catch (e, st) {
+      dev.log('_toggle: $e', name: 'grocery', level: 900, stackTrace: st);
+    }
   }
 
   Future<void> _removeItem(WidgetRef ref, GroceryListItem item) async {
-    await ref.read(dbProvider).markGroceryListItemDeleted(item.id);
-    ref.read(syncStateProvider.notifier).syncIfOnline();
+    try {
+      await ref.read(dbProvider).markGroceryListItemDeleted(item.id);
+      ref.read(syncStateProvider.notifier).syncIfOnline();
+    } catch (e, st) {
+      dev.log('_removeItem: $e', name: 'grocery', level: 900, stackTrace: st);
+    }
   }
 
   void _showAddItemSheet(
@@ -398,9 +410,13 @@ class _DetailHeader extends ConsumerWidget {
   }
 
   Future<void> _advance(WidgetRef ref) async {
-    final next = list.status == 'draft' ? 'active' : 'completed';
-    await ref.read(dbProvider).updateGroceryListStatus(list.id, next);
-    ref.read(syncStateProvider.notifier).syncIfOnline();
+    try {
+      final next = list.status == 'draft' ? 'active' : 'completed';
+      await ref.read(dbProvider).updateGroceryListStatus(list.id, next);
+      ref.read(syncStateProvider.notifier).syncIfOnline();
+    } catch (e, st) {
+      dev.log('_advance: $e', name: 'grocery', level: 900, stackTrace: st);
+    }
   }
 }
 
@@ -608,7 +624,10 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
   @override
   void initState() {
     super.initState();
-    _unit = widget.items.isNotEmpty ? widget.items.first.defaultUnit : 'each';
+    final defaultUnit = widget.items.isNotEmpty
+        ? widget.items.first.defaultUnit
+        : 'each';
+    _unit = GroceryConstants.units.contains(defaultUnit) ? defaultUnit : 'each';
   }
 
   @override
