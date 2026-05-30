@@ -1508,6 +1508,52 @@ void main() {
 
       await expectation;
     });
+
+    test('setGroceryOnHand inserts new row with pendingCreate', () async {
+      await database.setGroceryOnHand(42, 3.5, 'lb');
+
+      final rows = await database.select(database.groceryOnHand).get();
+      expect(rows.length, 1);
+      expect(rows.first.itemServerId, 42);
+      expect(rows.first.quantity, 3.5);
+      expect(rows.first.unit, 'lb');
+      expect(rows.first.syncStatus, SyncStatus.pendingCreate.value);
+    });
+
+    test(
+      'setGroceryOnHand updates existing synced row with pendingUpdate',
+      () async {
+        await database.upsertGroceryOnHand([
+          const GroceryOnHandCompanion(
+            itemServerId: Value(7),
+            quantity: Value(1.0),
+            unit: Value('each'),
+            syncStatus: Value(0),
+          ),
+        ]);
+
+        await database.setGroceryOnHand(7, 5.0, 'oz');
+
+        final rows = await database.select(database.groceryOnHand).get();
+        expect(rows.length, 1);
+        expect(rows.first.quantity, 5.0);
+        expect(rows.first.unit, 'oz');
+        expect(rows.first.syncStatus, SyncStatus.pendingUpdate.value);
+      },
+    );
+
+    test(
+      'setGroceryOnHand preserves pendingCreate when updating unsynced row',
+      () async {
+        await database.setGroceryOnHand(9, 1.0, 'each');
+        await database.setGroceryOnHand(9, 2.0, 'lb');
+
+        final rows = await database.select(database.groceryOnHand).get();
+        expect(rows.length, 1);
+        expect(rows.first.quantity, 2.0);
+        expect(rows.first.syncStatus, SyncStatus.pendingCreate.value);
+      },
+    );
   });
 
   // ── Grocery List DAO ─────────────────────────────────────────────────────

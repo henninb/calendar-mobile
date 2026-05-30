@@ -2,6 +2,7 @@ import 'dart:async' show TimeoutException;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:calendar_mobile/core/constants.dart';
 import 'package:calendar_mobile/services/wireguard_service.dart';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -303,7 +304,9 @@ void main() {
       expect(result, isTrue);
       await tester.pump();
       expect(
-        find.textContaining('tunnel "$wgTunnelName" is up'),
+        find.textContaining(
+          'tunnel "${AppConstants.defaultWgTunnelName}" is up',
+        ),
         findsOneWidget,
       );
     });
@@ -351,9 +354,9 @@ void main() {
     });
   });
 
-  group('wgTunnelName constant', () {
+  group('defaultWgTunnelName constant', () {
     test('is the expected tunnel name', () {
-      expect(wgTunnelName, 'k8');
+      expect(AppConstants.defaultWgTunnelName, 'k8');
     });
   });
 }

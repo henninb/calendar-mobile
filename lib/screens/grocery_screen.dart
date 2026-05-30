@@ -837,54 +837,413 @@ class _OnHandTabState extends ConsumerState<_OnHandTab> {
               )
               .toList();
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: TextField(
-            decoration: const InputDecoration(
-              hintText: 'Search items…',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
-              isDense: true,
+    return Scaffold(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search items…',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: (v) => setState(() => _filter = v),
             ),
-            onChanged: (v) => setState(() => _filter = v),
           ),
-        ),
-        Expanded(
-          child: visible.isEmpty
-              ? const Center(child: Text('No items'))
-              : ListView.builder(
-                  itemCount: visible.length,
-                  itemBuilder: (ctx, i) {
-                    final item = visible[i];
-                    final oh = item.serverId != null
-                        ? onHandByItem[item.serverId]
-                        : null;
-                    return ListTile(
-                      title: Text(item.name),
-                      trailing: oh != null
-                          ? Text(
-                              _fmtOnHandQty(oh.quantity, oh.unit),
-                              style: TextStyle(
-                                color: oh.quantity > 0
-                                    ? null
-                                    : AppColors.of(context).overdueFg,
+          Expanded(
+            child: visible.isEmpty
+                ? const Center(child: Text('No items'))
+                : ListView.builder(
+                    itemCount: visible.length,
+                    itemBuilder: (ctx, i) {
+                      final item = visible[i];
+                      final oh = item.serverId != null
+                          ? onHandByItem[item.serverId]
+                          : null;
+                      return ListTile(
+                        title: Text(item.name),
+                        trailing: oh != null
+                            ? Text(
+                                _fmtOnHandQty(oh.quantity, oh.unit),
+                                style: TextStyle(
+                                  color: oh.quantity > 0
+                                      ? null
+                                      : AppColors.of(context).overdueFg,
+                                ),
+                              )
+                            : Text(
+                                '—',
+                                style: TextStyle(
+                                  color: AppColors.of(context).textMuted,
+                                ),
                               ),
-                            )
-                          : Text(
-                              '—',
-                              style: TextStyle(
-                                color: AppColors.of(context).textMuted,
-                              ),
-                            ),
-                      dense: true,
-                    );
-                  },
-                ),
-        ),
-      ],
+                        dense: true,
+                        onTap: item.serverId != null
+                            ? () => _showSetOnHandSheet(context, item, oh)
+                            : null,
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showNewItemSheet(context),
+        child: const Icon(Icons.add),
+      ),
     );
+  }
+
+  void _showSetOnHandSheet(
+    BuildContext context,
+    GroceryItem item,
+    GroceryOnHandData? existing,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.of(context).surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _SetOnHandSheet(item: item, existing: existing),
+    );
+  }
+
+  void _showNewItemSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.of(context).surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => const _NewPantryItemSheet(),
+    );
+  }
+}
+
+// ── Set On-Hand Sheet ─────────────────────────────────────────────────────────
+
+class _SetOnHandSheet extends ConsumerStatefulWidget {
+  const _SetOnHandSheet({required this.item, required this.existing});
+
+  final GroceryItem item;
+  final GroceryOnHandData? existing;
+
+  @override
+  ConsumerState<_SetOnHandSheet> createState() => _SetOnHandSheetState();
+}
+
+class _SetOnHandSheetState extends ConsumerState<_SetOnHandSheet> {
+  late final TextEditingController _qtyCtrl;
+  late String _unit;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    _qtyCtrl = TextEditingController(
+      text: existing != null ? _fmtOnHandQty(existing.quantity, 'each') : '0',
+    );
+    final initialUnit = existing?.unit ?? widget.item.defaultUnit;
+    _unit = GroceryConstants.units.contains(initialUnit) ? initialUnit : 'each';
+  }
+
+  @override
+  void dispose() {
+    _qtyCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canSave = !_saving;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            widget.existing != null
+                ? 'Update On-Hand: ${widget.item.name}'
+                : 'Set On-Hand: ${widget.item.name}',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: _qtyCtrl,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Quantity',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  onSubmitted: canSave ? (_) => _save() : null,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Unit',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _unit,
+                      isExpanded: true,
+                      items: GroceryConstants.units
+                          .map(
+                            (u) => DropdownMenuItem(value: u, child: Text(u)),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setState(() => _unit = v);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: canSave ? _save : null,
+            child: _saving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    final qty = double.tryParse(_qtyCtrl.text.trim()) ?? 0.0;
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(dbProvider)
+          .setGroceryOnHand(widget.item.serverId!, qty, _unit);
+      ref.read(syncStateProvider.notifier).syncIfOnline();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e, st) {
+      dev.log(
+        '_SetOnHandSheet._save: $e',
+        name: 'grocery',
+        level: 900,
+        stackTrace: st,
+      );
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save. Please try again.')),
+        );
+      }
+    }
+  }
+}
+
+// ── New Pantry Item Sheet ─────────────────────────────────────────────────────
+//
+// Creates a brand-new grocery catalog item via the API, then records its
+// on-hand quantity.  Requires a network connection because the GroceryItems
+// catalog is server-managed (no syncStatus column for offline push).
+
+class _NewPantryItemSheet extends ConsumerStatefulWidget {
+  const _NewPantryItemSheet();
+
+  @override
+  ConsumerState<_NewPantryItemSheet> createState() =>
+      _NewPantryItemSheetState();
+}
+
+class _NewPantryItemSheetState extends ConsumerState<_NewPantryItemSheet> {
+  final _nameCtrl = TextEditingController();
+  final _qtyCtrl = TextEditingController(text: '0');
+  String _unit = 'each';
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _qtyCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canSave = _nameCtrl.text.trim().isNotEmpty && !_saving;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'New Pantry Item',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _nameCtrl,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Item name *',
+              border: OutlineInputBorder(),
+            ),
+            textCapitalization: TextCapitalization.sentences,
+            onChanged: (_) => setState(() {}),
+            onSubmitted: canSave ? (_) => _save() : null,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  controller: _qtyCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Quantity on hand',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  onSubmitted: canSave ? (_) => _save() : null,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Unit',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _unit,
+                      isExpanded: true,
+                      items: GroceryConstants.units
+                          .map(
+                            (u) => DropdownMenuItem(value: u, child: Text(u)),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setState(() => _unit = v);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: canSave ? _save : null,
+            child: _saving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) return;
+
+    final isOnline = ref.read(isOnlineProvider);
+    final baseUrl = ref.read(baseUrlProvider);
+    if (!isOnline || baseUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Connect to the network to add new pantry items.'),
+        ),
+      );
+      return;
+    }
+
+    final qty = double.tryParse(_qtyCtrl.text.trim()) ?? 0.0;
+    setState(() => _saving = true);
+    try {
+      final api = ref.read(apiClientProvider);
+      final db = ref.read(dbProvider);
+
+      final created = await api.createGroceryItem({
+        'name': name,
+        'default_unit': _unit,
+      });
+
+      await db.upsertGroceryItems([
+        GroceryItemsCompanion(
+          serverId: Value(created.id),
+          name: Value(created.name),
+          defaultUnit: Value(created.defaultUnit),
+        ),
+      ]);
+
+      await db.setGroceryOnHand(created.id, qty, _unit);
+
+      if (mounted) Navigator.of(context).pop();
+    } catch (e, st) {
+      dev.log(
+        '_NewPantryItemSheet._save: $e',
+        name: 'grocery',
+        level: 900,
+        stackTrace: st,
+      );
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to add item. Please try again.'),
+          ),
+        );
+      }
+    }
   }
 }
 

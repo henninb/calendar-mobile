@@ -87,7 +87,7 @@ void main() {
     expect(container.read(syncStateProvider).phase, SyncPhase.error);
     expect(
       container.read(syncStateProvider).errorMessage,
-      contains('Refresh failed'),
+      contains('An unexpected error occurred'),
     );
   });
 

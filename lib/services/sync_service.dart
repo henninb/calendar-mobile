@@ -12,7 +12,7 @@ class SyncService {
   SyncService(this._db, this._api);
 
   final AppDatabase _db;
-  final ApiClient _api;
+  final ApiClientBase _api;
 
   // ── Full refresh (pull all server data into local DB) ────────────────────
 
@@ -821,20 +821,20 @@ class SyncService {
 
   // ── JSON serialisers ──────────────────────────────────────────────────────
 
-  Map<String, dynamic> _storeToJson(GroceryStore s) => {
+  static Map<String, dynamic> _storeToJson(GroceryStore s) => {
     'name': s.name,
     if (s.location != null) 'location': s.location,
     'is_active': s.isActive,
   };
 
-  Map<String, dynamic> _groceryListToJson(GroceryList l) => {
+  static Map<String, dynamic> _groceryListToJson(GroceryList l) => {
     'name': l.name,
     'status': l.status,
     if (l.storeServerId != null) 'store_id': l.storeServerId,
     if (l.shoppingDate != null) 'shopping_date': l.shoppingDate,
   };
 
-  Map<String, dynamic> _taskToJson(Task t) => {
+  static Map<String, dynamic> _taskToJson(Task t) => {
     'title': t.title,
     'description': t.description,
     'status': t.status,
@@ -847,7 +847,7 @@ class SyncService {
     'order': t.order,
   };
 
-  Map<String, dynamic> _subtaskToJson(Subtask s) => {
+  static Map<String, dynamic> _subtaskToJson(Subtask s) => {
     'title': s.title,
     'status': s.status,
     if (s.dueDate != null) 'due_date': s.dueDate,
@@ -855,7 +855,7 @@ class SyncService {
     if (s.completedAt != null) 'completed_at': s.completedAt,
   };
 
-  Map<String, dynamic> _cardToJson(CreditCard c) => {
+  static Map<String, dynamic> _cardToJson(CreditCard c) => {
     'name': c.name,
     if (c.issuer != null) 'issuer': c.issuer,
     if (c.lastFour != null) 'last_four': c.lastFour,

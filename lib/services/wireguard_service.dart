@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/constants.dart';
 
-const wgTunnelName = 'k8';
 const _wgActionUp = 'com.wireguard.android.action.SET_TUNNEL_UP';
 const _wgActionDown = 'com.wireguard.android.action.SET_TUNNEL_DOWN';
 const _wgChannel = MethodChannel('wireguard_permission');
@@ -53,7 +52,7 @@ Future<bool?> isWireGuardActive({bool Function()? isAndroid}) async {
 Future<bool> toggleWireGuardTunnel({
   required bool goOffline,
   required BuildContext context,
-  String tunnelName = wgTunnelName,
+  String tunnelName = AppConstants.defaultWgTunnelName,
   bool Function()? isAndroid,
   Future<bool?> Function()? vpnActiveCheck,
   Duration verifyDelay = AppConstants.wgVerifyDelay,

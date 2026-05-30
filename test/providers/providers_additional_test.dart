@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:calendar_mobile/database/app_database.dart';
 import 'package:calendar_mobile/providers/providers.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:calendar_mobile/services/sync_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -278,12 +279,17 @@ void main() {
       final container = _makeOnlineContainer(prefs, mockSyncService);
       addTearDown(container.dispose);
 
+      final opts = RequestOptions(path: '/');
       when(
         () => mockSyncService.pushPending(),
       ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
-      when(
-        () => mockSyncService.fullRefresh(),
-      ).thenThrow(Exception('Server responded with status code of 401'));
+      when(() => mockSyncService.fullRefresh()).thenThrow(
+        DioException(
+          requestOptions: opts,
+          response: Response(requestOptions: opts, statusCode: 401),
+          type: DioExceptionType.badResponse,
+        ),
+      );
 
       await container.read(syncStateProvider.notifier).sync();
 
@@ -297,12 +303,17 @@ void main() {
       final container = _makeOnlineContainer(prefs, mockSyncService);
       addTearDown(container.dispose);
 
+      final opts = RequestOptions(path: '/');
       when(
         () => mockSyncService.pushPending(),
       ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
-      when(
-        () => mockSyncService.fullRefresh(),
-      ).thenThrow(Exception('Server responded with status code of 403'));
+      when(() => mockSyncService.fullRefresh()).thenThrow(
+        DioException(
+          requestOptions: opts,
+          response: Response(requestOptions: opts, statusCode: 403),
+          type: DioExceptionType.badResponse,
+        ),
+      );
 
       await container.read(syncStateProvider.notifier).sync();
 
@@ -312,7 +323,7 @@ void main() {
       );
     });
 
-    test('_friendlyError: short message returned as-is', () async {
+    test('_friendlyError: unknown exception returns generic message', () async {
       final container = _makeOnlineContainer(prefs, mockSyncService);
       addTearDown(container.dispose);
 
@@ -321,32 +332,37 @@ void main() {
       ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
       when(
         () => mockSyncService.fullRefresh(),
-      ).thenThrow(Exception('short error'));
+      ).thenThrow(Exception('some internal detail'));
 
       await container.read(syncStateProvider.notifier).sync();
 
       expect(
         container.read(syncStateProvider).errorMessage,
-        contains('short error'),
+        'An unexpected error occurred',
       );
     });
 
-    test('_friendlyError: long message is truncated with ellipsis', () async {
-      final container = _makeOnlineContainer(prefs, mockSyncService);
-      addTearDown(container.dispose);
+    test(
+      '_friendlyError: long unknown exception returns generic message',
+      () async {
+        final container = _makeOnlineContainer(prefs, mockSyncService);
+        addTearDown(container.dispose);
 
-      final longMsg = 'E' * 150;
-      when(
-        () => mockSyncService.pushPending(),
-      ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
-      when(() => mockSyncService.fullRefresh()).thenThrow(Exception(longMsg));
+        when(
+          () => mockSyncService.pushPending(),
+        ).thenAnswer((_) async => const SyncResult(pushed: 0, errors: []));
+        when(
+          () => mockSyncService.fullRefresh(),
+        ).thenThrow(Exception('E' * 150));
 
-      await container.read(syncStateProvider.notifier).sync();
+        await container.read(syncStateProvider.notifier).sync();
 
-      final errMsg = container.read(syncStateProvider).errorMessage!;
-      expect(errMsg.length, lessThan(150));
-      expect(errMsg, contains('…'));
-    });
+        expect(
+          container.read(syncStateProvider).errorMessage,
+          'An unexpected error occurred',
+        );
+      },
+    );
 
     test('_friendlyError via push error catch path', () async {
       final container = _makeOnlineContainer(prefs, mockSyncService);

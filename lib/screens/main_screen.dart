@@ -1,6 +1,7 @@
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/error_utils.dart';
 import '../core/extensions/date_extensions.dart';
 import '../core/theme.dart';
 import '../widgets/sheet_handle.dart';
@@ -601,9 +602,11 @@ class _EventFormSheetState extends ConsumerState<_EventFormSheet> {
       );
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to create event — $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create event — ${friendlyError(e)}'),
+          ),
+        );
       }
     }
   }

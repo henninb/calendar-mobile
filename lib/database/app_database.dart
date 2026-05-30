@@ -830,6 +830,36 @@ class AppDatabase extends _$AppDatabase {
     await (delete(groceryOnHand)..where((o) => o.id.equals(localId))).go();
   }
 
+  Future<void> setGroceryOnHand(
+    int itemServerId,
+    double quantity,
+    String unit,
+  ) async {
+    final existing = await (select(
+      groceryOnHand,
+    )..where((o) => o.itemServerId.equals(itemServerId))).getSingleOrNull();
+    if (existing == null) {
+      await into(groceryOnHand).insert(
+        GroceryOnHandCompanion(
+          itemServerId: Value(itemServerId),
+          quantity: Value(quantity),
+          unit: Value(unit),
+          syncStatus: Value(SyncStatus.pendingCreate.value),
+        ),
+      );
+    } else {
+      await (update(
+        groceryOnHand,
+      )..where((o) => o.id.equals(existing.id))).write(
+        GroceryOnHandCompanion(
+          quantity: Value(quantity),
+          unit: Value(unit),
+          syncStatus: Value(_nextSyncStatus(existing.syncStatus)),
+        ),
+      );
+    }
+  }
+
   // ── Grocery List DAO ────────────────────────────────────────────────────────
 
   Stream<List<GroceryList>> watchGroceryLists() => select(groceryLists).watch();

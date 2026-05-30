@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../api/api_client.dart';
 import '../core/constants.dart';
+import '../core/error_utils.dart';
 import '../database/app_database.dart';
 import '../services/sync_service.dart';
 
@@ -408,7 +409,7 @@ class SyncNotifier extends Notifier<SyncState> {
       }
     } catch (e) {
       dev.log('SyncNotifier.sync: push threw $e', name: 'sync', level: 900);
-      pushError = _friendlyError(e);
+      pushError = friendlyError(e);
     }
 
     state = state.copyWith(phase: SyncPhase.pulling);
@@ -425,7 +426,7 @@ class SyncNotifier extends Notifier<SyncState> {
       dev.log('SyncNotifier.sync: refresh threw $e', name: 'sync', level: 900);
       state = state.copyWith(
         phase: SyncPhase.error,
-        errorMessage: pushError ?? _friendlyError(e),
+        errorMessage: pushError ?? friendlyError(e),
       );
     }
   }
@@ -470,7 +471,7 @@ class SyncNotifier extends Notifier<SyncState> {
       dev.log('SyncNotifier.silentRefresh: threw $e', name: 'sync', level: 900);
       state = state.copyWith(
         phase: SyncPhase.error,
-        errorMessage: _friendlyError(e),
+        errorMessage: friendlyError(e),
       );
     }
   }
@@ -485,24 +486,6 @@ class SyncNotifier extends Notifier<SyncState> {
 
   void clearError() {
     state = state.copyWith(phase: SyncPhase.idle, errorMessage: null);
-  }
-
-  // Keep both the start (exception type) and the tail (key detail)
-  // so truncation never hides the most useful part of the message.
-  static String _friendlyError(Object e) {
-    final msg = e.toString();
-    if (msg.contains('Connection refused') || msg.contains('SocketException')) {
-      return 'Cannot reach backend — check the URL in Settings';
-    }
-    if (msg.contains('timed out')) {
-      return 'Request timed out — is the server running?';
-    }
-    if (msg.contains('status code of 401') ||
-        msg.contains('status code of 403')) {
-      return 'Authentication failed — check the API key in Settings';
-    }
-    if (msg.length <= 120) return msg;
-    return '${msg.substring(0, 80)}…${msg.substring(msg.length - 37)}';
   }
 }
 

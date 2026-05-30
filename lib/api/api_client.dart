@@ -3,7 +3,85 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'api_models.dart';
 
-class ApiClient {
+/// Abstract interface for all API operations.
+///
+/// Depend on this type in services and notifiers so they can be tested with
+/// any implementation (real HTTP, in-memory mock, etc.) without touching
+/// the concrete [ApiClient].
+abstract class ApiClientBase {
+  Future<List<ApiCategory>> fetchCategories();
+  Future<List<ApiPerson>> fetchPersons();
+
+  Future<List<ApiOccurrence>> fetchOccurrences({
+    String? startDate,
+    String? endDate,
+    String? status,
+    int? categoryId,
+    int limit,
+  });
+  Future<void> patchOccurrence(int serverId, Map<String, dynamic> data);
+  Future<void> deleteOccurrence(int serverId);
+  Future<void> generateAllOccurrences();
+  Future<ApiTask> createTaskFromOccurrence(int occurrenceServerId);
+
+  Future<ApiEvent> createEvent(Map<String, dynamic> data);
+
+  Future<List<ApiTask>> fetchTasks({int limit});
+  Future<ApiTask> createTask(Map<String, dynamic> data);
+  Future<void> patchTask(int serverId, Map<String, dynamic> data);
+  Future<void> deleteTask(int serverId);
+
+  Future<ApiSubtask> createSubtask(int taskServerId, Map<String, dynamic> data);
+  Future<void> patchSubtask(
+    int taskServerId,
+    int subtaskServerId,
+    Map<String, dynamic> data,
+  );
+  Future<void> deleteSubtask(int taskServerId, int subtaskServerId);
+
+  Future<List<ApiCreditCard>> fetchCreditCards({int limit});
+  Future<ApiCreditCard> createCreditCard(Map<String, dynamic> data);
+  Future<ApiCreditCard> updateCreditCard(
+    int serverId,
+    Map<String, dynamic> data,
+  );
+  Future<void> deleteCreditCard(int serverId);
+  Future<List<ApiTrackerRow>> fetchTrackerRows();
+
+  Future<List<ApiStore>> fetchStores();
+  Future<ApiStore> createStore(Map<String, dynamic> data);
+  Future<ApiStore> updateStore(int serverId, Map<String, dynamic> data);
+  Future<void> deleteStore(int serverId);
+
+  Future<List<ApiGroceryItem>> fetchGroceryItems({String? search});
+  Future<ApiGroceryItem> createGroceryItem(Map<String, dynamic> data);
+  Future<void> deleteGroceryItem(int serverId);
+
+  Future<List<ApiOnHand>> fetchOnHand();
+  Future<ApiOnHand> upsertOnHand(int itemServerId, Map<String, dynamic> data);
+  Future<void> deleteOnHand(int itemServerId);
+
+  Future<List<ApiGroceryList>> fetchGroceryLists({String? status});
+  Future<ApiGroceryList> createGroceryList(Map<String, dynamic> data);
+  Future<ApiGroceryList> updateGroceryList(
+    int serverId,
+    Map<String, dynamic> data,
+  );
+  Future<void> deleteGroceryList(int serverId);
+
+  Future<ApiGroceryListItem> addGroceryListItem(
+    int listServerId,
+    Map<String, dynamic> data,
+  );
+  Future<ApiGroceryListItem> updateGroceryListItem(
+    int listServerId,
+    int itemServerId,
+    Map<String, dynamic> data,
+  );
+  Future<void> removeGroceryListItem(int listServerId, int itemServerId);
+}
+
+class ApiClient implements ApiClientBase {
   ApiClient(String baseUrl, {String apiKey = '', Dio? dio})
     : _dio = dio ?? _buildDio(baseUrl, apiKey);
 
@@ -36,8 +114,15 @@ class ApiClient {
   void updateBaseUrl(String url) {
     if (url.isEmpty) return;
     final uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme || uri.scheme != 'https') {
-      throw ArgumentError.value(url, 'url', 'Only https:// URLs are accepted');
+    if (uri == null ||
+        !uri.hasScheme ||
+        uri.scheme != 'https' ||
+        uri.host.isEmpty) {
+      throw ArgumentError.value(
+        url,
+        'url',
+        'Only https:// URLs with a hostname are accepted',
+      );
     }
     _dio.options.baseUrl = '$url/api';
   }
