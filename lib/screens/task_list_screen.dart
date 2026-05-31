@@ -1170,7 +1170,6 @@ class _IconActions extends ConsumerWidget {
     }
 
     Future<void> deleteTask() async {
-      final syncNotifier = ref.read(syncStateProvider.notifier);
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
@@ -1195,9 +1194,35 @@ class _IconActions extends ConsumerWidget {
         ),
       );
       if (confirmed != true || !context.mounted) return;
+      // Capture context-dependent refs before the async gap.
+      final syncNotifier = ref.read(syncStateProvider.notifier);
+      final messenger = ScaffoldMessenger.of(context);
       try {
         await db.markTaskDeleted(task.id);
-        syncNotifier.syncIfOnline();
+        if (task.serverId != null) {
+          final ctrl = messenger.showSnackBar(
+            SnackBar(
+              content: Text('Task "${task.title}" deleted'),
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () => db.updateTask(
+                  task.id,
+                  TasksCompanion(
+                    syncStatus: Value(SyncStatus.pendingUpdate.value),
+                  ),
+                ),
+              ),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          ctrl.closed.then((reason) {
+            if (reason != SnackBarClosedReason.action) {
+              syncNotifier.syncIfOnline();
+            }
+          });
+        } else {
+          syncNotifier.syncIfOnline();
+        }
       } catch (e, st) {
         dev.log('deleteTask: $e', name: 'tasks', level: 900, stackTrace: st);
       }
@@ -1610,13 +1635,40 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
       ),
     );
     if (confirmed != true || !mounted) return;
+    // Capture context-dependent refs before the async gap.
+    final task = _task;
     final syncNotifier = ref.read(syncStateProvider.notifier);
+    final db = ref.read(dbProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     try {
-      await ref.read(dbProvider).markTaskDeleted(_task.id);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) Navigator.pop(context);
+      await db.markTaskDeleted(task.id);
+      // Always close the detail sheet.
+      WidgetsBinding.instance.addPostFrameCallback((_) => navigator.pop());
+      if (task.serverId != null) {
+        final ctrl = messenger.showSnackBar(
+          SnackBar(
+            content: Text('Task "${task.title}" deleted'),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () => db.updateTask(
+                task.id,
+                TasksCompanion(
+                  syncStatus: Value(SyncStatus.pendingUpdate.value),
+                ),
+              ),
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        ctrl.closed.then((reason) {
+          if (reason != SnackBarClosedReason.action) {
+            syncNotifier.syncIfOnline();
+          }
+        });
+      } else {
         syncNotifier.syncIfOnline();
-      });
+      }
     } catch (e, st) {
       dev.log(
         '_TaskDetailSheet _deleteTask: $e',
@@ -1693,9 +1745,34 @@ class _SubtaskRow extends ConsumerWidget {
             icon: Icon(Icons.close, size: 16, color: colors.textMuted),
             onPressed: () async {
               final syncNotifier = ref.read(syncStateProvider.notifier);
+              final db = ref.read(dbProvider);
+              final messenger = ScaffoldMessenger.of(context);
               try {
-                await ref.read(dbProvider).markSubtaskDeleted(subtask.id);
-                syncNotifier.syncIfOnline();
+                await db.markSubtaskDeleted(subtask.id);
+                if (subtask.serverId != null) {
+                  final ctrl = messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Subtask "${subtask.title}" deleted'),
+                      action: SnackBarAction(
+                        label: 'Undo',
+                        onPressed: () => db.updateSubtask(
+                          subtask.id,
+                          SubtasksCompanion(
+                            syncStatus: Value(SyncStatus.pendingUpdate.value),
+                          ),
+                        ),
+                      ),
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                  ctrl.closed.then((reason) {
+                    if (reason != SnackBarClosedReason.action) {
+                      syncNotifier.syncIfOnline();
+                    }
+                  });
+                } else {
+                  syncNotifier.syncIfOnline();
+                }
               } catch (e, st) {
                 dev.log(
                   '_SubtaskRow delete: $e',

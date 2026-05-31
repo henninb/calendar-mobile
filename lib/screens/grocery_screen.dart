@@ -620,6 +620,8 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
   double _qty = 1.0;
   late String _unit;
   bool _saving = false;
+  final _searchCtrl = TextEditingController();
+  String _search = '';
 
   @override
   void initState() {
@@ -631,8 +633,40 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
   }
 
   @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _clearSelection() {
+    setState(() {
+      _selected = null;
+      _search = '';
+      _searchCtrl.clear();
+    });
+  }
+
+  void _selectItem(GroceryItem item) {
+    setState(() {
+      _selected = item;
+      _unit = GroceryConstants.units.contains(item.defaultUnit)
+          ? item.defaultUnit
+          : 'each';
+      _search = '';
+      _searchCtrl.clear();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final canSave = _selected != null && !_saving;
+    final filtered = _search.isEmpty
+        ? widget.items
+        : widget.items
+              .where(
+                (i) => i.name.toLowerCase().contains(_search.toLowerCase()),
+              )
+              .toList();
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -653,86 +687,120 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
           if (widget.items.isEmpty)
             const Text('No catalog items available. Add items via the web app.')
           else ...[
-            InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Item *',
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
+            // Phase 2: item selected — show chip with clear button
+            if (_selected != null)
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Item',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                 ),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(_selected!.name)),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      onPressed: _clearSelection,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+              )
+            // Phase 1: no item — search field + filtered list
+            else ...[
+              TextField(
+                controller: _searchCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Search items *',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onChanged: (v) => setState(() => _search = v),
               ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<GroceryItem>(
-                  value: _selected,
-                  isExpanded: true,
-                  hint: const Text('Select item'),
-                  items: widget.items
-                      .map(
-                        (i) => DropdownMenuItem(value: i, child: Text(i.name)),
+              const SizedBox(height: 4),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 150),
+                child: filtered.isEmpty
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Text('No matching items'),
+                        ),
                       )
-                      .toList(),
-                  onChanged: (v) {
-                    setState(() {
-                      _selected = v;
-                      if (v != null) _unit = v.defaultUnit;
-                    });
-                  },
-                ),
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: filtered.length,
+                        itemBuilder: (_, i) => ListTile(
+                          title: Text(filtered[i].name),
+                          dense: true,
+                          onTap: () => _selectItem(filtered[i]),
+                        ),
+                      ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: TextFormField(
-                    initialValue: _qty.toString(),
-                    decoration: const InputDecoration(
-                      labelText: 'Qty',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    onChanged: (v) {
-                      final parsed = double.tryParse(v);
-                      if (parsed != null && parsed > 0) {
-                        setState(() => _qty = parsed);
-                      }
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 3,
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Unit',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
+            ],
+            // Qty / Unit row — only visible once an item is selected
+            if (_selected != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: TextFormField(
+                      initialValue: _qty.toString(),
+                      decoration: const InputDecoration(
+                        labelText: 'Qty',
+                        border: OutlineInputBorder(),
                       ),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _unit,
-                        isExpanded: true,
-                        items: GroceryConstants.units
-                            .map(
-                              (u) => DropdownMenuItem(value: u, child: Text(u)),
-                            )
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) setState(() => _unit = v);
-                        },
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
                       ),
+                      onChanged: (v) {
+                        final parsed = double.tryParse(v);
+                        if (parsed != null && parsed > 0) {
+                          setState(() => _qty = parsed);
+                        }
+                      },
                     ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 3,
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Unit',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _unit,
+                          isExpanded: true,
+                          items: GroceryConstants.units
+                              .map(
+                                (u) =>
+                                    DropdownMenuItem(value: u, child: Text(u)),
+                              )
+                              .toList(),
+                          onChanged: (v) {
+                            if (v != null) setState(() => _unit = v);
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: canSave ? _save : null,

@@ -85,6 +85,40 @@ GroceryOnHandData _onHand({
 );
 
 // ---------------------------------------------------------------------------
+// Additional helpers
+// ---------------------------------------------------------------------------
+
+// Wraps the full GroceryScreen with a seeded grocery list so tests can
+// navigate into _ListDetailView and open _AddItemSheet.
+Widget _wrapWithList({
+  required GroceryList list,
+  List<GroceryItem> catalogItems = const [],
+}) => ProviderScope(
+  overrides: [
+    groceryListsProvider.overrideWith((_) => Stream.value([list])),
+    groceryListItemsProvider.overrideWith((_) => Stream.value([])),
+    groceryListItemsForListProvider(
+      list.id,
+    ).overrideWith((_) => Stream.value([])),
+    groceryItemsProvider.overrideWith((_) => Stream.value(catalogItems)),
+    groceryOnHandProvider.overrideWith((_) => Stream.value([])),
+    groceryStoresProvider.overrideWith((_) => Stream.value([])),
+    syncStateProvider.overrideWith(_NoOpSyncNotifier.new),
+  ],
+  child: MaterialApp(
+    theme: buildAppTheme(),
+    home: const Scaffold(body: GroceryScreen()),
+  ),
+);
+
+const _activeList = GroceryList(
+  id: 1,
+  name: 'Weekly Shop',
+  status: 'active',
+  syncStatus: 0,
+);
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -262,6 +296,157 @@ void main() {
       expect(rows.length, 1);
       expect(rows.first.quantity, 5.0);
       expect(rows.first.syncStatus, SyncStatus.pendingUpdate.value);
+    });
+  });
+
+  // ── _AddItemSheet searchable picker ────────────────────────────────────────
+
+  group('GroceryScreen – Add Item sheet (searchable picker)', () {
+    Future<void> _openAddItemSheet(WidgetTester tester) async {
+      // Tap the list card to enter _ListDetailView.
+      await tester.tap(find.text('Weekly Shop'));
+      await tester.pumpAndSettle();
+      // Tap the FAB to open _AddItemSheet.
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Phase 1: search field is shown when sheet opens', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrapWithList(
+          list: _activeList,
+          catalogItems: [_item(id: 1, serverId: 1, name: 'Apple')],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _openAddItemSheet(tester);
+
+      expect(find.widgetWithText(TextField, 'Search items *'), findsOneWidget);
+      expect(find.text('Apple'), findsOneWidget);
+    });
+
+    testWidgets('Phase 1: typing filters the item list', (tester) async {
+      await tester.pumpWidget(
+        _wrapWithList(
+          list: _activeList,
+          catalogItems: [
+            _item(id: 1, serverId: 1, name: 'Apple'),
+            _item(id: 2, serverId: 2, name: 'Bread'),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _openAddItemSheet(tester);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Search items *'),
+        'app',
+      );
+      await tester.pump();
+
+      expect(find.text('Apple'), findsOneWidget);
+      expect(find.text('Bread'), findsNothing);
+    });
+
+    testWidgets('Phase 1: shows "No matching items" when filter is empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrapWithList(
+          list: _activeList,
+          catalogItems: [_item(id: 1, serverId: 1, name: 'Apple')],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _openAddItemSheet(tester);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Search items *'),
+        'zzz',
+      );
+      await tester.pump();
+
+      expect(find.text('No matching items'), findsOneWidget);
+    });
+
+    testWidgets('Phase 2: tapping an item shows selected chip', (tester) async {
+      await tester.pumpWidget(
+        _wrapWithList(
+          list: _activeList,
+          catalogItems: [_item(id: 1, serverId: 1, name: 'Apple')],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _openAddItemSheet(tester);
+
+      await tester.tap(find.text('Apple'));
+      await tester.pumpAndSettle();
+
+      // Phase 2: chip with item name + clear button; search field gone.
+      expect(find.text('Apple'), findsOneWidget);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Search items *'), findsNothing);
+    });
+
+    testWidgets('Phase 2: clear button returns to Phase 1', (tester) async {
+      await tester.pumpWidget(
+        _wrapWithList(
+          list: _activeList,
+          catalogItems: [_item(id: 1, serverId: 1, name: 'Apple')],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _openAddItemSheet(tester);
+
+      await tester.tap(find.text('Apple'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(TextField, 'Search items *'), findsOneWidget);
+      expect(find.text('Apple'), findsOneWidget);
+    });
+
+    testWidgets('Add button is disabled until an item is selected', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrapWithList(
+          list: _activeList,
+          catalogItems: [_item(id: 1, serverId: 1, name: 'Apple')],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _openAddItemSheet(tester);
+
+      final addButton = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Add'),
+      );
+      expect(addButton.onPressed, isNull);
+    });
+
+    testWidgets('Add button is enabled after selecting an item', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrapWithList(
+          list: _activeList,
+          catalogItems: [_item(id: 1, serverId: 1, name: 'Apple')],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _openAddItemSheet(tester);
+
+      await tester.tap(find.text('Apple'));
+      await tester.pumpAndSettle();
+
+      final addButton = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Add'),
+      );
+      expect(addButton.onPressed, isNotNull);
     });
   });
 }
