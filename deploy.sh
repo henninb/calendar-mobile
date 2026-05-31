@@ -88,6 +88,9 @@ echo "Device ready: $DEVICE_SERIAL"
 echo "==> Flutter pub get"
 flutter_quiet flutter pub get
 
+echo "==> Flutter analyze"
+flutter_quiet flutter analyze
+
 echo "==> Drift code generation"
 /opt/flutter/bin/dart run build_runner build
 

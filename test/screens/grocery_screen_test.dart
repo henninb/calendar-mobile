@@ -302,7 +302,7 @@ void main() {
   // ── _AddItemSheet searchable picker ────────────────────────────────────────
 
   group('GroceryScreen – Add Item sheet (searchable picker)', () {
-    Future<void> _openAddItemSheet(WidgetTester tester) async {
+    Future<void> openAddItemSheet(WidgetTester tester) async {
       // Tap the list card to enter _ListDetailView.
       await tester.tap(find.text('Weekly Shop'));
       await tester.pumpAndSettle();
@@ -321,7 +321,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await _openAddItemSheet(tester);
+      await openAddItemSheet(tester);
 
       expect(find.widgetWithText(TextField, 'Search items *'), findsOneWidget);
       expect(find.text('Apple'), findsOneWidget);
@@ -338,7 +338,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await _openAddItemSheet(tester);
+      await openAddItemSheet(tester);
 
       await tester.enterText(
         find.widgetWithText(TextField, 'Search items *'),
@@ -360,7 +360,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await _openAddItemSheet(tester);
+      await openAddItemSheet(tester);
 
       await tester.enterText(
         find.widgetWithText(TextField, 'Search items *'),
@@ -379,7 +379,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await _openAddItemSheet(tester);
+      await openAddItemSheet(tester);
 
       await tester.tap(find.text('Apple'));
       await tester.pumpAndSettle();
@@ -398,7 +398,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await _openAddItemSheet(tester);
+      await openAddItemSheet(tester);
 
       await tester.tap(find.text('Apple'));
       await tester.pumpAndSettle();
@@ -420,7 +420,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await _openAddItemSheet(tester);
+      await openAddItemSheet(tester);
 
       final addButton = tester.widget<ElevatedButton>(
         find.widgetWithText(ElevatedButton, 'Add'),
@@ -438,7 +438,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await _openAddItemSheet(tester);
+      await openAddItemSheet(tester);
 
       await tester.tap(find.text('Apple'));
       await tester.pumpAndSettle();
