@@ -206,6 +206,36 @@ class SyncService {
 
     final serverIds = apiTasks.map((t) => t.id).toSet();
     final localTasks = await _db.getTasks();
+
+    // Deduplicate locally-spawned recurring next tasks: when we completed a
+    // recurring task while offline the client inserted a pendingCreate
+    // placeholder. Now that the server has its own copy, delete the local
+    // shadow to avoid pushing a duplicate.
+    final localPendingCreates = localTasks
+        .where(
+          (t) =>
+              t.serverId == null &&
+              t.syncStatus == SyncStatus.pendingCreate.value,
+        )
+        .toList();
+    if (localPendingCreates.isNotEmpty) {
+      final serverTaskKeys = {
+        for (final t in apiTasks)
+          '${t.title}|${t.recurrence}|${t.dueDate ?? ''}|${t.priority}|${t.categoryId}|${t.assigneeId}',
+      };
+      for (final local in localPendingCreates) {
+        final key =
+            '${local.title}|${local.recurrence}|${local.dueDate ?? ''}|${local.priority}|${local.categoryServerId}|${local.assigneeServerId}';
+        if (serverTaskKeys.contains(key)) {
+          dev.log(
+            '_refreshTasks: removing local recurring placeholder local=${local.id}',
+            name: 'sync',
+          );
+          await _db.deleteTaskLocal(local.id);
+        }
+      }
+    }
+
     final orphanTaskIds = localTasks
         .where((t) => t.serverId != null && !serverIds.contains(t.serverId))
         .map((t) {

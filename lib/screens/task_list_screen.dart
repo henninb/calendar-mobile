@@ -32,6 +32,34 @@ const _kKeyNoDate = 'no_date';
 bool _isTaskActive(String status) =>
     status != TaskStatus.done && status != TaskStatus.cancelled;
 
+/// Computes the next due date string for a recurring task based on its
+/// recurrence rule. Returns null if the task has no due date or is non-recurring.
+String? _nextRecurringDueDate(String recurrence, String? currentDueDate) {
+  if (recurrence == 'none' || currentDueDate == null) return null;
+  final base = DateTime.tryParse(currentDueDate);
+  if (base == null) return null;
+  final DateTime next;
+  switch (recurrence) {
+    case 'daily':
+      next = base.add(const Duration(days: 1));
+    case 'weekly':
+      next = base.add(const Duration(days: 7));
+    case 'biweekly':
+      next = base.add(const Duration(days: 14));
+    case 'monthly':
+      next = DateTime(base.year, base.month + 1, base.day);
+    case 'quarterly':
+      next = DateTime(base.year, base.month + 3, base.day);
+    case 'semiannual':
+      next = DateTime(base.year, base.month + 6, base.day);
+    case 'yearly':
+      next = DateTime(base.year + 1, base.month, base.day);
+    default:
+      return null;
+  }
+  return next.toIso8601DateString();
+}
+
 Future<T?> _showAppSheet<T>(
   BuildContext context,
   WidgetBuilder builder, {
@@ -68,7 +96,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   }
 
   bool _isCollapsed(String key) =>
-      _collapsedSections[key] ?? (key == _kKeyDone);
+      _collapsedSections[key] ??
+      (key == _kKeyDone ||
+          key == _kKeyTomorrow ||
+          key == _kKeyThisWeek ||
+          key == _kKeyNextWeek ||
+          key == _kKeyLater);
 
   void _toggleSection(String key) {
     setState(() {
@@ -1163,6 +1196,31 @@ class _IconActions extends ConsumerWidget {
             syncStatus: Value(SyncStatus.next(task.syncStatus)),
           ),
         );
+        // When completing a recurring task, immediately insert the next
+        // occurrence locally so it appears in the list while offline.
+        // The sync service deduplicates this against the server-spawned copy
+        // when connectivity is restored.
+        if (status == TaskStatus.done && task.recurrence != 'none') {
+          final nextDate = _nextRecurringDueDate(task.recurrence, task.dueDate);
+          if (nextDate != null) {
+            await db.insertTask(
+              TasksCompanion(
+                title: Value(task.title),
+                description: Value(task.description),
+                status: const Value(TaskStatus.todo),
+                priority: Value(task.priority),
+                recurrence: Value(task.recurrence),
+                dueDate: Value(nextDate),
+                assigneeServerId: Value(task.assigneeServerId),
+                categoryServerId: Value(task.categoryServerId),
+                estimatedMinutes: Value(task.estimatedMinutes),
+                syncStatus: Value(SyncStatus.pendingCreate.value),
+                createdAt: Value(now),
+                updatedAt: Value(now),
+              ),
+            );
+          }
+        }
         syncNotifier.syncIfOnline();
       } catch (e, st) {
         dev.log('setStatus: $e', name: 'tasks', level: 900, stackTrace: st);
