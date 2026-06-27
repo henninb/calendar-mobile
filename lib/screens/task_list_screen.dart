@@ -1294,68 +1294,86 @@ class _IconActions extends ConsumerWidget {
         // Mark done circle
         if (isActive)
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => setStatus(TaskStatus.done),
-            child: Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: colors.divider, width: 1.5),
-              ),
+            child: SizedBox(
+              width: 44,
+              height: 44,
               child: Center(
-                child: Text(
-                  '✓',
-                  style: TextStyle(fontSize: 11, color: colors.textMuted),
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colors.divider, width: 1.5),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '✓',
+                      style: TextStyle(fontSize: 11, color: colors.textMuted),
+                    ),
+                  ),
                 ),
               ),
             ),
           )
         else
-          Container(
-            width: 22,
-            height: 22,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: colors.completedBg,
-              border: Border.fromBorderSide(
-                BorderSide(color: colors.completedFg, width: 1.5),
-              ),
-            ),
+          SizedBox(
+            width: 44,
+            height: 44,
             child: Center(
-              child: Text(
-                '✓',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: colors.completedFg,
-                  fontWeight: FontWeight.w700,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colors.completedBg,
+                  border: Border.fromBorderSide(
+                    BorderSide(color: colors.completedFg, width: 1.5),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    '✓',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colors.completedFg,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-        const SizedBox(width: 4),
         // Start button (todo only)
-        if (task.status == TaskStatus.todo) ...[
+        if (task.status == TaskStatus.todo)
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => setStatus(TaskStatus.inProgress),
-            child: Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: colors.divider, width: 1.5),
-              ),
+            child: SizedBox(
+              width: 44,
+              height: 44,
               child: Center(
-                child: Text(
-                  '▶',
-                  style: TextStyle(fontSize: 9, color: colors.textMuted),
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colors.divider, width: 1.5),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '▶',
+                      style: TextStyle(fontSize: 9, color: colors.textMuted),
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 4),
-        ],
         // Overflow menu (···)
         GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: () {
             _showAppSheet<void>(
               context,
@@ -1414,17 +1432,25 @@ class _IconActions extends ConsumerWidget {
               isScrollControlled: false,
             );
           },
-          child: Container(
-            width: 26,
-            height: 26,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
+          child: SizedBox(
+            width: 44,
+            height: 44,
             child: Center(
-              child: Text(
-                '···',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: colors.textMuted,
-                  letterSpacing: -1,
+              child: Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Center(
+                  child: Text(
+                    '···',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colors.textMuted,
+                      letterSpacing: -1,
+                    ),
+                  ),
                 ),
               ),
             ),
