@@ -725,11 +725,11 @@ void main() {
           title: 'T',
           createdAt: '2026-01-01',
           updatedAt: '2026-01-01',
-          priority: const Value('high'),
+          urgent: const Value(true),
         ),
       );
       final result = await database.managers.tasks
-          .filter((f) => f.priority.equals('high'))
+          .filter((f) => f.urgent.equals(true))
           .get();
       expect(result.length, 1);
     });
@@ -1833,7 +1833,8 @@ void main() {
         a.serverId;
         a.description;
         a.status;
-        a.priority;
+        a.important;
+        a.urgent;
         a.assigneeServerId;
         a.categoryServerId;
         a.dueDate;
@@ -2203,7 +2204,7 @@ void main() {
       await database.managers.tasks.orderBy((o) => o.serverId.asc()).get();
       await database.managers.tasks.orderBy((o) => o.description.asc()).get();
       await database.managers.tasks.orderBy((o) => o.status.asc()).get();
-      await database.managers.tasks.orderBy((o) => o.priority.asc()).get();
+      await database.managers.tasks.orderBy((o) => o.important.asc()).get();
       await database.managers.tasks
           .orderBy((o) => o.assigneeServerId.asc())
           .get();

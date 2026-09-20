@@ -1919,17 +1919,33 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     requiredDuringInsert: false,
     defaultValue: const Constant('todo'),
   );
-  static const VerificationMeta _priorityMeta = const VerificationMeta(
-    'priority',
+  static const VerificationMeta _importantMeta = const VerificationMeta(
+    'important',
   );
   @override
-  late final GeneratedColumn<String> priority = GeneratedColumn<String>(
-    'priority',
+  late final GeneratedColumn<bool> important = GeneratedColumn<bool>(
+    'important',
     aliasedName,
     false,
-    type: DriftSqlType.string,
+    type: DriftSqlType.bool,
     requiredDuringInsert: false,
-    defaultValue: const Constant('medium'),
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("important" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _urgentMeta = const VerificationMeta('urgent');
+  @override
+  late final GeneratedColumn<bool> urgent = GeneratedColumn<bool>(
+    'urgent',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("urgent" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
   );
   static const VerificationMeta _assigneeServerIdMeta = const VerificationMeta(
     'assigneeServerId',
@@ -2059,7 +2075,8 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     title,
     description,
     status,
-    priority,
+    important,
+    urgent,
     assigneeServerId,
     categoryServerId,
     dueDate,
@@ -2116,10 +2133,16 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         status.isAcceptableOrUnknown(data['status']!, _statusMeta),
       );
     }
-    if (data.containsKey('priority')) {
+    if (data.containsKey('important')) {
       context.handle(
-        _priorityMeta,
-        priority.isAcceptableOrUnknown(data['priority']!, _priorityMeta),
+        _importantMeta,
+        important.isAcceptableOrUnknown(data['important']!, _importantMeta),
+      );
+    }
+    if (data.containsKey('urgent')) {
+      context.handle(
+        _urgentMeta,
+        urgent.isAcceptableOrUnknown(data['urgent']!, _urgentMeta),
       );
     }
     if (data.containsKey('assignee_server_id')) {
@@ -2236,9 +2259,13 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
-      priority: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}priority'],
+      important: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}important'],
+      )!,
+      urgent: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}urgent'],
       )!,
       assigneeServerId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -2299,7 +2326,8 @@ class Task extends DataClass implements Insertable<Task> {
   final String title;
   final String? description;
   final String status;
-  final String priority;
+  final bool important;
+  final bool urgent;
   final int? assigneeServerId;
   final int? categoryServerId;
   final String? dueDate;
@@ -2317,7 +2345,8 @@ class Task extends DataClass implements Insertable<Task> {
     required this.title,
     this.description,
     required this.status,
-    required this.priority,
+    required this.important,
+    required this.urgent,
     this.assigneeServerId,
     this.categoryServerId,
     this.dueDate,
@@ -2342,7 +2371,8 @@ class Task extends DataClass implements Insertable<Task> {
       map['description'] = Variable<String>(description);
     }
     map['status'] = Variable<String>(status);
-    map['priority'] = Variable<String>(priority);
+    map['important'] = Variable<bool>(important);
+    map['urgent'] = Variable<bool>(urgent);
     if (!nullToAbsent || assigneeServerId != null) {
       map['assignee_server_id'] = Variable<int>(assigneeServerId);
     }
@@ -2380,7 +2410,8 @@ class Task extends DataClass implements Insertable<Task> {
           ? const Value.absent()
           : Value(description),
       status: Value(status),
-      priority: Value(priority),
+      important: Value(important),
+      urgent: Value(urgent),
       assigneeServerId: assigneeServerId == null && nullToAbsent
           ? const Value.absent()
           : Value(assigneeServerId),
@@ -2418,7 +2449,8 @@ class Task extends DataClass implements Insertable<Task> {
       title: serializer.fromJson<String>(json['title']),
       description: serializer.fromJson<String?>(json['description']),
       status: serializer.fromJson<String>(json['status']),
-      priority: serializer.fromJson<String>(json['priority']),
+      important: serializer.fromJson<bool>(json['important']),
+      urgent: serializer.fromJson<bool>(json['urgent']),
       assigneeServerId: serializer.fromJson<int?>(json['assigneeServerId']),
       categoryServerId: serializer.fromJson<int?>(json['categoryServerId']),
       dueDate: serializer.fromJson<String?>(json['dueDate']),
@@ -2441,7 +2473,8 @@ class Task extends DataClass implements Insertable<Task> {
       'title': serializer.toJson<String>(title),
       'description': serializer.toJson<String?>(description),
       'status': serializer.toJson<String>(status),
-      'priority': serializer.toJson<String>(priority),
+      'important': serializer.toJson<bool>(important),
+      'urgent': serializer.toJson<bool>(urgent),
       'assigneeServerId': serializer.toJson<int?>(assigneeServerId),
       'categoryServerId': serializer.toJson<int?>(categoryServerId),
       'dueDate': serializer.toJson<String?>(dueDate),
@@ -2462,7 +2495,8 @@ class Task extends DataClass implements Insertable<Task> {
     String? title,
     Value<String?> description = const Value.absent(),
     String? status,
-    String? priority,
+    bool? important,
+    bool? urgent,
     Value<int?> assigneeServerId = const Value.absent(),
     Value<int?> categoryServerId = const Value.absent(),
     Value<String?> dueDate = const Value.absent(),
@@ -2480,7 +2514,8 @@ class Task extends DataClass implements Insertable<Task> {
     title: title ?? this.title,
     description: description.present ? description.value : this.description,
     status: status ?? this.status,
-    priority: priority ?? this.priority,
+    important: important ?? this.important,
+    urgent: urgent ?? this.urgent,
     assigneeServerId: assigneeServerId.present
         ? assigneeServerId.value
         : this.assigneeServerId,
@@ -2510,7 +2545,8 @@ class Task extends DataClass implements Insertable<Task> {
           ? data.description.value
           : this.description,
       status: data.status.present ? data.status.value : this.status,
-      priority: data.priority.present ? data.priority.value : this.priority,
+      important: data.important.present ? data.important.value : this.important,
+      urgent: data.urgent.present ? data.urgent.value : this.urgent,
       assigneeServerId: data.assigneeServerId.present
           ? data.assigneeServerId.value
           : this.assigneeServerId,
@@ -2547,7 +2583,8 @@ class Task extends DataClass implements Insertable<Task> {
           ..write('title: $title, ')
           ..write('description: $description, ')
           ..write('status: $status, ')
-          ..write('priority: $priority, ')
+          ..write('important: $important, ')
+          ..write('urgent: $urgent, ')
           ..write('assigneeServerId: $assigneeServerId, ')
           ..write('categoryServerId: $categoryServerId, ')
           ..write('dueDate: $dueDate, ')
@@ -2570,7 +2607,8 @@ class Task extends DataClass implements Insertable<Task> {
     title,
     description,
     status,
-    priority,
+    important,
+    urgent,
     assigneeServerId,
     categoryServerId,
     dueDate,
@@ -2592,7 +2630,8 @@ class Task extends DataClass implements Insertable<Task> {
           other.title == this.title &&
           other.description == this.description &&
           other.status == this.status &&
-          other.priority == this.priority &&
+          other.important == this.important &&
+          other.urgent == this.urgent &&
           other.assigneeServerId == this.assigneeServerId &&
           other.categoryServerId == this.categoryServerId &&
           other.dueDate == this.dueDate &&
@@ -2612,7 +2651,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<String> title;
   final Value<String?> description;
   final Value<String> status;
-  final Value<String> priority;
+  final Value<bool> important;
+  final Value<bool> urgent;
   final Value<int?> assigneeServerId;
   final Value<int?> categoryServerId;
   final Value<String?> dueDate;
@@ -2630,7 +2670,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.title = const Value.absent(),
     this.description = const Value.absent(),
     this.status = const Value.absent(),
-    this.priority = const Value.absent(),
+    this.important = const Value.absent(),
+    this.urgent = const Value.absent(),
     this.assigneeServerId = const Value.absent(),
     this.categoryServerId = const Value.absent(),
     this.dueDate = const Value.absent(),
@@ -2649,7 +2690,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
     required String title,
     this.description = const Value.absent(),
     this.status = const Value.absent(),
-    this.priority = const Value.absent(),
+    this.important = const Value.absent(),
+    this.urgent = const Value.absent(),
     this.assigneeServerId = const Value.absent(),
     this.categoryServerId = const Value.absent(),
     this.dueDate = const Value.absent(),
@@ -2670,7 +2712,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Expression<String>? title,
     Expression<String>? description,
     Expression<String>? status,
-    Expression<String>? priority,
+    Expression<bool>? important,
+    Expression<bool>? urgent,
     Expression<int>? assigneeServerId,
     Expression<int>? categoryServerId,
     Expression<String>? dueDate,
@@ -2689,7 +2732,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
       if (title != null) 'title': title,
       if (description != null) 'description': description,
       if (status != null) 'status': status,
-      if (priority != null) 'priority': priority,
+      if (important != null) 'important': important,
+      if (urgent != null) 'urgent': urgent,
       if (assigneeServerId != null) 'assignee_server_id': assigneeServerId,
       if (categoryServerId != null) 'category_server_id': categoryServerId,
       if (dueDate != null) 'due_date': dueDate,
@@ -2711,7 +2755,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Value<String>? title,
     Value<String?>? description,
     Value<String>? status,
-    Value<String>? priority,
+    Value<bool>? important,
+    Value<bool>? urgent,
     Value<int?>? assigneeServerId,
     Value<int?>? categoryServerId,
     Value<String?>? dueDate,
@@ -2730,7 +2775,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
       title: title ?? this.title,
       description: description ?? this.description,
       status: status ?? this.status,
-      priority: priority ?? this.priority,
+      important: important ?? this.important,
+      urgent: urgent ?? this.urgent,
       assigneeServerId: assigneeServerId ?? this.assigneeServerId,
       categoryServerId: categoryServerId ?? this.categoryServerId,
       dueDate: dueDate ?? this.dueDate,
@@ -2763,8 +2809,11 @@ class TasksCompanion extends UpdateCompanion<Task> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
-    if (priority.present) {
-      map['priority'] = Variable<String>(priority.value);
+    if (important.present) {
+      map['important'] = Variable<bool>(important.value);
+    }
+    if (urgent.present) {
+      map['urgent'] = Variable<bool>(urgent.value);
     }
     if (assigneeServerId.present) {
       map['assignee_server_id'] = Variable<int>(assigneeServerId.value);
@@ -2810,7 +2859,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
           ..write('title: $title, ')
           ..write('description: $description, ')
           ..write('status: $status, ')
-          ..write('priority: $priority, ')
+          ..write('important: $important, ')
+          ..write('urgent: $urgent, ')
           ..write('assigneeServerId: $assigneeServerId, ')
           ..write('categoryServerId: $categoryServerId, ')
           ..write('dueDate: $dueDate, ')
@@ -8431,7 +8481,8 @@ typedef $$TasksTableCreateCompanionBuilder =
       required String title,
       Value<String?> description,
       Value<String> status,
-      Value<String> priority,
+      Value<bool> important,
+      Value<bool> urgent,
       Value<int?> assigneeServerId,
       Value<int?> categoryServerId,
       Value<String?> dueDate,
@@ -8451,7 +8502,8 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<String> title,
       Value<String?> description,
       Value<String> status,
-      Value<String> priority,
+      Value<bool> important,
+      Value<bool> urgent,
       Value<int?> assigneeServerId,
       Value<int?> categoryServerId,
       Value<String?> dueDate,
@@ -8498,8 +8550,13 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get priority => $composableBuilder(
-    column: $table.priority,
+  ColumnFilters<bool> get important => $composableBuilder(
+    column: $table.important,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get urgent => $composableBuilder(
+    column: $table.urgent,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8593,8 +8650,13 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get priority => $composableBuilder(
-    column: $table.priority,
+  ColumnOrderings<bool> get important => $composableBuilder(
+    column: $table.important,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get urgent => $composableBuilder(
+    column: $table.urgent,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -8680,8 +8742,11 @@ class $$TasksTableAnnotationComposer
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
-  GeneratedColumn<String> get priority =>
-      $composableBuilder(column: $table.priority, builder: (column) => column);
+  GeneratedColumn<bool> get important =>
+      $composableBuilder(column: $table.important, builder: (column) => column);
+
+  GeneratedColumn<bool> get urgent =>
+      $composableBuilder(column: $table.urgent, builder: (column) => column);
 
   GeneratedColumn<int> get assigneeServerId => $composableBuilder(
     column: $table.assigneeServerId,
@@ -8764,7 +8829,8 @@ class $$TasksTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<String> status = const Value.absent(),
-                Value<String> priority = const Value.absent(),
+                Value<bool> important = const Value.absent(),
+                Value<bool> urgent = const Value.absent(),
                 Value<int?> assigneeServerId = const Value.absent(),
                 Value<int?> categoryServerId = const Value.absent(),
                 Value<String?> dueDate = const Value.absent(),
@@ -8782,7 +8848,8 @@ class $$TasksTableTableManager
                 title: title,
                 description: description,
                 status: status,
-                priority: priority,
+                important: important,
+                urgent: urgent,
                 assigneeServerId: assigneeServerId,
                 categoryServerId: categoryServerId,
                 dueDate: dueDate,
@@ -8802,7 +8869,8 @@ class $$TasksTableTableManager
                 required String title,
                 Value<String?> description = const Value.absent(),
                 Value<String> status = const Value.absent(),
-                Value<String> priority = const Value.absent(),
+                Value<bool> important = const Value.absent(),
+                Value<bool> urgent = const Value.absent(),
                 Value<int?> assigneeServerId = const Value.absent(),
                 Value<int?> categoryServerId = const Value.absent(),
                 Value<String?> dueDate = const Value.absent(),
@@ -8820,7 +8888,8 @@ class $$TasksTableTableManager
                 title: title,
                 description: description,
                 status: status,
-                priority: priority,
+                important: important,
+                urgent: urgent,
                 assigneeServerId: assigneeServerId,
                 categoryServerId: categoryServerId,
                 dueDate: dueDate,

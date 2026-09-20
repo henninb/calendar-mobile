@@ -60,33 +60,49 @@ class TaskStatusBadge extends StatelessWidget {
   }
 }
 
-class PriorityBadge extends StatelessWidget {
-  const PriorityBadge(this.priority, {super.key});
+/// Covey quadrant for a task's importance × urgency.
+enum Quadrant {
+  doFirst('DO FIRST', AppColors.priorityHigh),
+  schedule('SCHEDULE', AppColors.btnBlue),
+  delegate('DELEGATE', AppColors.priorityMedium),
+  eliminate('ELIMINATE', AppColors.priorityLow);
 
-  final String priority;
+  const Quadrant(this.label, this.color);
+  final String label;
+  final Color color;
+
+  static Quadrant of({required bool important, required bool urgent}) =>
+      important
+      ? (urgent ? Quadrant.doFirst : Quadrant.schedule)
+      : (urgent ? Quadrant.delegate : Quadrant.eliminate);
+}
+
+class QuadrantBadge extends StatelessWidget {
+  const QuadrantBadge({
+    required this.important,
+    required this.urgent,
+    super.key,
+  });
+
+  final bool important;
+  final bool urgent;
 
   @override
   Widget build(BuildContext context) {
-    final textMuted = AppColors.of(context).textMuted;
-    final (color, label) = switch (priority) {
-      'high' => (AppColors.priorityHigh, 'HIGH'),
-      'medium' => (AppColors.priorityMedium, 'MED'),
-      'low' => (AppColors.priorityLow, 'LOW'),
-      _ => (textMuted, priority.toUpperCase()),
-    };
+    final q = Quadrant.of(important: important, urgent: urgent);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withAlpha(30),
+        color: q.color.withAlpha(30),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withAlpha(80)),
+        border: Border.all(color: q.color.withAlpha(80)),
       ),
       child: Text(
-        label,
+        q.label,
         style: TextStyle(
           fontSize: 9,
           fontWeight: FontWeight.w700,
-          color: color,
+          color: q.color,
           letterSpacing: 0.5,
         ),
       ),

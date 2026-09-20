@@ -154,7 +154,8 @@ class ApiTask {
   final String title;
   final String? description;
   final String status;
-  final String priority;
+  final bool important;
+  final bool urgent;
   final int? assigneeId;
   final int? categoryId;
   final String? dueDate;
@@ -174,7 +175,8 @@ class ApiTask {
     required this.title,
     this.description,
     required this.status,
-    required this.priority,
+    this.important = true,
+    this.urgent = false,
     this.assigneeId,
     this.categoryId,
     this.dueDate,
@@ -195,7 +197,8 @@ class ApiTask {
     title: j['title'] as String,
     description: j['description'] as String?,
     status: j['status'] as String? ?? 'todo',
-    priority: j['priority'] as String? ?? 'medium',
+    important: j['important'] as bool? ?? true,
+    urgent: j['urgent'] as bool? ?? false,
     assigneeId: (j['assignee_id'] as num?)?.toInt(),
     categoryId: (j['category_id'] as num?)?.toInt(),
     dueDate: j['due_date'] as String?,

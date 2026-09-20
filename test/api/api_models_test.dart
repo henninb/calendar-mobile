@@ -258,7 +258,8 @@ void main() {
       'id': 500,
       'title': 'Implement feature',
       'status': 'todo',
-      'priority': 'medium',
+      'important': true,
+      'urgent': false,
       'recurrence': 'none',
       'order': 0,
       'subtasks': [],
@@ -271,7 +272,8 @@ void main() {
       expect(t.id, 500);
       expect(t.title, 'Implement feature');
       expect(t.status, 'todo');
-      expect(t.priority, 'medium');
+      expect(t.important, isTrue);
+      expect(t.urgent, isFalse);
       expect(t.recurrence, 'none');
       expect(t.subtasks, isEmpty);
       expect(t.assignee, isNull);
@@ -284,9 +286,13 @@ void main() {
       expect(ApiTask.fromJson(json).status, 'todo');
     });
 
-    test('priority defaults to medium when missing', () {
-      final json = baseTask()..remove('priority');
-      expect(ApiTask.fromJson(json).priority, 'medium');
+    test('important/urgent default to important, not urgent when missing', () {
+      final json = baseTask()
+        ..remove('important')
+        ..remove('urgent');
+      final t = ApiTask.fromJson(json);
+      expect(t.important, isTrue);
+      expect(t.urgent, isFalse);
     });
 
     test('recurrence defaults to none when missing', () {

@@ -63,7 +63,9 @@ class Tasks extends Table {
   TextColumn get title => text()();
   TextColumn get description => text().nullable()();
   TextColumn get status => text().withDefault(const Constant('todo'))();
-  TextColumn get priority => text().withDefault(const Constant('medium'))();
+  // Covey / Eisenhower matrix: importance × urgency (replaces low/medium/high).
+  BoolColumn get important => boolean().withDefault(const Constant(true))();
+  BoolColumn get urgent => boolean().withDefault(const Constant(false))();
   IntColumn get assigneeServerId => integer().nullable()();
   IntColumn get categoryServerId => integer().nullable()();
   TextColumn get dueDate => text().nullable()();
@@ -223,7 +225,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.fromExecutor(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   // Table names derived from Drift-generated TableInfo objects so they are
   // never user-controlled. The assert enforces the safe character set.
@@ -287,6 +289,16 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 7) {
         await m.addColumn(groceryOnHand, groceryOnHand.syncStatus);
+      }
+      if (from < 8) {
+        await m.addColumn(tasks, tasks.important);
+        await m.addColumn(tasks, tasks.urgent);
+        // low/medium/high → important × urgent, then drop the old column.
+        await customStatement(
+          "UPDATE tasks SET urgent = (priority = 'high'), "
+          "important = (priority IN ('high', 'medium'))",
+        );
+        await customStatement('ALTER TABLE tasks DROP COLUMN priority');
       }
     },
     // coverage:ignore-end

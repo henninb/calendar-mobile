@@ -187,7 +187,8 @@ class SyncService {
               title: Value(t.title),
               description: Value(t.description),
               status: Value(t.status),
-              priority: Value(t.priority),
+              important: Value(t.important),
+              urgent: Value(t.urgent),
               assigneeServerId: Value(t.assigneeId),
               categoryServerId: Value(t.categoryId),
               dueDate: Value(t.dueDate),
@@ -221,11 +222,11 @@ class SyncService {
     if (localPendingCreates.isNotEmpty) {
       final serverTaskKeys = {
         for (final t in apiTasks)
-          '${t.title}|${t.recurrence}|${t.dueDate ?? ''}|${t.priority}|${t.categoryId}|${t.assigneeId}',
+          '${t.title}|${t.recurrence}|${t.dueDate ?? ''}|${t.important}|${t.urgent}|${t.categoryId}|${t.assigneeId}',
       };
       for (final local in localPendingCreates) {
         final key =
-            '${local.title}|${local.recurrence}|${local.dueDate ?? ''}|${local.priority}|${local.categoryServerId}|${local.assigneeServerId}';
+            '${local.title}|${local.recurrence}|${local.dueDate ?? ''}|${local.important}|${local.urgent}|${local.categoryServerId}|${local.assigneeServerId}';
         if (serverTaskKeys.contains(key)) {
           dev.log(
             '_refreshTasks: removing local recurring placeholder local=${local.id}',
@@ -868,7 +869,8 @@ class SyncService {
     'title': t.title,
     'description': t.description,
     'status': t.status,
-    'priority': t.priority,
+    'important': t.important,
+    'urgent': t.urgent,
     if (t.assigneeServerId != null) 'assignee_id': t.assigneeServerId,
     if (t.categoryServerId != null) 'category_id': t.categoryServerId,
     if (t.dueDate != null) 'due_date': t.dueDate,

@@ -537,11 +537,8 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     }
   }
 
-  static Color _priorityStripe(String priority) => switch (priority) {
-    'high' => AppColors.priorityHigh,
-    'medium' => AppColors.priorityMedium,
-    _ => AppColors.priorityLow,
-  };
+  static Color _quadrantStripe(Task task) =>
+      Quadrant.of(important: task.important, urgent: task.urgent).color;
 
   @override
   Widget build(BuildContext context) {
@@ -562,7 +559,7 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
     final colors = AppColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final stripeColor = _priorityStripe(task.priority);
+    final stripeColor = _quadrantStripe(task);
     final cardBg = isActive && isOverdue
         ? (isDark ? const Color(0x1ADC2626) : const Color(0xFFFEF2F2))
         : isActive && isDueToday
@@ -624,13 +621,16 @@ class _TaskCardState extends ConsumerState<_TaskCard> {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        // Meta row: priority, category, date, recurrence
+                        // Meta row: quadrant, category, date, recurrence
                         Wrap(
                           spacing: 6,
                           runSpacing: 4,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            PriorityBadge(task.priority),
+                            QuadrantBadge(
+                              important: task.important,
+                              urgent: task.urgent,
+                            ),
                             if (cat != null)
                               CategoryBadge(
                                 name: cat.name,
@@ -1208,7 +1208,8 @@ class _IconActions extends ConsumerWidget {
                 title: Value(task.title),
                 description: Value(task.description),
                 status: const Value(TaskStatus.todo),
-                priority: Value(task.priority),
+                important: Value(task.important),
+                urgent: Value(task.urgent),
                 recurrence: Value(task.recurrence),
                 dueDate: Value(nextDate),
                 assigneeServerId: Value(task.assigneeServerId),
@@ -1540,8 +1541,11 @@ class _TaskDetailSheetState extends ConsumerState<_TaskDetailSheet> {
                         child: TaskStatusBadge(_task.status),
                       ),
                       _InfoRow(
-                        label: 'PRIORITY',
-                        child: PriorityBadge(_task.priority),
+                        label: 'QUADRANT',
+                        child: QuadrantBadge(
+                          important: _task.important,
+                          urgent: _task.urgent,
+                        ),
                       ),
                       if (widget.categoryMap[_task.categoryServerId]
                           case final cat?)
@@ -1912,7 +1916,8 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
   late TextEditingController _title;
   late TextEditingController _description;
   String _status = TaskStatus.todo;
-  String _priority = 'medium';
+  bool _important = true;
+  bool _urgent = false;
   String _recurrence = 'none';
   late String _dueDate;
   int? _assigneeServerId;
@@ -1924,7 +1929,6 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
     TaskStatus.done,
     TaskStatus.cancelled,
   ];
-  static const _priorities = ['low', 'medium', 'high'];
   static const _recurrences = [
     'none',
     'daily',
@@ -1943,7 +1947,8 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
     _title = TextEditingController(text: existing?.title ?? '');
     _description = TextEditingController(text: existing?.description ?? '');
     _status = existing?.status ?? TaskStatus.todo;
-    _priority = existing?.priority ?? 'medium';
+    _important = existing?.important ?? true;
+    _urgent = existing?.urgent ?? false;
     _recurrence = existing?.recurrence ?? 'none';
     _dueDate = existing?.dueDate ?? DateTime.now().toIso8601DateString();
     _assigneeServerId = existing?.assigneeServerId;
@@ -2000,19 +2005,23 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
                       onChanged: (v) => setState(() => _status = v!),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _priority,
-                      decoration: const InputDecoration(labelText: 'Priority'),
-                      items: _priorities
-                          .map(
-                            (s) => DropdownMenuItem(value: s, child: Text(s)),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _priority = v!),
-                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                children: [
+                  FilterChip(
+                    label: const Text('Important'),
+                    selected: _important,
+                    onSelected: (v) => setState(() => _important = v),
                   ),
+                  FilterChip(
+                    label: const Text('Urgent'),
+                    selected: _urgent,
+                    onSelected: (v) => setState(() => _urgent = v),
+                  ),
+                  QuadrantBadge(important: _important, urgent: _urgent),
                 ],
               ),
               const SizedBox(height: 10),
@@ -2143,7 +2152,8 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             title: Value(title),
             description: Value(desc.isEmpty ? null : desc),
             status: Value(_status),
-            priority: Value(_priority),
+            important: Value(_important),
+            urgent: Value(_urgent),
             recurrence: Value(_recurrence),
             dueDate: Value(_dueDate),
             assigneeServerId: Value(_assigneeServerId),
@@ -2160,7 +2170,8 @@ class _TaskFormState extends ConsumerState<_TaskForm> {
             title: Value(title),
             description: Value(desc.isEmpty ? null : desc),
             status: Value(_status),
-            priority: Value(_priority),
+            important: Value(_important),
+            urgent: Value(_urgent),
             recurrence: Value(_recurrence),
             dueDate: Value(_dueDate),
             assigneeServerId: Value(_assigneeServerId),

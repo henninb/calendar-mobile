@@ -310,7 +310,8 @@ void main() {
       title: 'Fix bug',
       description: 'Critical',
       status: 'todo',
-      priority: 'high',
+      important: true,
+      urgent: true,
       assigneeServerId: 2,
       categoryServerId: 3,
       dueDate: '2026-05-20',
@@ -325,9 +326,9 @@ void main() {
     );
 
     test('copyWith', () {
-      final copy = task.copyWith(status: 'done', priority: 'low');
+      final copy = task.copyWith(status: 'done', important: false);
       expect(copy.status, 'done');
-      expect(copy.priority, 'low');
+      expect(copy.important, false);
       expect(copy.id, task.id);
     });
 
@@ -937,7 +938,8 @@ void main() {
         title: 'T',
         description: 'D',
         status: 'todo',
-        priority: 'high',
+        important: true,
+        urgent: true,
         assigneeServerId: 3,
         categoryServerId: 4,
         dueDate: '2026-05-20',
@@ -965,7 +967,8 @@ void main() {
         id: 1,
         title: 'T',
         status: 'todo',
-        priority: 'medium',
+        important: true,
+        urgent: false,
         recurrence: 'none',
         order: 0,
         syncStatus: 0,
@@ -1320,7 +1323,8 @@ void main() {
         title: const Constant('Task'),
         description: const Constant('desc'),
         status: const Constant('todo'),
-        priority: const Constant('medium'),
+        important: const Constant(true),
+        urgent: const Constant(false),
         assigneeServerId: const Constant(2),
         categoryServerId: const Constant(3),
         dueDate: const Constant('2026-05-20'),
@@ -1626,7 +1630,8 @@ void main() {
         title: 'Old',
         description: 'Old desc',
         status: 'todo',
-        priority: 'low',
+        important: false,
+        urgent: false,
         assigneeServerId: 1,
         categoryServerId: 1,
         dueDate: '2026-01-01',
@@ -1645,7 +1650,8 @@ void main() {
         title: Value('New'),
         description: Value('New desc'),
         status: Value('done'),
-        priority: Value('high'),
+        important: Value(true),
+        urgent: Value(true),
         assigneeServerId: Value(5),
         categoryServerId: Value(6),
         dueDate: Value('2026-06-01'),
